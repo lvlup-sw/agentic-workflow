@@ -37,6 +37,32 @@ The library builds on proven .NET infrastructure rather than reinventing durabil
 
 **Roslyn Source Generators** transform fluent DSL definitions into type-safe artifacts at compile time: phase enums, commands, events, saga handlers, and state reducers. Invalid workflows fail at build time with clear diagnostics, not at runtime with cryptic exceptions.
 
+## Packages
+
+| Package | Purpose |
+|---------|---------|
+| `Agentic.Workflow` | Core fluent DSL and abstractions |
+| `Agentic.Workflow.Generators` | Compile-time source generation (sagas, events, phase enums) |
+| `Agentic.Workflow.Infrastructure` | Production implementations (Thompson Sampling, loop detection, budgets) |
+| `Agentic.Workflow.Agents` | Microsoft Agent Framework integration for LLM-powered steps |
+| `Agentic.Workflow.Rag` | Vector store adapters for RAG patterns |
+
+**Minimal setup** (workflows without LLM agents):
+```bash
+dotnet add package Agentic.Workflow
+dotnet add package Agentic.Workflow.Generators
+```
+
+**With LLM integration** (most common):
+```bash
+dotnet add package Agentic.Workflow
+dotnet add package Agentic.Workflow.Generators
+dotnet add package Agentic.Workflow.Agents
+dotnet add package Agentic.Workflow.Infrastructure
+```
+
+See [Package Documentation](docs/packages.md) for detailed guidance.
+
 ## How It Compares
 
 | Capability | Agentic.Workflow | [LangGraph](https://www.langchain.com/langgraph) | [MS Agent Framework](https://learn.microsoft.com/en-us/agent-framework/) | [Temporal](https://temporal.io/) |
@@ -64,18 +90,27 @@ The library builds on proven .NET infrastructure rather than reinventing durabil
 
 ## Quick Start
 
-```bash
-dotnet add package Agentic.Workflow
-dotnet add package Agentic.Workflow.Generators
-```
-
 ```csharp
+// Register workflows at startup
 services.AddAgenticWorkflow()
     .AddWorkflow<ProcessOrderWorkflow>();
+
+// Define a workflow
+public class ProcessOrderWorkflow : IWorkflowDefinition<OrderState>
+{
+    public IWorkflow<OrderState> Define() =>
+        Workflow<OrderState>
+            .Create("process-order")
+            .StartWith<ValidateOrder>()
+            .Then<ProcessPayment>()
+            .Finally<SendConfirmation>();
+}
 ```
 
 ## Documentation
 
+- [Packages](docs/packages.md) — Detailed package documentation
+- [Integrations](docs/integrations.md) — Wolverine, Marten, and AI framework integration
 - [Design Document](docs/design.md) — Architecture and design rationale
 - [Examples](docs/examples/) — Branching, fork/join, approvals, Thompson Sampling
 
