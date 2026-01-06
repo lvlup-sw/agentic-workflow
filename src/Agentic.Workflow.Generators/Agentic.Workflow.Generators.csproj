@@ -18,6 +18,8 @@
     <PackageId>Agentic.Workflow.Generators</PackageId>
     <Description>Roslyn source generators for Agentic.Workflow. Generates Wolverine sagas, phase enums, commands, events, worker handlers, and DI extensions from fluent workflow definitions.</Description>
     <DevelopmentDependency>true</DevelopmentDependency>
+    <!-- Source generators don't have lib/ content, so no symbol package -->
+    <IncludeSymbols>false</IncludeSymbols>
   </PropertyGroup>
 
   <ItemGroup>
