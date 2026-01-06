@@ -40,7 +40,11 @@ jobs:
         run: dotnet build ${{ env.SOLUTION_PATH }} --no-restore --configuration Release
 
       - name: Test (verify before publish)
-        run: dotnet test ${{ env.SOLUTION_PATH }} --no-build --configuration Release
+        run: |
+          for proj in src/*Tests/*.csproj; do
+            echo "Testing $(basename $proj)..."
+            dotnet run --project "$proj" --configuration Release --no-build
+          done
 
       - name: Pack
         run: dotnet pack ${{ env.SOLUTION_PATH }} --no-build --configuration Release --output ./packages
