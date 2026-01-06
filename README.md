@@ -10,14 +10,13 @@
 
 AI agents are inherently probabilistic—given the same input, an LLM may produce different outputs. Current solutions force an unsatisfying choice:
 
-- **Agent frameworks** (LangGraph, CrewAI, AutoGen) offer great developer experience but lack production reliability: no durability, limited error recovery, poor auditability.
-- **Workflow engines** (Temporal, Durable Task) provide reliability but have no awareness of agent-specific patterns: confidence handling, context management, AI-aware compensation.
+- **Agent frameworks** ([LangGraph](https://www.langchain.com/langgraph), [MS Agent Framework](https://learn.microsoft.com/en-us/agent-framework/overview/agent-framework-overview)) offer great developer experience but rely on checkpoint-based persistence—they can resume workflows, but can't answer "what did the agent see when it made that decision?"
+
+- **Workflow engines** ([Temporal](https://temporal.io/)) provide battle-tested durability but have no awareness of agent-specific patterns: confidence handling, context assembly, AI-aware compensation.
 
 ## The Solution
 
 Agentic.Workflow bridges these domains with a key insight: while agent *outputs* are probabilistic, the *workflow itself* can be deterministic if we treat each agent decision as an immutable event in an event-sourced system.
-
-You get agent framework ergonomics with enterprise-grade reliability:
 
 ```csharp
 var workflow = Workflow<OrderState>
@@ -28,16 +27,29 @@ var workflow = Workflow<OrderState>
     .Finally<SendConfirmation>();
 ```
 
+## How It Works
+
+The library builds on proven .NET infrastructure rather than reinventing durability:
+
+**[Wolverine](https://wolverine.netlify.app/)** provides saga orchestration—each workflow becomes a saga with automatic message routing, transactional outbox (state + messages commit atomically), and retry policies.
+
+**[Marten](https://martendb.io/)** provides event sourcing—every step completion, branch decision, and approval is captured as an immutable event in PostgreSQL. This enables time-travel debugging ("what was the state when this decision was made?") and complete audit trails.
+
+**Roslyn Source Generators** transform fluent DSL definitions into type-safe artifacts at compile time: phase enums, commands, events, saga handlers, and state reducers. Invalid workflows fail at build time with clear diagnostics, not at runtime with cryptic exceptions.
+
 ## How It Compares
 
-| Capability | Agentic.Workflow | LangGraph | Temporal |
-|------------|:----------------:|:---------:|:--------:|
-| Durable by default | ✓ | | ✓ |
-| Agent-native patterns | ✓ | ✓ | |
-| Event-sourced audit trail | ✓ | | |
-| Compile-time validation | ✓ | | |
-| Confidence-based routing | ✓ | | |
-| Thompson Sampling agent selection | ✓ | | |
+| Capability | Agentic.Workflow | [LangGraph](https://www.langchain.com/langgraph) | [MS Agent Framework](https://learn.microsoft.com/en-us/agent-framework/) | [Temporal](https://temporal.io/) |
+|------------|:----------------:|:---------:|:------------------:|:--------:|
+| .NET native | ✓ | | ✓ | ✓ |
+| Durable execution | event-sourced | checkpoints | checkpoints | event history |
+| Full audit trail | ✓ | | | |
+| Confidence-based routing | ✓ | | | |
+| Thompson Sampling | ✓ | | | |
+| Compile-time validation | ✓ | | | |
+| Human-in-the-loop | ✓ | ✓ | ✓ | ✓ |
+| Compensation handlers | ✓ | | | ✓ |
+| Production status | 1.0 | stable | preview | stable |
 
 ## Key Features
 
@@ -64,7 +76,7 @@ services.AddAgenticWorkflow()
 
 ## Documentation
 
-- [Design Document](docs/design/agentic-workflow-library.md) — Architecture and design rationale
+- [Design Document](docs/design.md) — Architecture and design rationale
 - [Examples](docs/examples/) — Branching, fork/join, approvals, Thompson Sampling
 
 ## Requirements
