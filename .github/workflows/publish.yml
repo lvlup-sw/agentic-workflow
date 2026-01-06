@@ -1,0 +1,64 @@
+name: Publish
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+env:
+  DOTNET_VERSION: '10.0.x'
+  DOTNET_QUALITY: 'preview'
+  SOLUTION_PATH: 'src/agentic-workflow.sln'
+
+jobs:
+  publish:
+    name: Publish to NuGet
+    runs-on: blacksmith-4vcpu-ubuntu-2204
+    environment: nuget-publish
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+          dotnet-quality: ${{ env.DOTNET_QUALITY }}
+
+      - name: Restore
+        run: dotnet restore ${{ env.SOLUTION_PATH }}
+
+      - name: Build (Release)
+        run: dotnet build ${{ env.SOLUTION_PATH }} --no-restore --configuration Release
+
+      - name: Test (verify before publish)
+        run: dotnet test ${{ env.SOLUTION_PATH }} --no-build --configuration Release
+
+      - name: Pack
+        run: dotnet pack ${{ env.SOLUTION_PATH }} --no-build --configuration Release --output ./packages
+
+      - name: Push to NuGet
+        run: |
+          for package in ./packages/*.nupkg; do
+            dotnet nuget push "$package" \
+              --api-key ${{ secrets.NUGET_API_KEY }} \
+              --source https://api.nuget.org/v3/index.json \
+              --skip-duplicate
+          done
+
+      - name: Push symbols
+        run: |
+          for package in ./packages/*.snupkg; do
+            dotnet nuget push "$package" \
+              --api-key ${{ secrets.NUGET_API_KEY }} \
+              --source https://api.nuget.org/v3/index.json \
+              --skip-duplicate
+          done
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: ./packages/*
+          generate_release_notes: true

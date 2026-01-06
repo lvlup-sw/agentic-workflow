@@ -1,0 +1,87 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+env:
+  DOTNET_VERSION: '10.0.x'
+  DOTNET_QUALITY: 'preview'
+  SOLUTION_PATH: 'src/agentic-workflow.sln'
+  COVERAGE_THRESHOLD: 80
+
+jobs:
+  build-test:
+    name: Build & Test
+    runs-on: blacksmith-4vcpu-ubuntu-2204
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+          dotnet-quality: ${{ env.DOTNET_QUALITY }}
+
+      - name: Restore
+        run: dotnet restore ${{ env.SOLUTION_PATH }}
+
+      - name: Build
+        run: dotnet build ${{ env.SOLUTION_PATH }} --no-restore --configuration Release
+
+      - name: Test with coverage
+        run: |
+          mkdir -p ./TestResults
+          for proj in src/*Tests/*.csproj; do
+            projname=$(basename "$proj" .csproj)
+            dotnet run --project "$proj" --configuration Release -- \
+              --coverage \
+              --coverage-output-format cobertura \
+              --coverage-output "${GITHUB_WORKSPACE}/TestResults/${projname}.cobertura.xml"
+          done
+
+      - name: Pack (verify)
+        run: dotnet pack ${{ env.SOLUTION_PATH }} --no-build --configuration Release --output ./packages
+
+      - name: Upload coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-reports
+          path: ./TestResults/*.cobertura.xml
+
+  coverage-gate:
+    name: Coverage Gate
+    needs: build-test
+    runs-on: blacksmith-4vcpu-ubuntu-2204
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download coverage
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage-reports
+          path: ./coverage-reports
+
+      - name: Install ReportGenerator
+        run: dotnet tool install -g dotnet-reportgenerator-globaltool
+
+      - name: Merge and check threshold
+        run: |
+          reportgenerator \
+            -reports:"./coverage-reports/*.cobertura.xml" \
+            -targetdir:"./coverage-merged" \
+            -reporttypes:"Cobertura;TextSummary"
+
+          coverage=$(grep -oP 'Line coverage: \K[0-9.]+' ./coverage-merged/Summary.txt || echo "0")
+          echo "Line coverage: ${coverage}%"
+          if (( $(echo "$coverage < ${{ env.COVERAGE_THRESHOLD }}" | bc -l) )); then
+            echo "Coverage ${coverage}% is below threshold ${{ env.COVERAGE_THRESHOLD }}%"
+            exit 1
+          fi

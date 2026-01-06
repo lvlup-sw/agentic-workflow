@@ -1,0 +1,419 @@
+// =============================================================================
+// <copyright file="ThompsonSamplingSelectorTests.cs" company="Levelup Software">
+// Copyright (c) Levelup Software. All rights reserved.
+// </copyright>
+// =============================================================================
+
+using Agentic.Workflow.Infrastructure.Selection;
+using Agentic.Workflow.Selection;
+
+namespace Agentic.Workflow.Infrastructure.Tests.Selection;
+
+/// <summary>
+/// Unit tests for <see cref="ThompsonSamplingAgentSelector"/> covering the
+/// Thompson Sampling implementation of agent selection.
+/// </summary>
+[Property("Category", "Unit")]
+public class ThompsonSamplingSelectorTests
+{
+    // =============================================================================
+    // A. SelectAgentAsync Basic Tests
+    // =============================================================================
+
+    /// <summary>
+    /// Verifies that SelectAgentAsync returns a valid selection from available agents.
+    /// </summary>
+    [Test]
+    public async Task SelectAgentAsync_WithAvailableAgents_ReturnsValidSelection()
+    {
+        // Arrange
+        var beliefStore = new InMemoryBeliefStore();
+        var selector = new ThompsonSamplingAgentSelector(beliefStore, randomSeed: 42);
+
+        var context = new AgentSelectionContext
+        {
+            WorkflowId = Guid.NewGuid(),
+            StepName = "TestStep",
+            TaskDescription = "Implement a sorting algorithm",
+            AvailableAgents = ["gpt-4o", "claude-3", "gemini-pro"],
+        };
+
+        // Act
+        var result = await selector.SelectAgentAsync(context).ConfigureAwait(false);
+
+        // Assert
+        await Assert.That(result.IsSuccess).IsTrue();
+        await Assert.That(context.AvailableAgents).Contains(result.Value.SelectedAgentId);
+    }
+
+    /// <summary>
+    /// Verifies that SelectAgentAsync classifies task correctly.
+    /// </summary>
+    [Test]
+    public async Task SelectAgentAsync_WithCodeTask_ClassifiesAsCodeGeneration()
+    {
+        // Arrange
+        var beliefStore = new InMemoryBeliefStore();
+        var selector = new ThompsonSamplingAgentSelector(beliefStore, randomSeed: 42);
+
+        var context = new AgentSelectionContext
+        {
+            WorkflowId = Guid.NewGuid(),
+            StepName = "TestStep",
+            TaskDescription = "Debug and refactor this function",
+            AvailableAgents = ["agent-1"],
+        };
+
+        // Act
+        var result = await selector.SelectAgentAsync(context).ConfigureAwait(false);
+
+        // Assert
+        await Assert.That(result.Value.TaskCategory).IsEqualTo(TaskCategory.CodeGeneration);
+    }
+
+    /// <summary>
+    /// Verifies that SelectAgentAsync returns error when no agents available.
+    /// </summary>
+    [Test]
+    public async Task SelectAgentAsync_NoAvailableAgents_ReturnsFailure()
+    {
+        // Arrange
+        var beliefStore = new InMemoryBeliefStore();
+        var selector = new ThompsonSamplingAgentSelector(beliefStore, randomSeed: 42);
+
+        var context = new AgentSelectionContext
+        {
+            WorkflowId = Guid.NewGuid(),
+            StepName = "TestStep",
+            TaskDescription = "Test task",
+            AvailableAgents = [],
+        };
+
+        // Act
+        var result = await selector.SelectAgentAsync(context).ConfigureAwait(false);
+
+        // Assert
+        await Assert.That(result.IsFailure).IsTrue();
+        await Assert.That(result.Error.Code).IsEqualTo("SELECTOR_NO_CANDIDATES");
+    }
+
+    /// <summary>
+    /// Verifies that SelectAgentAsync respects exclusions.
+    /// </summary>
+    [Test]
+    public async Task SelectAgentAsync_WithExclusions_RespectsExclusions()
+    {
+        // Arrange
+        var beliefStore = new InMemoryBeliefStore();
+        var selector = new ThompsonSamplingAgentSelector(beliefStore, randomSeed: 42);
+
+        var context = new AgentSelectionContext
+        {
+            WorkflowId = Guid.NewGuid(),
+            StepName = "TestStep",
+            TaskDescription = "Test task",
+            AvailableAgents = ["agent-1", "agent-2", "agent-3"],
+            ExcludedAgents = ["agent-1", "agent-2"],
+        };
+
+        // Act
+        var result = await selector.SelectAgentAsync(context).ConfigureAwait(false);
+
+        // Assert
+        await Assert.That(result.IsSuccess).IsTrue();
+        await Assert.That(result.Value.SelectedAgentId).IsEqualTo("agent-3");
+    }
+
+    /// <summary>
+    /// Verifies that SelectAgentAsync returns failure when all agents excluded.
+    /// </summary>
+    [Test]
+    public async Task SelectAgentAsync_AllAgentsExcluded_ReturnsFailure()
+    {
+        // Arrange
+        var beliefStore = new InMemoryBeliefStore();
+        var selector = new ThompsonSamplingAgentSelector(beliefStore, randomSeed: 42);
+
+        var context = new AgentSelectionContext
+        {
+            WorkflowId = Guid.NewGuid(),
+            StepName = "TestStep",
+            TaskDescription = "Test task",
+            AvailableAgents = ["agent-1", "agent-2"],
+            ExcludedAgents = ["agent-1", "agent-2"],
+        };
+
+        // Act
+        var result = await selector.SelectAgentAsync(context).ConfigureAwait(false);
+
+        // Assert
+        await Assert.That(result.IsFailure).IsTrue();
+        await Assert.That(result.Error.Code).IsEqualTo("SELECTOR_NO_CANDIDATES");
+    }
+
+    // =============================================================================
+    // B. SelectAgentAsync Exploitation Tests
+    // =============================================================================
+
+    /// <summary>
+    /// Verifies that agent with more successes is selected more often.
+    /// </summary>
+    [Test]
+    public async Task SelectAgentAsync_AgentWithMoreSuccesses_SelectedMoreOften()
+    {
+        // Arrange
+        var beliefStore = new InMemoryBeliefStore();
+
+        // Give agent-1 many successes (should have higher expected value)
+        for (int i = 0; i < 20; i++)
+        {
+            await beliefStore.UpdateBeliefAsync("agent-1", "CodeGeneration", success: true).ConfigureAwait(false);
+        }
+
+        // Give agent-2 many failures (should have lower expected value)
+        for (int i = 0; i < 20; i++)
+        {
+            await beliefStore.UpdateBeliefAsync("agent-2", "CodeGeneration", success: false).ConfigureAwait(false);
+        }
+
+        var context = new AgentSelectionContext
+        {
+            WorkflowId = Guid.NewGuid(),
+            StepName = "TestStep",
+            TaskDescription = "Write some code",
+            AvailableAgents = ["agent-1", "agent-2"],
+        };
+
+        // Act - Run multiple selections to check distribution
+        var selections = new Dictionary<string, int> { ["agent-1"] = 0, ["agent-2"] = 0 };
+        for (int trial = 0; trial < 100; trial++)
+        {
+            var selector = new ThompsonSamplingAgentSelector(beliefStore, randomSeed: trial);
+            var result = await selector.SelectAgentAsync(context).ConfigureAwait(false);
+            selections[result.Value.SelectedAgentId]++;
+        }
+
+        // Assert - Agent-1 should be selected much more often
+        await Assert.That(selections["agent-1"]).IsGreaterThan(selections["agent-2"]);
+        await Assert.That(selections["agent-1"]).IsGreaterThan(70); // Should be heavily favored
+    }
+
+    // =============================================================================
+    // C. SelectAgentAsync Exploration Tests
+    // =============================================================================
+
+    /// <summary>
+    /// Verifies that with uniform priors, all agents have roughly equal selection chance.
+    /// </summary>
+    [Test]
+    public async Task SelectAgentAsync_UniformPriors_ExploresAllAgents()
+    {
+        // Arrange
+        var beliefStore = new InMemoryBeliefStore();
+
+        var context = new AgentSelectionContext
+        {
+            WorkflowId = Guid.NewGuid(),
+            StepName = "TestStep",
+            TaskDescription = "Test task",
+            AvailableAgents = ["agent-1", "agent-2", "agent-3"],
+        };
+
+        // Act - Run multiple selections
+        var selections = new Dictionary<string, int>
+        {
+            ["agent-1"] = 0,
+            ["agent-2"] = 0,
+            ["agent-3"] = 0,
+        };
+
+        for (int trial = 0; trial < 300; trial++)
+        {
+            var selector = new ThompsonSamplingAgentSelector(beliefStore, randomSeed: trial);
+            var result = await selector.SelectAgentAsync(context).ConfigureAwait(false);
+            selections[result.Value.SelectedAgentId]++;
+        }
+
+        // Assert - Each agent should be selected a reasonable number of times
+        foreach (var count in selections.Values)
+        {
+            await Assert.That(count).IsGreaterThan(50); // At least 50 out of 300
+        }
+    }
+
+    // =============================================================================
+    // D. RecordOutcomeAsync Tests
+    // =============================================================================
+
+    /// <summary>
+    /// Verifies that RecordOutcomeAsync updates beliefs on success.
+    /// </summary>
+    [Test]
+    public async Task RecordOutcomeAsync_Success_UpdatesBeliefAlpha()
+    {
+        // Arrange
+        var beliefStore = new InMemoryBeliefStore();
+        var selector = new ThompsonSamplingAgentSelector(beliefStore, randomSeed: 42);
+
+        // Act
+        var result = await selector.RecordOutcomeAsync(
+            "agent-1",
+            TaskCategory.CodeGeneration.ToString(),
+            AgentOutcome.Succeeded()).ConfigureAwait(false);
+
+        // Assert
+        await Assert.That(result.IsSuccess).IsTrue();
+
+        var belief = await beliefStore.GetBeliefAsync("agent-1", "CodeGeneration").ConfigureAwait(false);
+        await Assert.That(belief.Value.Alpha).IsEqualTo(3.0); // Prior + 1
+        await Assert.That(belief.Value.Beta).IsEqualTo(2.0); // Unchanged
+    }
+
+    /// <summary>
+    /// Verifies that RecordOutcomeAsync updates beliefs on failure.
+    /// </summary>
+    [Test]
+    public async Task RecordOutcomeAsync_Failure_UpdatesBeliefBeta()
+    {
+        // Arrange
+        var beliefStore = new InMemoryBeliefStore();
+        var selector = new ThompsonSamplingAgentSelector(beliefStore, randomSeed: 42);
+
+        // Act
+        var result = await selector.RecordOutcomeAsync(
+            "agent-1",
+            TaskCategory.DataAnalysis.ToString(),
+            AgentOutcome.Failed()).ConfigureAwait(false);
+
+        // Assert
+        await Assert.That(result.IsSuccess).IsTrue();
+
+        var belief = await beliefStore.GetBeliefAsync("agent-1", "DataAnalysis").ConfigureAwait(false);
+        await Assert.That(belief.Value.Alpha).IsEqualTo(2.0); // Unchanged
+        await Assert.That(belief.Value.Beta).IsEqualTo(3.0); // Prior + 1
+    }
+
+    // =============================================================================
+    // E. SelectionConfidence Tests
+    // =============================================================================
+
+    /// <summary>
+    /// Verifies that selection confidence starts low with few observations.
+    /// </summary>
+    [Test]
+    public async Task SelectAgentAsync_FewObservations_LowConfidence()
+    {
+        // Arrange
+        var beliefStore = new InMemoryBeliefStore();
+        var selector = new ThompsonSamplingAgentSelector(beliefStore, randomSeed: 42);
+
+        var context = new AgentSelectionContext
+        {
+            WorkflowId = Guid.NewGuid(),
+            StepName = "TestStep",
+            TaskDescription = "Test task",
+            AvailableAgents = ["agent-1"],
+        };
+
+        // Act
+        var result = await selector.SelectAgentAsync(context).ConfigureAwait(false);
+
+        // Assert - With no observations, confidence should be 0
+        await Assert.That(result.Value.SelectionConfidence).IsEqualTo(0.0);
+    }
+
+    /// <summary>
+    /// Verifies that selection confidence increases with more observations.
+    /// </summary>
+    [Test]
+    public async Task SelectAgentAsync_ManyObservations_HighConfidence()
+    {
+        // Arrange
+        var beliefStore = new InMemoryBeliefStore();
+
+        // Add 20 observations
+        for (int i = 0; i < 20; i++)
+        {
+            await beliefStore.UpdateBeliefAsync("agent-1", "General", success: true).ConfigureAwait(false);
+        }
+
+        var selector = new ThompsonSamplingAgentSelector(beliefStore, randomSeed: 42);
+
+        var context = new AgentSelectionContext
+        {
+            WorkflowId = Guid.NewGuid(),
+            StepName = "TestStep",
+            TaskDescription = "Hello world", // General category
+            AvailableAgents = ["agent-1"],
+        };
+
+        // Act
+        var result = await selector.SelectAgentAsync(context).ConfigureAwait(false);
+
+        // Assert - With 20 observations, confidence should be 1.0 (capped)
+        await Assert.That(result.Value.SelectionConfidence).IsEqualTo(1.0);
+    }
+
+    // =============================================================================
+    // F. SampledTheta Tests
+    // =============================================================================
+
+    /// <summary>
+    /// Verifies that sampled theta is in valid range [0, 1].
+    /// </summary>
+    [Test]
+    public async Task SelectAgentAsync_SampledTheta_InValidRange()
+    {
+        // Arrange
+        var beliefStore = new InMemoryBeliefStore();
+        var selector = new ThompsonSamplingAgentSelector(beliefStore, randomSeed: 42);
+
+        var context = new AgentSelectionContext
+        {
+            WorkflowId = Guid.NewGuid(),
+            StepName = "TestStep",
+            TaskDescription = "Test task",
+            AvailableAgents = ["agent-1"],
+        };
+
+        // Act
+        var result = await selector.SelectAgentAsync(context).ConfigureAwait(false);
+
+        // Assert
+        await Assert.That(result.Value.SampledTheta).IsGreaterThanOrEqualTo(0.0);
+        await Assert.That(result.Value.SampledTheta).IsLessThanOrEqualTo(1.0);
+    }
+
+    // =============================================================================
+    // G. Reproducibility Tests
+    // =============================================================================
+
+    /// <summary>
+    /// Verifies that same seed produces same selection.
+    /// </summary>
+    [Test]
+    public async Task SelectAgentAsync_SameSeed_ProducesSameResult()
+    {
+        // Arrange
+        var beliefStore = new InMemoryBeliefStore();
+
+        var context = new AgentSelectionContext
+        {
+            WorkflowId = Guid.NewGuid(),
+            StepName = "TestStep",
+            TaskDescription = "Test task",
+            AvailableAgents = ["agent-1", "agent-2", "agent-3"],
+        };
+
+        // Act
+        var selector1 = new ThompsonSamplingAgentSelector(beliefStore, randomSeed: 42);
+        var result1 = await selector1.SelectAgentAsync(context).ConfigureAwait(false);
+
+        var selector2 = new ThompsonSamplingAgentSelector(beliefStore, randomSeed: 42);
+        var result2 = await selector2.SelectAgentAsync(context).ConfigureAwait(false);
+
+        // Assert
+        await Assert.That(result1.Value.SelectedAgentId).IsEqualTo(result2.Value.SelectedAgentId);
+        await Assert.That(result1.Value.SampledTheta).IsEqualTo(result2.Value.SampledTheta);
+    }
+}

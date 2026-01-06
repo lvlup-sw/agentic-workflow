@@ -1,0 +1,41 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- Source generators MUST target netstandard2.0 -->
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <RootNamespace>$(RootNamespace).Workflow.Generators</RootNamespace>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <!-- Source generator specific settings -->
+    <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
+    <IsRoslynComponent>true</IsRoslynComponent>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <!-- Disable analyzers that don't work with netstandard2.0 -->
+    <EnableNETAnalyzers>false</EnableNETAnalyzers>
+    <!-- RS2008: Analyzer release tracking not needed for internal generator -->
+    <NoWarn>$(NoWarn);RS2008</NoWarn>
+    <!-- NuGet Package Configuration -->
+    <PackageId>Agentic.Workflow.Generators</PackageId>
+    <Description>Roslyn source generators for Agentic.Workflow. Generates Wolverine sagas, phase enums, commands, events, worker handlers, and DI extensions from fluent workflow definitions.</Description>
+    <DevelopmentDependency>true</DevelopmentDependency>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.CodeAnalysis.Analyzers">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <!-- Pack the generator as an analyzer -->
+  <ItemGroup>
+    <None Include="$(OutputPath)\$(AssemblyName).dll" Pack="true" PackagePath="analyzers/dotnet/cs" Visible="false" />
+  </ItemGroup>
+
+  <!-- Expose internals to test project -->
+  <ItemGroup>
+    <InternalsVisibleTo Include="Agentic.Workflow.Generators.Tests" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <RootNamespace>$(RootNamespace).Workflow.Agents</RootNamespace>
+    <!-- NuGet Package Configuration -->
+    <PackageId>Agentic.Workflow.Agents</PackageId>
+    <Description>Microsoft Agent Framework integration for Agentic.Workflow. Provides abstractions for LLM-powered workflow steps with conversation continuity, streaming responses, and agent selection.</Description>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="$(AssemblyName).Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.AI" />
+    <PackageReference Include="Microsoft.Extensions.AI.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Agentic.Workflow\Agentic.Workflow.csproj" />
+  </ItemGroup>
+
+</Project>
