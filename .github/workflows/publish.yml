@@ -10,6 +10,12 @@ env:
   DOTNET_QUALITY: 'preview'
   SOLUTION_PATH: 'src/agentic-workflow.sln'
 
+# Required for trusted publishing (OIDC)
+permissions:
+  id-token: write   # OIDC token for NuGet trusted publishing
+  contents: write   # Create GitHub Releases
+  packages: write   # Push packages
+
 jobs:
   publish:
     name: Publish to NuGet
@@ -19,7 +25,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 0  # Required for MinVer
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
@@ -39,11 +45,14 @@ jobs:
       - name: Pack
         run: dotnet pack ${{ env.SOLUTION_PATH }} --no-build --configuration Release --output ./packages
 
-      - name: Push to NuGet
+      - name: List packages
+        run: ls -la ./packages/
+
+      - name: Push to NuGet (trusted publishing)
         run: |
           for package in ./packages/*.nupkg; do
+            echo "Pushing $package..."
             dotnet nuget push "$package" \
-              --api-key ${{ secrets.NUGET_API_KEY }} \
               --source https://api.nuget.org/v3/index.json \
               --skip-duplicate
           done
@@ -51,10 +60,12 @@ jobs:
       - name: Push symbols
         run: |
           for package in ./packages/*.snupkg; do
-            dotnet nuget push "$package" \
-              --api-key ${{ secrets.NUGET_API_KEY }} \
-              --source https://api.nuget.org/v3/index.json \
-              --skip-duplicate
+            if [ -f "$package" ]; then
+              echo "Pushing symbols $package..."
+              dotnet nuget push "$package" \
+                --source https://api.nuget.org/v3/index.json \
+                --skip-duplicate
+            fi
           done
 
       - name: Create GitHub Release
