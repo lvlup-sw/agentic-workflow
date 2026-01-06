@@ -4,34 +4,22 @@
 [![Build Status](https://img.shields.io/github/actions/workflow/status/lvlup-sw/agentic-workflow/ci.yml?branch=main)](https://github.com/lvlup-sw/agentic-workflow/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-A .NET library for building production-grade agentic workflows with deterministic orchestration over probabilistic AI agents.
+> Deterministic orchestration for probabilistic AI agents
 
-## Features
+## The Problem
 
-- **Fluent DSL** - Intuitive workflow definitions that read like natural language
-- **Roslyn Source Generators** - Compile-time validation with generated sagas, events, and state machines
-- **Thompson Sampling** - Contextual multi-armed bandit agent selection with Beta priors
-- **Loop Detection** - Automatic detection of stuck workflows (exact/semantic repetition, oscillation)
-- **Budget Guard** - Resource budget enforcement (steps, tokens, wall time)
-- **Durable by Default** - Automatic persistence via Wolverine sagas and Marten event sourcing
-- **Human-in-the-Loop** - Built-in approval workflows with timeout escalation
-- **Complete Audit Trail** - Event-sourced decision history for compliance and debugging
+AI agents are inherently probabilistic—given the same input, an LLM may produce different outputs. Current solutions force an unsatisfying choice:
 
-## Quick Start
+- **Agent frameworks** (LangGraph, CrewAI, AutoGen) offer great developer experience but lack production reliability: no durability, limited error recovery, poor auditability.
+- **Workflow engines** (Temporal, Durable Task) provide reliability but have no awareness of agent-specific patterns: confidence handling, context management, AI-aware compensation.
 
-### Installation
+## The Solution
 
-```bash
-dotnet add package Agentic.Workflow
-dotnet add package Agentic.Workflow.Generators
-dotnet add package Agentic.Workflow.Infrastructure
-```
+Agentic.Workflow bridges these domains with a key insight: while agent *outputs* are probabilistic, the *workflow itself* can be deterministic if we treat each agent decision as an immutable event in an event-sourced system.
 
-### Define a Workflow
+You get agent framework ergonomics with enterprise-grade reliability:
 
 ```csharp
-using Agentic.Workflow;
-
 var workflow = Workflow<OrderState>
     .Create("process-order")
     .StartWith<ValidateOrder>()
@@ -40,119 +28,50 @@ var workflow = Workflow<OrderState>
     .Finally<SendConfirmation>();
 ```
 
-### Implement Steps
+## How It Compares
 
-```csharp
-public class ValidateOrder : IWorkflowStep<OrderState>
-{
-    public async Task<StepResult<OrderState>> ExecuteAsync(
-        OrderState state,
-        StepContext context,
-        CancellationToken ct)
-    {
-        // Validation logic
-        return state.With(s => s.IsValid, true).AsResult();
-    }
-}
+| Capability | Agentic.Workflow | LangGraph | Temporal |
+|------------|:----------------:|:---------:|:--------:|
+| Durable by default | ✓ | | ✓ |
+| Agent-native patterns | ✓ | ✓ | |
+| Event-sourced audit trail | ✓ | | |
+| Compile-time validation | ✓ | | |
+| Confidence-based routing | ✓ | | |
+| Thompson Sampling agent selection | ✓ | | |
+
+## Key Features
+
+- **Fluent DSL** — Intuitive workflow definitions that read like natural language
+- **Roslyn Source Generators** — Compile-time validation; invalid workflows fail at build time
+- **Thompson Sampling** — Contextual multi-armed bandit for intelligent agent selection
+- **Confidence Routing** — Automatic escalation to human review for low-confidence decisions
+- **Event-Sourced Audit Trail** — Complete decision history: what the agent saw, what it decided, which model version produced the output
+- **Durable by Default** — Automatic persistence via Wolverine sagas and Marten event sourcing
+- **Human-in-the-Loop** — Built-in approval workflows with timeout escalation
+- **Compensation Handlers** — Explicit rollback for AI decisions when workflows fail
+
+## Quick Start
+
+```bash
+dotnet add package Agentic.Workflow
+dotnet add package Agentic.Workflow.Generators
 ```
-
-### Register Services
 
 ```csharp
 services.AddAgenticWorkflow()
     .AddWorkflow<ProcessOrderWorkflow>();
 ```
 
-## Workflow Patterns
-
-### Conditional Branching
-
-```csharp
-Workflow<ClaimState>
-    .Create("process-claim")
-    .StartWith<AssessClaim>()
-    .Branch(state => state.ClaimType,
-        when: ClaimType.Auto, then: flow => flow
-            .Then<AutoClaimProcessor>(),
-        when: ClaimType.Property, then: flow => flow
-            .Then<PropertyInspection>()
-            .Then<PropertyClaimProcessor>(),
-        otherwise: flow => flow
-            .Then<ManualReview>())
-    .Finally<NotifyClaimant>();
-```
-
-### Parallel Execution
-
-```csharp
-Workflow<AnalysisState>
-    .Create("comprehensive-analysis")
-    .StartWith<GatherData>()
-    .Fork(
-        flow => flow.Then<FinancialAnalysis>(),
-        flow => flow.Then<TechnicalAnalysis>(),
-        flow => flow.Then<MarketAnalysis>())
-    .Join<SynthesizeResults>()
-    .Finally<GenerateReport>();
-```
-
-### Human Approval
-
-```csharp
-Workflow<DocumentState>
-    .Create("document-approval")
-    .StartWith<DraftDocument>()
-    .AwaitApproval<LegalTeam>(options => options
-        .WithTimeout(TimeSpan.FromDays(2))
-        .OnTimeout(flow => flow.Then<EscalateToManager>()))
-    .Then<PublishDocument>()
-    .Finally<NotifyStakeholders>();
-```
-
-### Iterative Refinement
-
-```csharp
-Workflow<RefinementState>
-    .Create("iterative-refinement")
-    .StartWith<GenerateDraft>()
-    .RepeatUntil(
-        condition: state => state.QualityScore >= 0.9m,
-        maxIterations: 5,
-        body: flow => flow
-            .Then<Critique>()
-            .Then<Refine>())
-    .Finally<Publish>();
-```
-
-## Packages
-
-| Package | Description |
-|---------|-------------|
-| `Agentic.Workflow` | Core DSL, abstractions, and Thompson Sampling types |
-| `Agentic.Workflow.Generators` | Roslyn source generators for saga/event generation |
-| `Agentic.Workflow.Infrastructure` | Infrastructure implementations (belief stores, selectors) |
-| `Agentic.Workflow.Agents` | Agent-specific integrations (MAF, Semantic Kernel) |
-| `Agentic.Workflow.Rag` | RAG integration with vector search adapters |
-
 ## Documentation
 
-- [Design Document](docs/design/agentic-workflow-library.md) - Complete architecture and design rationale
-- [Basic Workflow](docs/examples/basic-workflow.md) - Linear workflow example
-- [Branching](docs/examples/branching.md) - Conditional routing
-- [Fork/Join](docs/examples/fork-join.md) - Parallel execution
-- [Approval Flow](docs/examples/approval-flow.md) - Human-in-the-loop
-- [Iterative Refinement](docs/examples/iterative-refinement.md) - Quality loops
-- [Thompson Sampling](docs/examples/thompson-sampling.md) - Agent selection
+- [Design Document](docs/design/agentic-workflow-library.md) — Architecture and design rationale
+- [Examples](docs/examples/) — Branching, fork/join, approvals, Thompson Sampling
 
 ## Requirements
 
 - .NET 10 or later
 - PostgreSQL (for Wolverine/Marten persistence)
 
-## Contributing
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on code style, testing, and the PR process.
-
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+MIT — see [LICENSE](LICENSE) for details.
