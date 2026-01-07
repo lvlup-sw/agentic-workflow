@@ -36,17 +36,18 @@ jobs:
       - name: Build
         run: dotnet build ${{ env.SOLUTION_PATH }} --no-restore --configuration Release
 
-      - name: Install dotnet-coverage
-        run: dotnet tool install -g dotnet-coverage
-
       - name: Test with coverage
         run: |
-          dotnet-coverage collect \
-            --output ./TestResults/coverage.cobertura.xml \
-            --output-format cobertura \
-            -- dotnet test ${{ env.SOLUTION_PATH }} \
-              --no-build \
-              --configuration Release
+          dotnet test ${{ env.SOLUTION_PATH }} \
+            --no-build \
+            --configuration Release \
+            --collect:"XPlat Code Coverage" \
+            --results-directory ./TestResults
+
+      - name: Find coverage file
+        run: |
+          mkdir -p ./TestResults
+          find ./TestResults -name "coverage.cobertura.xml" -exec cp {} ./TestResults/coverage.cobertura.xml \; 2>/dev/null || echo "No coverage file found"
 
       - name: Pack (verify)
         run: dotnet pack ${{ env.SOLUTION_PATH }} --no-build --configuration Release --output ./packages
