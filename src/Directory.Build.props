@@ -40,6 +40,8 @@
   <PropertyGroup Condition="'$(IsTestProject)' == 'true'">
     <IsPackable>false</IsPackable>
     <IsPublishable>false</IsPublishable>
+    <!-- Enable new Microsoft Testing Platform integration for .NET 10+ -->
+    <TestingPlatformDotnetTestSupport>true</TestingPlatformDotnetTestSupport>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="MinVer" PrivateAssets="all" />
