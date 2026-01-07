@@ -279,7 +279,7 @@ Complete infrastructure setup:
 services.AddAgenticWorkflow()
     .AddThompsonSampling(options => options
         .WithPrior(alpha: 2, beta: 2)
-        .WithBeliefStore<PostgresBeliefStore>())
+        .WithBeliefStore<InMemoryBeliefStore>())
     .AddLoopDetection(options => options
         .AddExactRepetition()
         .AddSemanticRepetition()

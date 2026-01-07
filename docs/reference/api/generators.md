@@ -279,7 +279,7 @@ public static partial class ProcessOrderWorkflow
 
 Generated files appear in the `obj` directory and are visible in IDE under Dependencies > Analyzers:
 
-```
+```text
 obj/
   Debug/
     net8.0/

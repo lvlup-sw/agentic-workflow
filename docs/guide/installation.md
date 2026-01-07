@@ -234,7 +234,7 @@ public class TestController : ControllerBase
 
 Start your application and call the test endpoint. Check your logs for:
 
-```
+```plaintext
 info: Agentic.Workflow[0]
       Workflow hello-world started with ID: a1b2c3d4-...
       Executing step: SayHello
@@ -246,22 +246,28 @@ info: Agentic.Workflow[0]
 
 ### Common Issues
 
-**Missing package reference**
-```
+#### Missing package reference
+
+```plaintext
 error CS0246: The type or namespace name 'IWorkflowState' could not be found
 ```
+
 Ensure `Agentic.Workflow` is referenced and you have `using Agentic.Workflow;`
 
-**PostgreSQL connection failed**
-```
+#### PostgreSQL connection failed
+
+```plaintext
 Npgsql.NpgsqlException: Failed to connect to host
 ```
+
 Verify PostgreSQL is running and the connection string is correct.
 
-**Schema creation failed**
-```
+#### Schema creation failed
+
+```plaintext
 42501: permission denied for schema public
 ```
+
 Grant your database user permission to create tables, or run migrations as a superuser.
 
 ## Key Points

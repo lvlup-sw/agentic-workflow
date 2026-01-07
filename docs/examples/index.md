@@ -82,7 +82,7 @@ app.Run();
 
 Each example follows this structure:
 
-```
+```text
 Examples/
   YourWorkflow/
     State/

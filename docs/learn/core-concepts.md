@@ -148,7 +148,7 @@ When an agent makes a low-confidence decision or produces an unexpected result, 
 
 These concepts work together to create reliable AI workflows:
 
-```
+```text
 Workflow Definition
        |
        v

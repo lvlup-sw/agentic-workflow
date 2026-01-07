@@ -21,7 +21,7 @@ Wolverine provides saga orchestration for workflow execution.
 
 Every workflow definition is compiled into a Wolverine saga at build time:
 
-```
+```text
 Workflow Definition -> Source Generator -> Wolverine Saga
      (DSL)              (compile-time)      (runtime)
 ```

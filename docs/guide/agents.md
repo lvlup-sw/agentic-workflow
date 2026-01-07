@@ -14,7 +14,7 @@ Thompson Sampling is a contextual multi-armed bandit algorithm that:
 
 Each agent maintains a Beta distribution belief for each task category:
 
-```
+```text
 Agent "analyst" for "Analysis" tasks:
   Beta(alpha=15, beta=3)  ->  High success rate, confident
 

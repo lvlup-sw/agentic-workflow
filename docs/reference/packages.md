@@ -293,7 +293,7 @@ dotnet add package Agentic.Workflow.Rag
 
 ## Package Dependencies
 
-```
+```plaintext
 Agentic.Workflow (core)
 +-- No external dependencies
 

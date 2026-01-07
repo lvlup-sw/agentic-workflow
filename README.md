@@ -116,13 +116,6 @@ public class ProcessOrderWorkflow : IWorkflowDefinition<OrderState>
 }
 ```
 
-## Documentation
-
-- [Packages](docs/packages.md) — Detailed package documentation
-- [Integrations](docs/integrations.md) — Wolverine, Marten, and AI framework integration
-- [Design Document](docs/design.md) — Architecture and design rationale
-- [Examples](docs/examples/) — Branching, fork/join, approvals, Thompson Sampling
-
 ## Requirements
 
 - .NET 10 or later
