@@ -55,7 +55,7 @@ export default defineConfig({
           text: 'Workflow Patterns',
           items: [
             { text: 'Branching', link: '/guide/branching' },
-            { text: 'Parallel Execution', link: '/guide/parallel-execution' },
+            { text: 'Parallel Execution', link: '/guide/parallel' },
             { text: 'Loops', link: '/guide/loops' },
             { text: 'Approvals', link: '/guide/approvals' },
           ],
@@ -63,7 +63,7 @@ export default defineConfig({
         {
           text: 'Agents',
           items: [
-            { text: 'Agent Selection', link: '/guide/agent-selection' },
+            { text: 'Agent Selection', link: '/guide/agents' },
           ],
         },
       ],
