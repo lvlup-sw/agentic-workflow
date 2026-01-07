@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
+  <!-- Workflow nodes -->
+  <circle cx="8" cy="8" r="4" fill="#646cff"/>
+  <circle cx="24" cy="8" r="4" fill="#646cff"/>
+  <circle cx="16" cy="24" r="4" fill="#646cff"/>
+
+  <!-- Connecting lines -->
+  <path d="M12 8h8" stroke="#646cff" stroke-width="2" stroke-linecap="round"/>
+  <path d="M10 11l4 10" stroke="#646cff" stroke-width="2" stroke-linecap="round"/>
+  <path d="M22 11l-4 10" stroke="#646cff" stroke-width="2" stroke-linecap="round"/>
+
+  <!-- Center agent indicator -->
+  <circle cx="16" cy="12" r="2" fill="#42b883"/>
+</svg>
