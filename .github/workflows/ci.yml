@@ -11,6 +11,8 @@ env:
   DOTNET_QUALITY: 'preview'
   SOLUTION_PATH: 'src/agentic-workflow.sln'
   COVERAGE_THRESHOLD: 80
+  # Enable new Microsoft Testing Platform integration for .NET 10+
+  DOTNET_CLI_TESTINGPLATFORM_ENABLE: '1'
 
 jobs:
   build-test:
