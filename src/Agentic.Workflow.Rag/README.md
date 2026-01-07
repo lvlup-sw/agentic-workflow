@@ -15,3 +15,7 @@ Register the adapter in your dependency injection container:
 ```csharp
 services.AddSingleton<IVectorSearchAdapter, InMemoryVectorSearchAdapter>();
 ```
+
+## Documentation
+
+- **[RAG API Reference](https://lvlup-sw.github.io/agentic-workflow/reference/api/rag)** - Complete API documentation

@@ -53,7 +53,9 @@ public static partial class ProcessOrderWorkflow
 
 ## Documentation
 
-See [Agentic.Workflow Design Document](https://github.com/levelup-software/agentic-workflow/blob/main/docs/adrs/agentic-workflow-library.md) for complete documentation.
+- **[Getting Started Guide](https://lvlup-sw.github.io/agentic-workflow/guide/)** - Installation and first workflow
+- **[Workflow API Reference](https://lvlup-sw.github.io/agentic-workflow/reference/api/workflow)** - Complete API documentation
+- **[Examples](https://lvlup-sw.github.io/agentic-workflow/examples/)** - Real-world workflow patterns
 
 ## License
 

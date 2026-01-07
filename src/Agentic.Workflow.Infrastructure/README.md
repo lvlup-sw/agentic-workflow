@@ -91,6 +91,11 @@ services.AddAgenticWorkflowInfrastructure(options =>
 });
 ```
 
+## Documentation
+
+- **[Infrastructure API Reference](https://lvlup-sw.github.io/agentic-workflow/reference/api/infrastructure)** - Complete API documentation
+- **[Configuration Guide](https://lvlup-sw.github.io/agentic-workflow/reference/configuration)** - Configuration options
+
 ## License
 
 MIT

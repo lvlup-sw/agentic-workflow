@@ -91,6 +91,11 @@ services.AddAgenticWorkflowAgents()
 | `IConversationThreadManager` | Manages conversation thread lifecycle |
 | `IStreamingCallback` | Handles real-time token streaming |
 
+## Documentation
+
+- **[Agent Selection Guide](https://lvlup-sw.github.io/agentic-workflow/guide/agents)** - Configuring agents in workflows
+- **[Agents API Reference](https://lvlup-sw.github.io/agentic-workflow/reference/api/agents)** - Complete API documentation
+
 ## License
 
 MIT

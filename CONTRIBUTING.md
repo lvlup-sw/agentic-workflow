@@ -168,6 +168,20 @@ cd src && dotnet build
 cd src && dotnet test
 ```
 
+## Documentation Contributions
+
+We welcome documentation improvements! The docs site is built with VitePress.
+
+- **[Documentation Site](https://lvlup-sw.github.io/agentic-workflow/)** - Live documentation
+- **[Docs Contributing Guide](docs/contributing.md)** - Style guidelines and local setup
+
+To contribute documentation:
+
+1. Follow the setup in `docs/contributing.md`
+2. Run `npm run docs:dev` in the `docs/` directory
+3. Make changes and preview locally
+4. Submit a PR with `docs:` prefix
+
 ## Questions?
 
 Open an issue for questions or feature discussions. We're happy to help!
