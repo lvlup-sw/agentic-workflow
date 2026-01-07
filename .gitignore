@@ -54,3 +54,10 @@ Thumbs.db
 
 # User secrets
 secrets.json
+
+# Node.js
+node_modules/
+
+# VitePress
+docs/.vitepress/cache/
+docs/.vitepress/dist/
