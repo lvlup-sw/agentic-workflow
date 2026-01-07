@@ -36,18 +36,47 @@ jobs:
       - name: Build
         run: dotnet build ${{ env.SOLUTION_PATH }} --no-restore --configuration Release
 
-      - name: Test with coverage
+      - name: Run tests with coverage
         run: |
-          dotnet test ${{ env.SOLUTION_PATH }} \
-            --no-build \
-            --configuration Release \
-            --collect:"XPlat Code Coverage" \
-            --results-directory ./TestResults
-
-      - name: Find coverage file
-        run: |
+          # .NET 10 + TUnit (Microsoft.Testing.Platform): run each test project individually
           mkdir -p ./TestResults
-          find ./TestResults -name "coverage.cobertura.xml" -exec cp {} ./TestResults/coverage.cobertura.xml \; 2>/dev/null || echo "No coverage file found"
+          failed=0
+          for proj in src/*Tests/*.csproj; do
+            echo "=========================================="
+            echo "Running tests for $proj"
+            echo "=========================================="
+            projname=$(basename "$proj" .csproj)
+            # Use absolute path for coverage output
+            coverage_path="${GITHUB_WORKSPACE}/TestResults/${projname}.cobertura.xml"
+            if ! dotnet run --project "$proj" --configuration Release -- \
+              --coverage \
+              --coverage-output-format cobertura \
+              --coverage-output "$coverage_path"; then
+              echo "Tests failed for $proj"
+              failed=1
+            fi
+          done
+          exit $failed
+
+      - name: Merge coverage reports
+        if: always()
+        run: |
+          dotnet tool install -g dotnet-reportgenerator-globaltool || true
+          if ls ./TestResults/*.cobertura.xml 1> /dev/null 2>&1; then
+            reportgenerator \
+              -reports:"./TestResults/*.cobertura.xml" \
+              -targetdir:"./TestResults" \
+              -reporttypes:"Cobertura" \
+              -verbosity:Warning
+            # Create the expected output file
+            if [ -f "./TestResults/Cobertura.xml" ]; then
+              cp ./TestResults/Cobertura.xml ./TestResults/coverage.cobertura.xml
+            fi
+          else
+            echo "WARNING: No coverage files found."
+            # Create empty coverage file to not break downstream
+            echo '<?xml version="1.0"?><coverage version="1"></coverage>' > ./TestResults/coverage.cobertura.xml
+          fi
 
       - name: Pack (verify)
         run: dotnet pack ${{ env.SOLUTION_PATH }} --no-build --configuration Release --output ./packages
