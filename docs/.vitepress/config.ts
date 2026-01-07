@@ -4,6 +4,9 @@ export default defineConfig({
   title: 'Agentic.Workflow',
   description: 'Deterministic, auditable AI agent workflows for .NET',
 
+  // Required for GitHub Pages project sites (https://lvlup-sw.github.io/agentic-workflow/)
+  base: '/agentic-workflow/',
+
   srcExclude: [
     '**/archive/**',
     '**/theory/**',
