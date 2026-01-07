@@ -34,16 +34,17 @@ jobs:
       - name: Build
         run: dotnet build ${{ env.SOLUTION_PATH }} --no-restore --configuration Release
 
+      - name: Install dotnet-coverage
+        run: dotnet tool install -g dotnet-coverage
+
       - name: Test with coverage
         run: |
-          mkdir -p ./TestResults
-          for proj in src/*Tests/*.csproj; do
-            projname=$(basename "$proj" .csproj)
-            dotnet run --project "$proj" --configuration Release -- \
-              --coverage \
-              --coverage-output-format cobertura \
-              --coverage-output "${GITHUB_WORKSPACE}/TestResults/${projname}.cobertura.xml"
-          done
+          dotnet-coverage collect \
+            --output ./TestResults/coverage.cobertura.xml \
+            --output-format cobertura \
+            -- dotnet test ${{ env.SOLUTION_PATH }} \
+              --no-build \
+              --configuration Release
 
       - name: Pack (verify)
         run: dotnet pack ${{ env.SOLUTION_PATH }} --no-build --configuration Release --output ./packages
@@ -52,7 +53,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: coverage-reports
-          path: ./TestResults/*.cobertura.xml
+          path: ./TestResults/coverage.cobertura.xml
+          retention-days: 7
 
   coverage-gate:
     name: Coverage Gate
@@ -72,16 +74,57 @@ jobs:
       - name: Install ReportGenerator
         run: dotnet tool install -g dotnet-reportgenerator-globaltool
 
-      - name: Merge and check threshold
+      - name: Merge coverage reports
         run: |
           reportgenerator \
-            -reports:"./coverage-reports/*.cobertura.xml" \
+            -reports:"./coverage-reports/**/coverage.cobertura.xml" \
             -targetdir:"./coverage-merged" \
             -reporttypes:"Cobertura;TextSummary"
 
-          coverage=$(grep -oP 'Line coverage: \K[0-9.]+' ./coverage-merged/Summary.txt || echo "0")
-          echo "Line coverage: ${coverage}%"
-          if (( $(echo "$coverage < ${{ env.COVERAGE_THRESHOLD }}" | bc -l) )); then
-            echo "Coverage ${coverage}% is below threshold ${{ env.COVERAGE_THRESHOLD }}%"
-            exit 1
-          fi
+      - name: Run coverage gate
+        id: coverage
+        run: |
+          chmod +x ./scripts/ci/coverage-gate.sh
+          ./scripts/ci/coverage-gate.sh \
+            --coverage-file ./coverage-merged/Cobertura.xml \
+            --threshold ${{ env.COVERAGE_THRESHOLD }} \
+            --output-dir ./coverage-merged
+
+      - name: Post PR comment
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh pr comment ${{ github.event.pull_request.number }} \
+            --body-file ./coverage-merged/pr-comment.md \
+            --edit-last || \
+          gh pr comment ${{ github.event.pull_request.number }} \
+            --body-file ./coverage-merged/pr-comment.md
+
+  update-baseline:
+    name: Update Coverage Baseline
+    runs-on: blacksmith-4vcpu-ubuntu-2204
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    needs: build-test
+    steps:
+      - name: Download coverage artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage-reports
+          path: ./coverage-reports
+
+      - name: Install ReportGenerator
+        run: dotnet tool install -g dotnet-reportgenerator-globaltool
+
+      - name: Generate merged report
+        run: |
+          reportgenerator \
+            -reports:"./coverage-reports/**/coverage.cobertura.xml" \
+            -targetdir:"./coverage-merged" \
+            -reporttypes:"JsonSummary"
+
+      - name: Cache baseline coverage
+        uses: actions/cache/save@v4
+        with:
+          path: ./coverage-merged/Summary.json
+          key: coverage-baseline-${{ github.sha }}

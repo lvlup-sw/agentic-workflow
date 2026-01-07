@@ -25,7 +25,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Required for MinVer
+          fetch-depth: 0  # Required for MinVer and git-cliff
           fetch-tags: true  # Explicitly fetch tags for version detection
 
       - name: Setup .NET
@@ -75,8 +75,16 @@ jobs:
             fi
           done
 
+      - name: Generate changelog
+        id: changelog
+        uses: orhun/git-cliff-action@v3
+        with:
+          config: .github/cliff.toml
+          args: --latest --strip header
+
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           files: ./packages/*
-          generate_release_notes: true
+          body: ${{ steps.changelog.outputs.content }}
+          generate_release_notes: false
