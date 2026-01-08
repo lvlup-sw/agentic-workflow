@@ -46,7 +46,7 @@ public static class RagServiceExtensions
         IVectorSearchAdapter<TCollection> adapter)
         where TCollection : IRagCollection
     {
-        services.AddSingleton(adapter);
+        services.AddSingleton<IVectorSearchAdapter<TCollection>>(adapter);
         return services;
     }
 }

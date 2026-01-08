@@ -261,3 +261,4 @@ internal static class ContextAssemblerEmitter
             .Replace("\t", "\\t");
     }
 }
+
