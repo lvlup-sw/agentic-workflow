@@ -146,6 +146,24 @@ internal sealed class SagaPropertiesEmitter : ISagaComponentEmitter
             sb.AppendLine("    /// </summary>");
             sb.AppendLine("    public string? FailureExceptionMessage { get; set; }");
             sb.AppendLine();
+
+            sb.AppendLine("    /// <summary>");
+            sb.AppendLine("    /// Gets or sets the exception type name from the failed step.");
+            sb.AppendLine("    /// </summary>");
+            sb.AppendLine("    public string? FailureExceptionType { get; set; }");
+            sb.AppendLine();
+
+            sb.AppendLine("    /// <summary>");
+            sb.AppendLine("    /// Gets or sets the stack trace from the failed step.");
+            sb.AppendLine("    /// </summary>");
+            sb.AppendLine("    public string? FailureStackTrace { get; set; }");
+            sb.AppendLine();
+
+            sb.AppendLine("    /// <summary>");
+            sb.AppendLine("    /// Gets or sets the timestamp when the failure occurred.");
+            sb.AppendLine("    /// </summary>");
+            sb.AppendLine("    public DateTimeOffset? FailureTimestamp { get; set; }");
+            sb.AppendLine();
         }
 
         // StartedAt timestamp

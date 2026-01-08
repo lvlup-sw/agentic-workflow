@@ -92,6 +92,9 @@ internal sealed class SagaFailureHandlerComponentEmitter : ISagaComponentEmitter
         sb.AppendLine();
         sb.AppendLine("        FailedStepName = cmd.FailedStepName;");
         sb.AppendLine("        FailureExceptionMessage = cmd.ExceptionMessage;");
+        sb.AppendLine("        FailureExceptionType = cmd.ExceptionType;");
+        sb.AppendLine("        FailureStackTrace = cmd.StackTrace;");
+        sb.AppendLine("        FailureTimestamp = DateTimeOffset.UtcNow;");
         sb.AppendLine();
         sb.AppendLine($"        return new {startCommandName}(WorkflowId);");
         sb.AppendLine("    }");
@@ -125,7 +128,9 @@ internal sealed class SagaFailureHandlerComponentEmitter : ISagaComponentEmitter
         sb.AppendLine("            Guid.NewGuid(),");
         sb.AppendLine("            State,");
         sb.AppendLine("            FailedStepName!,");
-        sb.AppendLine("            FailureExceptionMessage);");
+        sb.AppendLine("            FailureExceptionMessage,");
+        sb.AppendLine("            FailureExceptionType,");
+        sb.AppendLine("            FailureStackTrace);");
         sb.AppendLine("    }");
     }
 

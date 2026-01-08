@@ -18,13 +18,15 @@ namespace Agentic.Workflow.Generators.Models;
 /// <param name="LoopName">The name of the parent loop, if this step is inside a loop.</param>
 /// <param name="ValidationPredicate">The predicate expression text for state validation guard.</param>
 /// <param name="ValidationErrorMessage">The error message when validation fails.</param>
+/// <param name="Context">The optional context configuration for this step.</param>
 internal sealed record StepModel(
     string StepName,
     string StepTypeName,
     string? InstanceName = null,
     string? LoopName = null,
     string? ValidationPredicate = null,
-    string? ValidationErrorMessage = null)
+    string? ValidationErrorMessage = null,
+    ContextModel? Context = null)
 {
     /// <summary>
     /// Gets the effective name for this step, used for duplicate detection and phase naming.
@@ -68,6 +70,7 @@ internal sealed record StepModel(
     /// <param name="loopName">The optional name of the parent loop. If provided, must be a valid C# identifier.</param>
     /// <param name="validationPredicate">The optional predicate expression text for state validation guard.</param>
     /// <param name="validationErrorMessage">The optional error message when validation fails.</param>
+    /// <param name="context">The optional context configuration for this step.</param>
     /// <returns>A validated <see cref="StepModel"/> instance.</returns>
     /// <exception cref="ArgumentNullException">Thrown when <paramref name="stepName"/> or <paramref name="stepTypeName"/> is null.</exception>
     /// <exception cref="ArgumentException">Thrown when validation fails or when predicate and message are mismatched.</exception>
@@ -81,7 +84,8 @@ internal sealed record StepModel(
         string? instanceName = null,
         string? loopName = null,
         string? validationPredicate = null,
-        string? validationErrorMessage = null)
+        string? validationErrorMessage = null,
+        ContextModel? context = null)
     {
         // Validate required parameters
         ThrowHelper.ThrowIfNull(stepName, nameof(stepName));
@@ -120,6 +124,7 @@ internal sealed record StepModel(
             InstanceName: instanceName,
             LoopName: loopName,
             ValidationPredicate: validationPredicate,
-            ValidationErrorMessage: validationErrorMessage);
+            ValidationErrorMessage: validationErrorMessage,
+            Context: context);
     }
 }

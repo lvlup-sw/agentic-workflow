@@ -473,7 +473,9 @@ internal static class CommandsEmitter
         sb.AppendLine($"public sealed partial record Trigger{model.PascalName}FailureHandlerCommand(");
         sb.AppendLine("    [property: Wolverine.Persistence.Sagas.SagaIdentity] Guid WorkflowId,");
         sb.AppendLine("    string FailedStepName,");
-        sb.AppendLine("    string? ExceptionMessage);");
+        sb.AppendLine("    string? ExceptionMessage,");
+        sb.AppendLine("    string? ExceptionType,");
+        sb.AppendLine("    string? StackTrace);");
     }
 
     private static void EmitStartFailureHandlerStepCommand(
@@ -513,7 +515,9 @@ internal static class CommandsEmitter
         sb.AppendLine("    Guid StepExecutionId,");
         sb.AppendLine($"    {stateType} State,");
         sb.AppendLine("    string FailedStepName,");
-        sb.AppendLine("    string? ExceptionMessage);");
+        sb.AppendLine("    string? ExceptionMessage,");
+        sb.AppendLine("    string? ExceptionType,");
+        sb.AppendLine("    string? StackTrace);");
     }
 
     /// <summary>
