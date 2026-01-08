@@ -93,6 +93,9 @@ jobs:
     needs: build-test
     runs-on: blacksmith-4vcpu-ubuntu-2204
     if: github.event_name == 'pull_request'
+    permissions:
+      contents: read
+      pull-requests: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
