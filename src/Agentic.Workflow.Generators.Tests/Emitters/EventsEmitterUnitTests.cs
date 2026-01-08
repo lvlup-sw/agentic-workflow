@@ -527,6 +527,202 @@ public class EventsEmitterUnitTests
     }
 
     // =============================================================================
+    // G. WorkflowFailed Event Tests (Task E2 - Failure Event Enhancement)
+    // =============================================================================
+
+    /// <summary>
+    /// Verifies that WorkflowFailed event is generated when workflow has failure handlers.
+    /// </summary>
+    [Test]
+    public async Task Emit_WorkflowWithFailureHandlers_GeneratesWorkflowFailedEvent()
+    {
+        // Arrange
+        var handler = FailureHandlerModel.Create(
+            handlerId: "default-failure",
+            scope: FailureHandlerScope.Workflow,
+            stepNames: ["LogFailure"],
+            isTerminal: true);
+        var model = new WorkflowModel(
+            WorkflowName: "process-order",
+            PascalName: "ProcessOrder",
+            Namespace: "TestNamespace",
+            StepNames: ["ValidateOrder", "ProcessPayment"],
+            StateTypeName: "OrderState",
+            FailureHandlers: [handler]);
+
+        // Act
+        var source = EventsEmitter.Emit(model);
+
+        // Assert
+        await Assert.That(source).Contains("public sealed partial record ProcessOrderFailed");
+    }
+
+    /// <summary>
+    /// Verifies that WorkflowFailed event has FailedStepName property.
+    /// </summary>
+    [Test]
+    public async Task Emit_WorkflowFailedEvent_HasFailedStepNameProperty()
+    {
+        // Arrange
+        var handler = FailureHandlerModel.Create(
+            handlerId: "default-failure",
+            scope: FailureHandlerScope.Workflow,
+            stepNames: ["LogFailure"],
+            isTerminal: true);
+        var model = new WorkflowModel(
+            WorkflowName: "process-order",
+            PascalName: "ProcessOrder",
+            Namespace: "TestNamespace",
+            StepNames: ["ValidateOrder", "ProcessPayment"],
+            StateTypeName: "OrderState",
+            FailureHandlers: [handler]);
+
+        // Act
+        var source = EventsEmitter.Emit(model);
+
+        // Assert
+        await Assert.That(source).Contains("string FailedStepName");
+    }
+
+    /// <summary>
+    /// Verifies that WorkflowFailed event has ExceptionType property.
+    /// </summary>
+    [Test]
+    public async Task Emit_WorkflowFailedEvent_HasExceptionTypeProperty()
+    {
+        // Arrange
+        var handler = FailureHandlerModel.Create(
+            handlerId: "default-failure",
+            scope: FailureHandlerScope.Workflow,
+            stepNames: ["LogFailure"],
+            isTerminal: true);
+        var model = new WorkflowModel(
+            WorkflowName: "process-order",
+            PascalName: "ProcessOrder",
+            Namespace: "TestNamespace",
+            StepNames: ["ValidateOrder", "ProcessPayment"],
+            StateTypeName: "OrderState",
+            FailureHandlers: [handler]);
+
+        // Act
+        var source = EventsEmitter.Emit(model);
+
+        // Assert
+        await Assert.That(source).Contains("string? ExceptionType");
+    }
+
+    /// <summary>
+    /// Verifies that WorkflowFailed event has ExceptionMessage property.
+    /// </summary>
+    [Test]
+    public async Task Emit_WorkflowFailedEvent_HasExceptionMessageProperty()
+    {
+        // Arrange
+        var handler = FailureHandlerModel.Create(
+            handlerId: "default-failure",
+            scope: FailureHandlerScope.Workflow,
+            stepNames: ["LogFailure"],
+            isTerminal: true);
+        var model = new WorkflowModel(
+            WorkflowName: "process-order",
+            PascalName: "ProcessOrder",
+            Namespace: "TestNamespace",
+            StepNames: ["ValidateOrder", "ProcessPayment"],
+            StateTypeName: "OrderState",
+            FailureHandlers: [handler]);
+
+        // Act
+        var source = EventsEmitter.Emit(model);
+
+        // Assert
+        await Assert.That(source).Contains("string? ExceptionMessage");
+    }
+
+    /// <summary>
+    /// Verifies that WorkflowFailed event has StackTrace property.
+    /// </summary>
+    [Test]
+    public async Task Emit_WorkflowFailedEvent_HasStackTraceProperty()
+    {
+        // Arrange
+        var handler = FailureHandlerModel.Create(
+            handlerId: "default-failure",
+            scope: FailureHandlerScope.Workflow,
+            stepNames: ["LogFailure"],
+            isTerminal: true);
+        var model = new WorkflowModel(
+            WorkflowName: "process-order",
+            PascalName: "ProcessOrder",
+            Namespace: "TestNamespace",
+            StepNames: ["ValidateOrder", "ProcessPayment"],
+            StateTypeName: "OrderState",
+            FailureHandlers: [handler]);
+
+        // Act
+        var source = EventsEmitter.Emit(model);
+
+        // Assert
+        await Assert.That(source).Contains("string? StackTrace");
+    }
+
+    /// <summary>
+    /// Verifies that WorkflowFailed event has Timestamp property.
+    /// </summary>
+    [Test]
+    public async Task Emit_WorkflowFailedEvent_HasTimestampProperty()
+    {
+        // Arrange
+        var handler = FailureHandlerModel.Create(
+            handlerId: "default-failure",
+            scope: FailureHandlerScope.Workflow,
+            stepNames: ["LogFailure"],
+            isTerminal: true);
+        var model = new WorkflowModel(
+            WorkflowName: "process-order",
+            PascalName: "ProcessOrder",
+            Namespace: "TestNamespace",
+            StepNames: ["ValidateOrder", "ProcessPayment"],
+            StateTypeName: "OrderState",
+            FailureHandlers: [handler]);
+
+        // Act
+        var source = EventsEmitter.Emit(model);
+
+        // Assert - Check that the Failed event section contains Timestamp
+        var failedEventIndex = source.IndexOf("ProcessOrderFailed", StringComparison.Ordinal);
+        if (failedEventIndex > 0)
+        {
+            var failedEventSection = source.Substring(failedEventIndex, Math.Min(500, source.Length - failedEventIndex));
+            await Assert.That(failedEventSection).Contains("DateTimeOffset Timestamp");
+        }
+        else
+        {
+            await Assert.That(source).Contains("DateTimeOffset Timestamp");
+        }
+    }
+
+    /// <summary>
+    /// Verifies that WorkflowFailed event is NOT generated when workflow has no failure handlers.
+    /// </summary>
+    [Test]
+    public async Task Emit_WorkflowWithoutFailureHandlers_DoesNotGenerateWorkflowFailedEvent()
+    {
+        // Arrange
+        var model = new WorkflowModel(
+            WorkflowName: "process-order",
+            PascalName: "ProcessOrder",
+            Namespace: "TestNamespace",
+            StepNames: ["ValidateOrder", "ProcessPayment"],
+            StateTypeName: "OrderState");
+
+        // Act
+        var source = EventsEmitter.Emit(model);
+
+        // Assert
+        await Assert.That(source).DoesNotContain("ProcessOrderFailed");
+    }
+
+    // =============================================================================
     // Helper Methods
     // =============================================================================
 

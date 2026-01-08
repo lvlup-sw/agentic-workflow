@@ -176,6 +176,10 @@ internal static class EventsEmitter
         if (model.HasFailureHandlers)
         {
             EmitFailureHandlerEvents(sb, model, model.FailureHandlers!);
+
+            // Workflow Failed event with full exception context
+            sb.AppendLine();
+            EmitWorkflowFailedEvent(sb, model);
         }
 
         return sb.ToString();
@@ -232,6 +236,33 @@ internal static class EventsEmitter
         sb.AppendLine("    [property: SagaIdentity] Guid WorkflowId,");
         sb.AppendLine("    string StepName,");
         sb.AppendLine("    string ErrorMessage,");
+        sb.AppendLine($"    DateTimeOffset Timestamp) : I{model.PascalName}Event;");
+    }
+
+    private static void EmitWorkflowFailedEvent(StringBuilder sb, WorkflowModel model)
+    {
+        sb.AppendLine("/// <summary>");
+        sb.AppendLine($"/// Event published when the {model.WorkflowName} workflow fails.");
+        sb.AppendLine("/// </summary>");
+        sb.AppendLine("/// <remarks>");
+        sb.AppendLine("/// <para>");
+        sb.AppendLine("/// This event captures the full exception context:");
+        sb.AppendLine("/// <list type=\"bullet\">");
+        sb.AppendLine("///   <item><description>FailedStepName - The step where the failure occurred</description></item>");
+        sb.AppendLine("///   <item><description>ExceptionType - The type name of the exception</description></item>");
+        sb.AppendLine("///   <item><description>ExceptionMessage - The exception message</description></item>");
+        sb.AppendLine("///   <item><description>StackTrace - The exception stack trace</description></item>");
+        sb.AppendLine("///   <item><description>Timestamp - When the failure occurred</description></item>");
+        sb.AppendLine("/// </list>");
+        sb.AppendLine("/// </para>");
+        sb.AppendLine("/// </remarks>");
+        sb.AppendLine("[GeneratedCode(\"Agentic.Workflow.Generators\", \"1.0.0\")]");
+        sb.AppendLine($"public sealed partial record {model.PascalName}Failed(");
+        sb.AppendLine("    [property: SagaIdentity] Guid WorkflowId,");
+        sb.AppendLine("    string FailedStepName,");
+        sb.AppendLine("    string? ExceptionType,");
+        sb.AppendLine("    string? ExceptionMessage,");
+        sb.AppendLine("    string? StackTrace,");
         sb.AppendLine($"    DateTimeOffset Timestamp) : I{model.PascalName}Event;");
     }
 

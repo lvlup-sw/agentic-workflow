@@ -351,9 +351,11 @@ public class SagaFailureHandlerComponentEmitterTests
         // Assert
         var output = sb.ToString();
 
-        // Worker command should receive failure context
+        // Worker command should receive failure context (now includes type and stack trace)
         await Assert.That(output).Contains("FailedStepName!,");
-        await Assert.That(output).Contains("FailureExceptionMessage);");
+        await Assert.That(output).Contains("FailureExceptionMessage,");
+        await Assert.That(output).Contains("FailureExceptionType,");
+        await Assert.That(output).Contains("FailureStackTrace);");
     }
 
     // ====================================================================
@@ -443,6 +445,267 @@ public class SagaFailureHandlerComponentEmitterTests
         // Assert
         var output = sb.ToString();
         await Assert.That(output).Contains("TestStateReducer.Reduce(State, evt.UpdatedState)");
+    }
+
+    // ====================================================================
+    // Section K: Full Exception Context Tests (Task E1)
+    // ====================================================================
+
+    /// <summary>
+    /// Verifies that trigger handler captures exception type name.
+    /// </summary>
+    [Test]
+    public async Task Emit_TriggerHandler_CapturesExceptionTypeName()
+    {
+        // Arrange
+        var emitter = new SagaFailureHandlerComponentEmitter();
+        var sb = new StringBuilder();
+        var handler = FailureHandlerModel.Create(
+            handlerId: "exc-type-handler",
+            scope: FailureHandlerScope.Workflow,
+            stepNames: ["LogError"],
+            isTerminal: true);
+        var model = CreateMinimalModel(failureHandlers: [handler]);
+
+        // Act
+        emitter.Emit(sb, model);
+
+        // Assert
+        var output = sb.ToString();
+
+        // Trigger handler should store exception type from command
+        await Assert.That(output).Contains("FailureExceptionType = cmd.ExceptionType;");
+    }
+
+    /// <summary>
+    /// Verifies that trigger handler captures stack trace.
+    /// </summary>
+    [Test]
+    public async Task Emit_TriggerHandler_CapturesStackTrace()
+    {
+        // Arrange
+        var emitter = new SagaFailureHandlerComponentEmitter();
+        var sb = new StringBuilder();
+        var handler = FailureHandlerModel.Create(
+            handlerId: "stack-trace-handler",
+            scope: FailureHandlerScope.Workflow,
+            stepNames: ["LogError"],
+            isTerminal: true);
+        var model = CreateMinimalModel(failureHandlers: [handler]);
+
+        // Act
+        emitter.Emit(sb, model);
+
+        // Assert
+        var output = sb.ToString();
+
+        // Trigger handler should store stack trace from command
+        await Assert.That(output).Contains("FailureStackTrace = cmd.StackTrace;");
+    }
+
+    /// <summary>
+    /// Verifies that trigger handler records failure timestamp.
+    /// </summary>
+    [Test]
+    public async Task Emit_TriggerHandler_RecordsFailureTimestamp()
+    {
+        // Arrange
+        var emitter = new SagaFailureHandlerComponentEmitter();
+        var sb = new StringBuilder();
+        var handler = FailureHandlerModel.Create(
+            handlerId: "timestamp-handler",
+            scope: FailureHandlerScope.Workflow,
+            stepNames: ["LogError"],
+            isTerminal: true);
+        var model = CreateMinimalModel(failureHandlers: [handler]);
+
+        // Act
+        emitter.Emit(sb, model);
+
+        // Assert
+        var output = sb.ToString();
+
+        // Trigger handler should record timestamp of failure
+        await Assert.That(output).Contains("FailureTimestamp = ");
+    }
+
+    /// <summary>
+    /// Verifies that worker command receives exception type.
+    /// </summary>
+    [Test]
+    public async Task Emit_WorkerCommand_IncludesExceptionType()
+    {
+        // Arrange
+        var emitter = new SagaFailureHandlerComponentEmitter();
+        var sb = new StringBuilder();
+        var handler = FailureHandlerModel.Create(
+            handlerId: "worker-exc-type",
+            scope: FailureHandlerScope.Workflow,
+            stepNames: ["ProcessError"],
+            isTerminal: true);
+        var model = CreateMinimalModel(failureHandlers: [handler]);
+
+        // Act
+        emitter.Emit(sb, model);
+
+        // Assert
+        var output = sb.ToString();
+
+        // Worker command should receive exception type
+        await Assert.That(output).Contains("FailureExceptionType");
+    }
+
+    /// <summary>
+    /// Verifies that worker command receives stack trace.
+    /// </summary>
+    [Test]
+    public async Task Emit_WorkerCommand_IncludesStackTrace()
+    {
+        // Arrange
+        var emitter = new SagaFailureHandlerComponentEmitter();
+        var sb = new StringBuilder();
+        var handler = FailureHandlerModel.Create(
+            handlerId: "worker-stack",
+            scope: FailureHandlerScope.Workflow,
+            stepNames: ["ProcessError"],
+            isTerminal: true);
+        var model = CreateMinimalModel(failureHandlers: [handler]);
+
+        // Act
+        emitter.Emit(sb, model);
+
+        // Assert
+        var output = sb.ToString();
+
+        // Worker command should receive stack trace
+        await Assert.That(output).Contains("FailureStackTrace");
+    }
+
+    // ====================================================================
+    // Section L: Step-Scoped Failure Handler Tests (Task E3)
+    // ====================================================================
+
+    /// <summary>
+    /// Verifies that step-scoped failure handler model can be created with trigger step name.
+    /// </summary>
+    [Test]
+    public async Task StepScopedHandler_CanBeCreatedWithTriggerStepName()
+    {
+        // Arrange & Act
+        var handler = FailureHandlerModel.Create(
+            handlerId: "step-failure",
+            scope: FailureHandlerScope.Step,
+            stepNames: ["RecoverStep"],
+            isTerminal: false,
+            triggerStepName: "PaymentStep");
+
+        // Assert
+        await Assert.That(handler.Scope).IsEqualTo(FailureHandlerScope.Step);
+        await Assert.That(handler.TriggerStepName).IsEqualTo("PaymentStep");
+        await Assert.That(handler.IsWorkflowScoped).IsFalse();
+    }
+
+    /// <summary>
+    /// Verifies that emitter generates handlers for step-scoped failure handlers.
+    /// </summary>
+    [Test]
+    public async Task Emit_StepScopedFailureHandler_GeneratesHandlers()
+    {
+        // Arrange
+        var emitter = new SagaFailureHandlerComponentEmitter();
+        var sb = new StringBuilder();
+        var handler = FailureHandlerModel.Create(
+            handlerId: "step-scoped-failure",
+            scope: FailureHandlerScope.Step,
+            stepNames: ["RecoverFromError"],
+            isTerminal: false,
+            triggerStepName: "RiskyStep");
+        var model = CreateMinimalModel(failureHandlers: [handler]);
+
+        // Act
+        emitter.Emit(sb, model);
+
+        // Assert
+        var output = sb.ToString();
+
+        // Should generate trigger handler
+        await Assert.That(output).Contains("TriggerTestWorkflowFailureHandlerCommand");
+
+        // Should generate start and completed handlers for the step
+        await Assert.That(output).Contains("StartFailureHandler_step_scoped_failure_RecoverFromErrorCommand");
+        await Assert.That(output).Contains("FailureHandler_step_scoped_failure_RecoverFromErrorCompleted");
+    }
+
+    /// <summary>
+    /// Verifies that non-terminal step-scoped handler updates state without marking completed.
+    /// </summary>
+    [Test]
+    public async Task Emit_StepScopedNonTerminalHandler_DoesNotMarkCompleted()
+    {
+        // Arrange
+        var emitter = new SagaFailureHandlerComponentEmitter();
+        var sb = new StringBuilder();
+        var handler = FailureHandlerModel.Create(
+            handlerId: "recover-handler",
+            scope: FailureHandlerScope.Step,
+            stepNames: ["AttemptRecovery"],
+            isTerminal: false,
+            triggerStepName: "FailingStep");
+        var model = CreateMinimalModel(failureHandlers: [handler]);
+
+        // Act
+        emitter.Emit(sb, model);
+
+        // Assert
+        var output = sb.ToString();
+
+        // Find the completed handler for this step
+        var completedHandlerIndex = output.IndexOf("FailureHandler_recover_handler_AttemptRecoveryCompleted", StringComparison.Ordinal);
+        await Assert.That(completedHandlerIndex).IsGreaterThan(-1);
+
+        // Extract the handler method
+        var handlerStart = completedHandlerIndex;
+        var handlerEnd = output.IndexOf("    }", handlerStart, StringComparison.Ordinal) + 5;
+        var handlerCode = output.Substring(handlerStart, handlerEnd - handlerStart);
+
+        // Should NOT contain MarkCompleted for non-terminal handler
+        await Assert.That(handlerCode).DoesNotContain("MarkCompleted");
+    }
+
+    /// <summary>
+    /// Verifies that multiple failure handlers (workflow and step-scoped) can coexist.
+    /// </summary>
+    [Test]
+    public async Task Emit_MultipleFailureHandlers_GeneratesAllHandlers()
+    {
+        // Arrange
+        var emitter = new SagaFailureHandlerComponentEmitter();
+        var sb = new StringBuilder();
+        var workflowHandler = FailureHandlerModel.Create(
+            handlerId: "workflow-failure",
+            scope: FailureHandlerScope.Workflow,
+            stepNames: ["LogAndNotify"],
+            isTerminal: true);
+        var stepHandler = FailureHandlerModel.Create(
+            handlerId: "payment-failure",
+            scope: FailureHandlerScope.Step,
+            stepNames: ["RetryPayment", "RefundIfNeeded"],
+            isTerminal: false,
+            triggerStepName: "ProcessPayment");
+        var model = CreateMinimalModel(failureHandlers: [workflowHandler, stepHandler]);
+
+        // Act
+        emitter.Emit(sb, model);
+
+        // Assert
+        var output = sb.ToString();
+
+        // Workflow handler steps
+        await Assert.That(output).Contains("FailureHandler_workflow_failure_LogAndNotify");
+
+        // Step handler steps
+        await Assert.That(output).Contains("FailureHandler_payment_failure_RetryPayment");
+        await Assert.That(output).Contains("FailureHandler_payment_failure_RefundIfNeeded");
     }
 
     // ====================================================================
