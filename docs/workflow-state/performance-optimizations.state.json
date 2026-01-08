@@ -1,0 +1,23 @@
+{
+  "version": "1.0",
+  "featureId": "performance-optimizations",
+  "createdAt": "2026-01-08T04:56:16Z",
+  "updatedAt": "2026-01-08T05:04:28Z",
+  "phase": "ideate",
+  "artifacts": {
+    "design": "docs/designs/2026-01-07-performance-optimizations.md",
+    "plan": null,
+    "pr": null
+  },
+  "tasks": [],
+  "worktrees": {},
+  "julesSessions": {},
+  "reviews": {},
+  "synthesis": {
+    "integrationBranch": null,
+    "mergeOrder": [],
+    "mergedBranches": [],
+    "prUrl": null,
+    "prFeedback": []
+  }
+}
