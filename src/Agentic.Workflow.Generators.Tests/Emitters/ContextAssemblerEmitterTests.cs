@@ -51,6 +51,94 @@ public class ContextAssemblerEmitterTests
         await Assert.That(source).Contains(": IContextAssembler<TestState>");
     }
 
+    // =============================================================================
+    // C. Interface Signature Compliance Tests
+    // =============================================================================
+
+    /// <summary>
+    /// Verifies that AssembleAsync returns Task of AssembledContext (not Task of string).
+    /// </summary>
+    [Test]
+    public async Task Emit_AssembleAsyncMethod_ReturnsTaskOfAssembledContext()
+    {
+        // Arrange
+        var model = CreateTestModel();
+
+        // Act
+        var source = ContextAssemblerEmitter.Emit(model);
+
+        // Assert
+        await Assert.That(source).Contains("Task<AssembledContext> AssembleAsync");
+        await Assert.That(source).DoesNotContain("Task<string> AssembleAsync");
+    }
+
+    /// <summary>
+    /// Verifies that AssembleAsync has StepContext parameter between state and cancellationToken.
+    /// </summary>
+    [Test]
+    public async Task Emit_AssembleAsyncMethod_HasStepContextParameter()
+    {
+        // Arrange
+        var model = CreateTestModel();
+
+        // Act
+        var source = ContextAssemblerEmitter.Emit(model);
+
+        // Assert
+        await Assert.That(source).Contains("TestState state, StepContext stepContext, CancellationToken cancellationToken");
+    }
+
+    /// <summary>
+    /// Verifies that generated code uses AssembledContextBuilder instead of StringBuilder.
+    /// </summary>
+    [Test]
+    public async Task Emit_AssembleAsyncMethod_UsesAssembledContextBuilder()
+    {
+        // Arrange
+        var model = CreateTestModel();
+
+        // Act
+        var source = ContextAssemblerEmitter.Emit(model);
+
+        // Assert
+        await Assert.That(source).Contains("new AssembledContextBuilder()");
+        await Assert.That(source).DoesNotContain("new StringBuilder()");
+    }
+
+    /// <summary>
+    /// Verifies that generated code returns contextBuilder.Build() not ToString().
+    /// </summary>
+    [Test]
+    public async Task Emit_AssembleAsyncMethod_ReturnsBuildNotToString()
+    {
+        // Arrange
+        var model = CreateTestModel();
+
+        // Act
+        var source = ContextAssemblerEmitter.Emit(model);
+
+        // Assert
+        await Assert.That(source).Contains("return contextBuilder.Build()");
+        await Assert.That(source).DoesNotContain("return contextBuilder.ToString()");
+    }
+
+    /// <summary>
+    /// Verifies that required using directives are included.
+    /// </summary>
+    [Test]
+    public async Task Emit_StepWithContext_IncludesRequiredUsings()
+    {
+        // Arrange
+        var model = CreateTestModel();
+
+        // Act
+        var source = ContextAssemblerEmitter.Emit(model);
+
+        // Assert
+        await Assert.That(source).Contains("using Agentic.Workflow.Agents.Models;");
+        await Assert.That(source).Contains("using Agentic.Workflow.Steps;");
+    }
+
     /// <summary>
     /// Verifies that the generated assembler has the correct namespace.
     /// </summary>
@@ -100,10 +188,10 @@ public class ContextAssemblerEmitterTests
     // =============================================================================
 
     /// <summary>
-    /// Verifies that state context generates state accessor code.
+    /// Verifies that state context generates AddStateContext call.
     /// </summary>
     [Test]
-    public async Task Emit_WithStateContext_GeneratesStateAccessor()
+    public async Task Emit_WithStateContext_GeneratesAddStateContextCall()
     {
         // Arrange
         var stateSource = new StateContextSourceModel("CustomerName", "string", "state.CustomerName");
@@ -115,14 +203,14 @@ public class ContextAssemblerEmitterTests
         var source = ContextAssemblerEmitter.Emit(model);
 
         // Assert
-        await Assert.That(source).Contains("state.CustomerName");
+        await Assert.That(source).Contains("contextBuilder.AddStateContext(\"CustomerName\", state.CustomerName)");
     }
 
     /// <summary>
-    /// Verifies that retrieval context generates search call code.
+    /// Verifies that retrieval context generates AddRetrievalContext call.
     /// </summary>
     [Test]
-    public async Task Emit_WithRetrievalContext_GeneratesSearchCall()
+    public async Task Emit_WithRetrievalContext_GeneratesAddRetrievalContextCall()
     {
         // Arrange
         var retrievalSource = new RetrievalContextSourceModel(
@@ -140,15 +228,15 @@ public class ContextAssemblerEmitterTests
         var source = ContextAssemblerEmitter.Emit(model);
 
         // Assert
-        await Assert.That(source).Contains("ProductCatalog");
         await Assert.That(source).Contains("SearchAsync");
+        await Assert.That(source).Contains("contextBuilder.AddRetrievalContext(\"ProductCatalog\"");
     }
 
     /// <summary>
-    /// Verifies that literal context generates literal string code.
+    /// Verifies that literal context generates AddLiteralContext call.
     /// </summary>
     [Test]
-    public async Task Emit_WithLiteralContext_GeneratesLiteralString()
+    public async Task Emit_WithLiteralContext_GeneratesAddLiteralContextCall()
     {
         // Arrange
         var literalSource = new LiteralContextSourceModel("You are a helpful assistant.");
@@ -160,7 +248,7 @@ public class ContextAssemblerEmitterTests
         var source = ContextAssemblerEmitter.Emit(model);
 
         // Assert
-        await Assert.That(source).Contains("You are a helpful assistant.");
+        await Assert.That(source).Contains("contextBuilder.AddLiteralContext(\"You are a helpful assistant.\")");
     }
 
     /// <summary>

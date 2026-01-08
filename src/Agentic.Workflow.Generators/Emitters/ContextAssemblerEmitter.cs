@@ -40,9 +40,10 @@ internal static class ContextAssemblerEmitter
             "System",
             "System.CodeDom.Compiler",
             "System.Collections.Generic",
-            "System.Text",
             "System.Threading",
-            "System.Threading.Tasks");
+            "System.Threading.Tasks",
+            "Agentic.Workflow.Agents.Models",
+            "Agentic.Workflow.Steps");
 
         // Namespace
         FileHeaderHelper.AppendNamespace(sb, model.Namespace);
@@ -168,39 +169,31 @@ internal static class ContextAssemblerEmitter
         var stateType = model.StateTypeName ?? "object";
 
         sb.AppendLine("    /// <inheritdoc />");
-        sb.AppendLine($"    public async Task<string> AssembleAsync({stateType} state, CancellationToken cancellationToken = default)");
+        sb.AppendLine($"    public async Task<AssembledContext> AssembleAsync({stateType} state, StepContext stepContext, CancellationToken cancellationToken)");
         sb.AppendLine("    {");
-        sb.AppendLine("        var contextBuilder = new StringBuilder();");
+        sb.AppendLine("        var contextBuilder = new AssembledContextBuilder();");
         sb.AppendLine();
 
-        var sourceIndex = 0;
         foreach (var source in step.Context!.Sources)
         {
-            if (sourceIndex > 0)
-            {
-                sb.AppendLine("        contextBuilder.AppendLine();");
-            }
-
             switch (source)
             {
                 case LiteralContextSourceModel literal:
                     EmitLiteralSource(sb, literal);
                     break;
 
-                case StateContextSourceModel state:
-                    EmitStateSource(sb, state);
+                case StateContextSourceModel stateSource:
+                    EmitStateSource(sb, stateSource);
                     break;
 
                 case RetrievalContextSourceModel retrieval:
                     EmitRetrievalSource(sb, retrieval);
                     break;
             }
-
-            sourceIndex++;
         }
 
         sb.AppendLine();
-        sb.AppendLine("        return contextBuilder.ToString();");
+        sb.AppendLine("        return contextBuilder.Build();");
         sb.AppendLine("    }");
     }
 
@@ -209,18 +202,19 @@ internal static class ContextAssemblerEmitter
         // Escape the string for C# verbatim string
         var escapedValue = EscapeStringForCSharp(literal.Value);
         sb.AppendLine($"        // Literal context");
-        sb.AppendLine($"        contextBuilder.Append(\"{escapedValue}\");");
+        sb.AppendLine($"        contextBuilder.AddLiteralContext(\"{escapedValue}\");");
     }
 
-    private static void EmitStateSource(StringBuilder sb, StateContextSourceModel state)
+    private static void EmitStateSource(StringBuilder sb, StateContextSourceModel stateSource)
     {
-        sb.AppendLine($"        // State context: {state.PropertyPath}");
-        sb.AppendLine($"        contextBuilder.Append({state.AccessExpression}?.ToString() ?? string.Empty);");
+        sb.AppendLine($"        // State context: {stateSource.PropertyPath}");
+        sb.AppendLine($"        contextBuilder.AddStateContext(\"{stateSource.PropertyPath}\", {stateSource.AccessExpression});");
     }
 
     private static void EmitRetrievalSource(StringBuilder sb, RetrievalContextSourceModel retrieval)
     {
         var fieldName = $"_{ToCamelCase(retrieval.CollectionTypeName)}Collection";
+        var resultsVarName = $"{ToCamelCase(retrieval.CollectionTypeName)}Results";
 
         sb.AppendLine($"        // Retrieval context from {retrieval.CollectionTypeName}");
 
@@ -239,15 +233,12 @@ internal static class ContextAssemblerEmitter
             queryExpr = "string.Empty";
         }
 
-        sb.AppendLine($"        var {ToCamelCase(retrieval.CollectionTypeName)}Results = await {fieldName}.SearchAsync(");
+        sb.AppendLine($"        var {resultsVarName} = await {fieldName}.SearchAsync(");
         sb.AppendLine($"            {queryExpr},");
         sb.AppendLine($"            topK: {retrieval.TopK},");
         sb.AppendLine($"            minRelevance: {retrieval.MinRelevance}m,");
         sb.AppendLine($"            cancellationToken: cancellationToken);");
-        sb.AppendLine($"        foreach (var result in {ToCamelCase(retrieval.CollectionTypeName)}Results)");
-        sb.AppendLine("        {");
-        sb.AppendLine("            contextBuilder.AppendLine(result.Content);");
-        sb.AppendLine("        }");
+        sb.AppendLine($"        contextBuilder.AddRetrievalContext(\"{retrieval.CollectionTypeName}\", {resultsVarName});");
     }
 
     private static string ToCamelCase(string pascalCase)
