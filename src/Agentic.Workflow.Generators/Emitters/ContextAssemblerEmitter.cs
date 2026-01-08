@@ -43,6 +43,7 @@ internal static class ContextAssemblerEmitter
             "System.Threading",
             "System.Threading.Tasks",
             "Agentic.Workflow.Agents.Models",
+            "Agentic.Workflow.Rag",
             "Agentic.Workflow.Steps");
 
         // Namespace
@@ -125,7 +126,7 @@ internal static class ContextAssemblerEmitter
             foreach (var retrieval in retrievalSources)
             {
                 var fieldName = $"_{ToCamelCase(retrieval.CollectionTypeName)}Collection";
-                sb.AppendLine($"    private readonly IVectorCollection<{retrieval.CollectionTypeName}> {fieldName};");
+                sb.AppendLine($"    private readonly IVectorSearchAdapter<{retrieval.CollectionTypeName}> {fieldName};");
             }
 
             sb.AppendLine();
@@ -145,7 +146,7 @@ internal static class ContextAssemblerEmitter
                 }
 
                 var paramName = $"{ToCamelCase(retrieval.CollectionTypeName)}Collection";
-                sb.Append($"IVectorCollection<{retrieval.CollectionTypeName}> {paramName}");
+                sb.Append($"IVectorSearchAdapter<{retrieval.CollectionTypeName}> {paramName}");
                 first = false;
             }
 

@@ -136,6 +136,7 @@ public class ContextAssemblerEmitterTests
 
         // Assert
         await Assert.That(source).Contains("using Agentic.Workflow.Agents.Models;");
+        await Assert.That(source).Contains("using Agentic.Workflow.Rag;");
         await Assert.That(source).Contains("using Agentic.Workflow.Steps;");
     }
 
@@ -230,6 +231,32 @@ public class ContextAssemblerEmitterTests
         // Assert
         await Assert.That(source).Contains("SearchAsync");
         await Assert.That(source).Contains("contextBuilder.AddRetrievalContext(\"ProductCatalog\"");
+    }
+
+    /// <summary>
+    /// Verifies that retrieval context uses IVectorSearchAdapter interface (not IVectorCollection).
+    /// </summary>
+    [Test]
+    public async Task Emit_WithRetrievalContext_UsesIVectorSearchAdapterInterface()
+    {
+        // Arrange
+        var retrievalSource = new RetrievalContextSourceModel(
+            "ProductCatalog",
+            QueryExpression: null,
+            LiteralQuery: "product info",
+            TopK: 5,
+            MinRelevance: 0.7m,
+            Filters: []);
+        var context = new ContextModel([retrievalSource]);
+        var step = StepModel.Create("ProcessStep", "TestNamespace.ProcessStep", context: context);
+        var model = CreateWorkflowModel(step);
+
+        // Act
+        var source = ContextAssemblerEmitter.Emit(model);
+
+        // Assert - Verify correct interface is used
+        await Assert.That(source).Contains("IVectorSearchAdapter<ProductCatalog>");
+        await Assert.That(source).DoesNotContain("IVectorCollection");
     }
 
     /// <summary>
