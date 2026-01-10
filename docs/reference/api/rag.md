@@ -190,7 +190,7 @@ Azure AI Search for enterprise-scale deployments.
 services.AddVectorSearch(options => options
     .UseAzureAISearch(
         endpoint: "https://your-search.search.windows.net",
-        apiKey: "your-api-key",
+        apiKey: "<YOUR_API_KEY>", // WARNING: Do not hardcode secrets. Use a secret manager.
         indexName: "documents"));
 ```
 

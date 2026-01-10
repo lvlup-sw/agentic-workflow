@@ -128,7 +128,7 @@ Marten automatically creates database schemas on startup. Ensure your PostgreSQL
 ```json
 {
   "ConnectionStrings": {
-    "PostgreSQL": "Host=localhost;Database=workflows;Username=app;Password=secret"
+    "PostgreSQL": "Host=localhost;Database=workflows;Username=app;Password=<YOUR_SECURE_PASSWORD>"
   }
 }
 ```
@@ -141,7 +141,7 @@ For local development:
 docker run -d \
   --name workflow-postgres \
   -e POSTGRES_USER=app \
-  -e POSTGRES_PASSWORD=secret \
+  -e POSTGRES_PASSWORD=<YOUR_SECURE_PASSWORD> \
   -e POSTGRES_DB=workflows \
   -p 5432:5432 \
   postgres:16
