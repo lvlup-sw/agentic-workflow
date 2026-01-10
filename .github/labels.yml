@@ -1,0 +1,66 @@
+# GitHub Labels - Sync with manual gh label commands
+# Run: for each label, use gh label create/edit
+
+# Type Labels
+- name: "type:bug"
+  color: "d73a4a"
+  description: "Something isn't working"
+
+- name: "type:feature"
+  color: "a2eeef"
+  description: "New feature or enhancement"
+
+- name: "type:docs"
+  color: "0075ca"
+  description: "Documentation improvements"
+
+- name: "type:chore"
+  color: "fef2c0"
+  description: "Maintenance, dependencies, CI"
+
+- name: "type:question"
+  color: "d876e3"
+  description: "Question or discussion"
+
+# Scope Labels (domain-specific)
+- name: "scope:workflow"
+  color: "1d76db"
+  description: "Core workflow engine"
+
+- name: "scope:agents"
+  color: "5319e7"
+  description: "Agent orchestration"
+
+- name: "scope:rag"
+  color: "006b75"
+  description: "RAG and knowledge systems"
+
+- name: "scope:generators"
+  color: "bfdadc"
+  description: "Source generators"
+
+- name: "scope:infrastructure"
+  color: "bfd4f2"
+  description: "Infrastructure and utilities"
+
+# Status Labels
+- name: "status:triage"
+  color: "ededed"
+  description: "Needs initial review"
+
+- name: "status:blocked"
+  color: "b60205"
+  description: "Blocked by external factor"
+
+- name: "status:stale"
+  color: "ffffff"
+  description: "No activity, will auto-close"
+
+# Priority Labels
+- name: "priority:high"
+  color: "d93f0b"
+  description: "Address soon"
+
+- name: "priority:low"
+  color: "0e8a16"
+  description: "Nice to have"
