@@ -23,6 +23,16 @@ namespace Agentic.Workflow.Infrastructure.Budget;
 /// </remarks>
 public sealed record WorkflowBudget : IWorkflowBudget
 {
+    private readonly Lazy<ScarcityLevel> _cachedScarcity;
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="WorkflowBudget"/> record.
+    /// </summary>
+    public WorkflowBudget()
+    {
+        _cachedScarcity = new Lazy<ScarcityLevel>(ComputeOverallScarcity);
+    }
+
     /// <inheritdoc />
     public required string BudgetId { get; init; }
 
@@ -43,20 +53,19 @@ public sealed record WorkflowBudget : IWorkflowBudget
     public DateTimeOffset UpdatedAt { get; init; } = DateTimeOffset.UtcNow;
 
     /// <inheritdoc />
-    public ScarcityLevel OverallScarcity
-    {
-        get
-        {
-            if (Resources.Count == 0)
-            {
-                return ScarcityLevel.Abundant;
-            }
+    public ScarcityLevel OverallScarcity => _cachedScarcity.Value;
 
-            // Return the most severe (highest ordinal) scarcity level
-            return Resources.Values
-                .Select(r => r.Scarcity)
-                .Max();
+    private ScarcityLevel ComputeOverallScarcity()
+    {
+        if (Resources.Count == 0)
+        {
+            return ScarcityLevel.Abundant;
         }
+
+        // Return the most severe (highest ordinal) scarcity level
+        return Resources.Values
+            .Select(r => r.Scarcity)
+            .Max();
     }
 
     /// <inheritdoc />

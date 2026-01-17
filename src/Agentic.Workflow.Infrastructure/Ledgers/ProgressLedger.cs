@@ -70,9 +70,14 @@ public sealed record ProgressLedger : IProgressLedger
     {
         ArgumentNullException.ThrowIfNull(entry, nameof(entry));
 
+        // Pre-allocate capacity to avoid internal reallocations
+        var newEntries = new List<ProgressEntry>(Entries.Count + 1);
+        newEntries.AddRange(Entries);
+        newEntries.Add(entry);
+
         return this with
         {
-            Entries = Entries.Append(entry).ToList(),
+            Entries = newEntries,
             UpdatedAt = DateTimeOffset.UtcNow
         };
     }
@@ -82,9 +87,17 @@ public sealed record ProgressLedger : IProgressLedger
     {
         ArgumentNullException.ThrowIfNull(entries, nameof(entries));
 
+        // Materialize to count for pre-allocation if not already a collection
+        var entriesToAdd = entries as IReadOnlyCollection<ProgressEntry> ?? entries.ToList();
+
+        // Pre-allocate capacity to avoid internal reallocations
+        var newEntries = new List<ProgressEntry>(Entries.Count + entriesToAdd.Count);
+        newEntries.AddRange(Entries);
+        newEntries.AddRange(entriesToAdd);
+
         return this with
         {
-            Entries = Entries.Concat(entries).ToList(),
+            Entries = newEntries,
             UpdatedAt = DateTimeOffset.UtcNow
         };
     }
