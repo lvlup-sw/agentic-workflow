@@ -21,6 +21,10 @@ namespace Agentic.Workflow.Infrastructure.Selection;
 /// belief storage. Beliefs are keyed by "{AgentId}_{TaskCategory}".
 /// </para>
 /// <para>
+/// Secondary indices provide O(1) lookup by agent or category, avoiding
+/// O(n) scans of all beliefs for common query patterns.
+/// </para>
+/// <para>
 /// This implementation is suitable for:
 /// <list type="bullet">
 ///   <item><description>Unit and integration testing</description></item>
@@ -37,6 +41,16 @@ public sealed class InMemoryBeliefStore : IBeliefStore
 {
     private readonly ConcurrentDictionary<string, AgentBelief> _beliefs = new();
 
+    /// <summary>
+    /// Secondary index: maps agent ID to set of composite keys for that agent's beliefs.
+    /// </summary>
+    private readonly ConcurrentDictionary<string, ConcurrentDictionary<string, byte>> _byAgent = new();
+
+    /// <summary>
+    /// Secondary index: maps task category to set of composite keys for that category's beliefs.
+    /// </summary>
+    private readonly ConcurrentDictionary<string, ConcurrentDictionary<string, byte>> _byCategory = new();
+
     /// <inheritdoc/>
     public Task<Result<AgentBelief>> GetBeliefAsync(
         string agentId,
@@ -47,7 +61,12 @@ public sealed class InMemoryBeliefStore : IBeliefStore
         ArgumentNullException.ThrowIfNull(taskCategory);
 
         var key = GetKey(agentId, taskCategory);
-        var belief = _beliefs.GetOrAdd(key, _ => AgentBelief.CreatePrior(agentId, taskCategory));
+        var belief = _beliefs.GetOrAdd(key, _ =>
+        {
+            var newBelief = AgentBelief.CreatePrior(agentId, taskCategory);
+            AddToIndices(agentId, taskCategory, key);
+            return newBelief;
+        });
 
         return Task.FromResult(Result<AgentBelief>.Success(belief));
     }
@@ -66,7 +85,11 @@ public sealed class InMemoryBeliefStore : IBeliefStore
 
         _beliefs.AddOrUpdate(
             key,
-            _ => CreateUpdatedPrior(agentId, taskCategory, success),
+            _ =>
+            {
+                AddToIndices(agentId, taskCategory, key);
+                return CreateUpdatedPrior(agentId, taskCategory, success);
+            },
             (_, existing) => success ? existing.WithSuccess() : existing.WithFailure());
 
         return Task.FromResult(Result<Unit>.Success(Unit.Value));
@@ -79,8 +102,16 @@ public sealed class InMemoryBeliefStore : IBeliefStore
     {
         ArgumentNullException.ThrowIfNull(agentId);
 
-        var beliefs = _beliefs.Values
-            .Where(b => b.AgentId == agentId)
+        if (!_byAgent.TryGetValue(agentId, out var keySet))
+        {
+            return Task.FromResult(Result<IReadOnlyList<AgentBelief>>.Success(
+                Array.Empty<AgentBelief>()));
+        }
+
+        var beliefs = keySet.Keys
+            .Select(key => _beliefs.TryGetValue(key, out var belief) ? belief : null)
+            .Where(b => b is not null)
+            .Cast<AgentBelief>()
             .ToList();
 
         return Task.FromResult(Result<IReadOnlyList<AgentBelief>>.Success(beliefs));
@@ -93,8 +124,16 @@ public sealed class InMemoryBeliefStore : IBeliefStore
     {
         ArgumentNullException.ThrowIfNull(taskCategory);
 
-        var beliefs = _beliefs.Values
-            .Where(b => b.TaskCategory == taskCategory)
+        if (!_byCategory.TryGetValue(taskCategory, out var keySet))
+        {
+            return Task.FromResult(Result<IReadOnlyList<AgentBelief>>.Success(
+                Array.Empty<AgentBelief>()));
+        }
+
+        var beliefs = keySet.Keys
+            .Select(key => _beliefs.TryGetValue(key, out var belief) ? belief : null)
+            .Where(b => b is not null)
+            .Cast<AgentBelief>()
             .ToList();
 
         return Task.FromResult(Result<IReadOnlyList<AgentBelief>>.Success(beliefs));
@@ -109,6 +148,7 @@ public sealed class InMemoryBeliefStore : IBeliefStore
 
         var key = GetKey(belief.AgentId, belief.TaskCategory);
         _beliefs[key] = belief;
+        AddToIndices(belief.AgentId, belief.TaskCategory, key);
 
         return Task.FromResult(Result<Unit>.Success(Unit.Value));
     }
@@ -122,6 +162,21 @@ public sealed class InMemoryBeliefStore : IBeliefStore
     private static string GetKey(string agentId, string taskCategory)
     {
         return $"{agentId}_{taskCategory}";
+    }
+
+    /// <summary>
+    /// Adds a composite key to the secondary indices for agent and category.
+    /// </summary>
+    /// <param name="agentId">The agent identifier.</param>
+    /// <param name="taskCategory">The task category.</param>
+    /// <param name="key">The composite key.</param>
+    private void AddToIndices(string agentId, string taskCategory, string key)
+    {
+        var agentKeys = _byAgent.GetOrAdd(agentId, _ => new ConcurrentDictionary<string, byte>());
+        agentKeys.TryAdd(key, 0);
+
+        var categoryKeys = _byCategory.GetOrAdd(taskCategory, _ => new ConcurrentDictionary<string, byte>());
+        categoryKeys.TryAdd(key, 0);
     }
 
     /// <summary>

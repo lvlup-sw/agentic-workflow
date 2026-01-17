@@ -62,9 +62,10 @@ public sealed class ThompsonSamplingAgentSelector : IAgentSelector
         var categoryName = taskCategory.ToString();
 
         // 2. Get available agents (exclude any excluded)
-        var candidates = context.AvailableAgents
-            .Except(context.ExcludedAgents ?? [])
-            .ToList();
+        // Optimization: Skip .Except() allocation when no exclusions
+        var candidates = context.ExcludedAgents is { Count: > 0 }
+            ? context.AvailableAgents.Except(context.ExcludedAgents).ToList()
+            : context.AvailableAgents.ToList();
 
         if (candidates.Count == 0)
         {
@@ -74,15 +75,20 @@ public sealed class ThompsonSamplingAgentSelector : IAgentSelector
                 "No available agents after applying exclusions"));
         }
 
-        // 3. Sample from Beta posteriors for each candidate
+        // 3. Fetch beliefs in parallel for all candidates
+        var beliefTasks = candidates.Select(agentId =>
+            _beliefStore.GetBeliefAsync(agentId, categoryName, cancellationToken));
+        var beliefResults = await Task.WhenAll(beliefTasks).ConfigureAwait(false);
+
+        // 4. Sample from Beta posteriors for each candidate
         var bestAgentId = candidates[0];
         var bestTheta = double.MinValue;
         var bestBelief = AgentBelief.CreatePrior(bestAgentId, categoryName);
 
-        foreach (var agentId in candidates)
+        for (int i = 0; i < candidates.Count; i++)
         {
-            var beliefResult = await _beliefStore.GetBeliefAsync(agentId, categoryName, cancellationToken)
-                .ConfigureAwait(false);
+            var beliefResult = beliefResults[i];
+            var agentId = candidates[i];
 
             var belief = beliefResult.IsSuccess
                 ? beliefResult.Value

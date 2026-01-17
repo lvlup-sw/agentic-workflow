@@ -2,7 +2,7 @@
   "version": "1.0",
   "featureId": "performance-optimizations",
   "createdAt": "2026-01-08T04:56:16Z",
-  "updatedAt": "2026-01-08T05:04:28Z",
+  "updatedAt": "2026-01-17T23:31:42Z",
   "phase": "ideate",
   "artifacts": {
     "design": "docs/designs/2026-01-07-performance-optimizations.md",
@@ -10,7 +10,36 @@
     "pr": null
   },
   "tasks": [],
-  "worktrees": {},
+  "worktrees": {
+    ".worktrees/perf-thompson": {
+      "branch": "feature/perf-thompson",
+      "taskGroups": [
+        "A"
+      ],
+      "status": "active"
+    },
+    ".worktrees/perf-loop": {
+      "branch": "feature/perf-loop",
+      "taskGroups": [
+        "B"
+      ],
+      "status": "active"
+    },
+    ".worktrees/perf-ledgers": {
+      "branch": "feature/perf-ledgers",
+      "taskGroups": [
+        "C"
+      ],
+      "status": "active"
+    },
+    ".worktrees/perf-generators": {
+      "branch": "feature/perf-generators",
+      "taskGroups": [
+        "D"
+      ],
+      "status": "active"
+    }
+  },
   "julesSessions": {},
   "reviews": {},
   "synthesis": {
