@@ -306,4 +306,42 @@ public class StateReducerGeneratorIntegrationTests
         // Assert
         await Assert.That(generatedSource).Contains("[GeneratedCode(\"Agentic.Workflow.Generators\"");
     }
+
+    // =============================================================================
+    // E. Performance Optimization Tests (A.10 - Metadata Caching)
+    // =============================================================================
+
+    /// <summary>
+    /// Verifies that the generator correctly handles multiple collection properties.
+    /// This test ensures the cached WellKnownTypes optimization preserves correct behavior
+    /// when processing multiple [Append] and [Merge] properties.
+    /// </summary>
+    [Test]
+    public async Task Generator_ManyCollectionProperties_GeneratesCorrectReducer()
+    {
+        // Arrange & Act
+        var result = GeneratorTestHelper.RunStateReducerGenerator(SourceTexts.StateWithManyCollections);
+        var generatedSource = GeneratorTestHelper.GetGeneratedSource(result, "MultiCollectionStateReducer.g.cs");
+
+        // Assert - Reducer class structure
+        await Assert.That(generatedSource).Contains("public static partial class MultiCollectionStateReducer");
+
+        // Assert - Standard property
+        await Assert.That(generatedSource).Contains("Name = update.Name");
+
+        // Assert - All [Append] properties generate Concat expressions
+        await Assert.That(generatedSource).Contains("current.Items1.Concat(update.Items1)");
+        await Assert.That(generatedSource).Contains("current.Items2.Concat(update.Items2)");
+        await Assert.That(generatedSource).Contains("current.Items3.Concat(update.Items3)");
+
+        // Assert - All [Merge] properties generate MergeDictionaries calls
+        await Assert.That(generatedSource).Contains("MergeDictionaries(current.Dict1, update.Dict1)");
+        await Assert.That(generatedSource).Contains("MergeDictionaries(current.Dict2, update.Dict2)");
+
+        // Assert - No diagnostics (errors)
+        var errors = result.Diagnostics
+            .Where(d => d.Severity == DiagnosticSeverity.Error)
+            .ToList();
+        await Assert.That(errors).IsEmpty();
+    }
 }
