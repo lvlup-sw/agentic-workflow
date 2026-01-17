@@ -1,0 +1,11 @@
+{
+  "sdk": {
+    "version": "10.0.101"
+  },
+  "msbuild-sdks": {},
+  "testing": {
+    "commandLine": {
+      "microsoftTestingPlatform": true
+    }
+  }
+}
