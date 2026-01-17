@@ -319,4 +319,97 @@ public class InMemoryBeliefStoreTests
         await Assert.That(belief.IsSuccess).IsTrue();
         await Assert.That(belief.Value.ObservationCount).IsEqualTo(iterationCount);
     }
+
+    // =============================================================================
+    // F. Performance Optimization Tests (Secondary Indices)
+    // =============================================================================
+
+    /// <summary>
+    /// Verifies that GetBeliefsForAgentAsync returns in near-constant time with many beliefs.
+    /// </summary>
+    [Test]
+    public async Task GetBeliefsForAgentAsync_ManyBeliefs_ReturnsInConstantTime()
+    {
+        // Arrange
+        var store = new InMemoryBeliefStore();
+        const int agentCount = 100;
+        const int categoriesPerAgent = 100;
+
+        // Populate store with 10,000 beliefs (100 agents x 100 categories)
+        for (int a = 0; a < agentCount; a++)
+        {
+            for (int c = 0; c < categoriesPerAgent; c++)
+            {
+                await store.UpdateBeliefAsync($"agent-{a}", $"category-{c}", success: true).ConfigureAwait(false);
+            }
+        }
+
+        // Act - Measure lookup time for a specific agent
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        var result = await store.GetBeliefsForAgentAsync("agent-50").ConfigureAwait(false);
+        stopwatch.Stop();
+
+        // Assert
+        // With O(1) index lookup, should be < 5ms even with 10K total beliefs
+        // Without index (O(n) scan), could be much slower
+        await Assert.That(result.IsSuccess).IsTrue();
+        await Assert.That(result.Value.Count).IsEqualTo(categoriesPerAgent);
+        await Assert.That(stopwatch.ElapsedMilliseconds).IsLessThan(5);
+    }
+
+    /// <summary>
+    /// Verifies that GetBeliefsForCategoryAsync returns in near-constant time with many beliefs.
+    /// </summary>
+    [Test]
+    public async Task GetBeliefsForCategoryAsync_ManyBeliefs_ReturnsInConstantTime()
+    {
+        // Arrange
+        var store = new InMemoryBeliefStore();
+        const int agentCount = 100;
+        const int categoriesPerAgent = 100;
+
+        // Populate store with 10,000 beliefs (100 agents x 100 categories)
+        for (int a = 0; a < agentCount; a++)
+        {
+            for (int c = 0; c < categoriesPerAgent; c++)
+            {
+                await store.UpdateBeliefAsync($"agent-{a}", $"category-{c}", success: true).ConfigureAwait(false);
+            }
+        }
+
+        // Act - Measure lookup time for a specific category
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        var result = await store.GetBeliefsForCategoryAsync("category-50").ConfigureAwait(false);
+        stopwatch.Stop();
+
+        // Assert
+        // With O(1) index lookup, should be < 5ms even with 10K total beliefs
+        // Without index (O(n) scan), could be much slower
+        await Assert.That(result.IsSuccess).IsTrue();
+        await Assert.That(result.Value.Count).IsEqualTo(agentCount);
+        await Assert.That(stopwatch.ElapsedMilliseconds).IsLessThan(5);
+    }
+
+    /// <summary>
+    /// Verifies that SaveBeliefAsync maintains secondary indices.
+    /// </summary>
+    [Test]
+    public async Task SaveBeliefAsync_MaintainsIndices()
+    {
+        // Arrange
+        var store = new InMemoryBeliefStore();
+        var belief = AgentBelief.CreatePrior("agent-1", "CodeGeneration").WithSuccess();
+
+        // Act
+        await store.SaveBeliefAsync(belief).ConfigureAwait(false);
+
+        // Assert - Verify the belief is accessible via both indices
+        var byAgent = await store.GetBeliefsForAgentAsync("agent-1").ConfigureAwait(false);
+        var byCategory = await store.GetBeliefsForCategoryAsync("CodeGeneration").ConfigureAwait(false);
+
+        await Assert.That(byAgent.Value.Count).IsEqualTo(1);
+        await Assert.That(byCategory.Value.Count).IsEqualTo(1);
+        await Assert.That(byAgent.Value[0].Alpha).IsEqualTo(belief.Alpha);
+        await Assert.That(byCategory.Value[0].Alpha).IsEqualTo(belief.Alpha);
+    }
 }

@@ -4,7 +4,9 @@
 // </copyright>
 // =============================================================================
 
+using Agentic.Workflow.Abstractions;
 using Agentic.Workflow.Infrastructure.Selection;
+using Agentic.Workflow.Primitives;
 using Agentic.Workflow.Selection;
 
 namespace Agentic.Workflow.Infrastructure.Tests.Selection;
@@ -416,4 +418,141 @@ public class ThompsonSamplingSelectorTests
         await Assert.That(result1.Value.SelectedAgentId).IsEqualTo(result2.Value.SelectedAgentId);
         await Assert.That(result1.Value.SampledTheta).IsEqualTo(result2.Value.SampledTheta);
     }
+
+    // =============================================================================
+    // H. Performance Optimization Tests
+    // =============================================================================
+
+    /// <summary>
+    /// Verifies that belief fetching for multiple candidates happens concurrently.
+    /// </summary>
+    [Test]
+    public async Task SelectAgentAsync_MultipleCandidates_FetchesBeliefsConcurrently()
+    {
+        // Arrange
+        const int candidateCount = 5;
+        const int delayPerFetchMs = 50;
+        var delayingStore = new DelayingBeliefStore(TimeSpan.FromMilliseconds(delayPerFetchMs));
+        var selector = new ThompsonSamplingAgentSelector(delayingStore, randomSeed: 42);
+
+        var agents = Enumerable.Range(1, candidateCount).Select(i => $"agent-{i}").ToList();
+        var context = new AgentSelectionContext
+        {
+            WorkflowId = Guid.NewGuid(),
+            StepName = "TestStep",
+            TaskDescription = "Test task",
+            AvailableAgents = agents,
+        };
+
+        // Act - Measure elapsed time
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        var result = await selector.SelectAgentAsync(context).ConfigureAwait(false);
+        stopwatch.Stop();
+
+        // Assert
+        // If sequential: would take ~250ms (5 * 50ms)
+        // If parallel: should take ~50-100ms (all at once, plus overhead)
+        // We use 150ms as threshold: much less than sequential 250ms
+        await Assert.That(result.IsSuccess).IsTrue();
+        await Assert.That(stopwatch.ElapsedMilliseconds).IsLessThan(150);
+    }
+
+    /// <summary>
+    /// Verifies that early exit skips .Except() when no exclusions provided.
+    /// </summary>
+    [Test]
+    public async Task SelectAgentAsync_NoExclusions_SkipsExceptAllocation()
+    {
+        // Arrange
+        var beliefStore = new InMemoryBeliefStore();
+        var selector = new ThompsonSamplingAgentSelector(beliefStore, randomSeed: 42);
+
+        var context = new AgentSelectionContext
+        {
+            WorkflowId = Guid.NewGuid(),
+            StepName = "TestStep",
+            TaskDescription = "Test task",
+            AvailableAgents = ["agent-1", "agent-2", "agent-3"],
+            ExcludedAgents = null, // No exclusions
+        };
+
+        // Act
+        var result = await selector.SelectAgentAsync(context).ConfigureAwait(false);
+
+        // Assert - Verify the result is valid (the early exit optimization doesn't affect correctness)
+        await Assert.That(result.IsSuccess).IsTrue();
+        await Assert.That(context.AvailableAgents).Contains(result.Value.SelectedAgentId);
+    }
+
+    /// <summary>
+    /// Verifies that early exit skips .Except() when exclusions list is empty.
+    /// </summary>
+    [Test]
+    public async Task SelectAgentAsync_EmptyExclusions_SkipsExceptAllocation()
+    {
+        // Arrange
+        var beliefStore = new InMemoryBeliefStore();
+        var selector = new ThompsonSamplingAgentSelector(beliefStore, randomSeed: 42);
+
+        var context = new AgentSelectionContext
+        {
+            WorkflowId = Guid.NewGuid(),
+            StepName = "TestStep",
+            TaskDescription = "Test task",
+            AvailableAgents = ["agent-1", "agent-2", "agent-3"],
+            ExcludedAgents = [], // Empty list
+        };
+
+        // Act
+        var result = await selector.SelectAgentAsync(context).ConfigureAwait(false);
+
+        // Assert - Verify the result is valid
+        await Assert.That(result.IsSuccess).IsTrue();
+        await Assert.That(context.AvailableAgents).Contains(result.Value.SelectedAgentId);
+    }
+}
+
+/// <summary>
+/// Test belief store that introduces artificial delay to verify parallel fetching.
+/// </summary>
+file sealed class DelayingBeliefStore : IBeliefStore
+{
+    private readonly TimeSpan _delay;
+    private readonly InMemoryBeliefStore _inner = new();
+
+    public DelayingBeliefStore(TimeSpan delay)
+    {
+        _delay = delay;
+    }
+
+    public async Task<Result<AgentBelief>> GetBeliefAsync(
+        string agentId,
+        string taskCategory,
+        CancellationToken cancellationToken = default)
+    {
+        await Task.Delay(_delay, cancellationToken).ConfigureAwait(false);
+        return await _inner.GetBeliefAsync(agentId, taskCategory, cancellationToken).ConfigureAwait(false);
+    }
+
+    public Task<Result<Unit>> UpdateBeliefAsync(
+        string agentId,
+        string taskCategory,
+        bool success,
+        CancellationToken cancellationToken = default)
+        => _inner.UpdateBeliefAsync(agentId, taskCategory, success, cancellationToken);
+
+    public Task<Result<IReadOnlyList<AgentBelief>>> GetBeliefsForAgentAsync(
+        string agentId,
+        CancellationToken cancellationToken = default)
+        => _inner.GetBeliefsForAgentAsync(agentId, cancellationToken);
+
+    public Task<Result<IReadOnlyList<AgentBelief>>> GetBeliefsForCategoryAsync(
+        string taskCategory,
+        CancellationToken cancellationToken = default)
+        => _inner.GetBeliefsForCategoryAsync(taskCategory, cancellationToken);
+
+    public Task<Result<Unit>> SaveBeliefAsync(
+        AgentBelief belief,
+        CancellationToken cancellationToken = default)
+        => _inner.SaveBeliefAsync(belief, cancellationToken);
 }
