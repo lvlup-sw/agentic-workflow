@@ -478,6 +478,21 @@ public class LoopDetectorTests
     }
 
     /// <summary>
+    /// Test semantic similarity calculator that throws if called.
+    /// Used to verify that semantic similarity is skipped when high-confidence signals exist.
+    /// </summary>
+    private sealed class ThrowingSemanticSimilarityCalculator : ISemanticSimilarityCalculator
+    {
+        public Task<double> CalculateMaxSimilarityAsync(
+            IReadOnlyList<string?> outputs,
+            CancellationToken cancellationToken = default)
+        {
+            throw new InvalidOperationException(
+                "Semantic similarity should not be called when high-confidence signal exists");
+        }
+    }
+
+    /// <summary>
     /// Verifies that high semantic similarity detects SemanticRepetition loop.
     /// </summary>
     [Test]
@@ -686,5 +701,128 @@ public class LoopDetectorTests
         // Assert - lower threshold may trigger detection
         // With 2/5 repetition = 0.4, confidence = 0.4 * 0.4 = 0.16 + other factors
         await Assert.That(result.Confidence).IsGreaterThan(0.0);
+    }
+
+    // =============================================================================
+    // I. Performance Optimization Tests - Skip Semantic Similarity (A.4)
+    // =============================================================================
+
+    /// <summary>
+    /// Verifies that semantic similarity is skipped when exact repetition score is 1.0.
+    /// </summary>
+    [Test]
+    public async Task DetectAsync_ExactRepetition_SkipsSemanticSimilarity()
+    {
+        // Arrange - use a throwing calculator to verify it's not called
+        var throwingCalculator = new ThrowingSemanticSimilarityCalculator();
+        var detector = CreateLoopDetector(similarityCalculator: throwingCalculator);
+        var ledger = CreateLedgerWithRepeatedAction("stuck_action", 5);
+
+        // Act - should not throw because semantic similarity is skipped
+        var result = await detector.DetectAsync(ledger).ConfigureAwait(false);
+
+        // Assert
+        await Assert.That(result.LoopDetected).IsTrue();
+        await Assert.That(result.DetectedType).IsEqualTo(LoopType.ExactRepetition);
+    }
+
+    /// <summary>
+    /// Verifies that semantic similarity is skipped when no-progress score is 1.0.
+    /// </summary>
+    [Test]
+    public async Task DetectAsync_PerfectNoProgress_SkipsSemanticSimilarity()
+    {
+        // Arrange - use a throwing calculator to verify it's not called
+        var throwingCalculator = new ThrowingSemanticSimilarityCalculator();
+        var detector = CreateLoopDetector(similarityCalculator: throwingCalculator);
+        var ledger = CreateLedgerWithNoProgress(5);
+
+        // Act - should not throw because semantic similarity is skipped
+        var result = await detector.DetectAsync(ledger).ConfigureAwait(false);
+
+        // Assert
+        await Assert.That(result.LoopDetected).IsTrue();
+        await Assert.That(result.DetectedType).IsEqualTo(LoopType.NoProgress);
+    }
+
+    // =============================================================================
+    // J. String Comparison Correctness Tests (A.5)
+    // =============================================================================
+
+    /// <summary>
+    /// Creates a non-interned string by building it at runtime.
+    /// This ensures the string is not in the intern pool.
+    /// </summary>
+    private static string CreateNonInternedString(string value)
+    {
+        // Build the string from char array to ensure it's not interned
+        return new string(value.ToCharArray());
+    }
+
+    /// <summary>
+    /// Verifies that oscillation detection works with non-interned strings.
+    /// This tests that the string comparison uses value equality, not reference equality.
+    /// </summary>
+    [Test]
+    public async Task CalculateOscillationScore_NonInternedStrings_DetectsPattern()
+    {
+        // Arrange - create entries with non-interned action strings
+        // These strings have the same value but are different object references
+        var detector = CreateLoopDetector();
+        var entries = new[]
+        {
+            CreateEntry(CreateNonInternedString("action_a")),
+            CreateEntry(CreateNonInternedString("action_b")),
+            CreateEntry(CreateNonInternedString("action_a")),
+            CreateEntry(CreateNonInternedString("action_b")),
+            CreateEntry(CreateNonInternedString("action_a"))
+        };
+        var ledger = CreateLedgerWithEntries(entries);
+
+        // Act
+        var result = await detector.DetectAsync(ledger).ConfigureAwait(false);
+
+        // Assert - should detect oscillation pattern even with non-interned strings
+        await Assert.That(result.LoopDetected).IsTrue();
+        await Assert.That(result.DetectedType).IsEqualTo(LoopType.Oscillation);
+    }
+
+    // =============================================================================
+    // K. LINQ Optimization Tests (A.6)
+    // =============================================================================
+
+    /// <summary>
+    /// Verifies that repetition score calculation works correctly with large entry sets.
+    /// This tests the optimized LINQ path that avoids intermediate list allocation.
+    /// </summary>
+    [Test]
+    public async Task CalculateRepetitionScore_LargeEntrySet_CalculatesCorrectly()
+    {
+        // Arrange - create a ledger with many repeated actions
+        var options = LoopDetectionOptions.CreateProductionDefaults();
+        options.WindowSize = 10;
+        var detector = CreateLoopDetector(options);
+
+        // Create 10 entries where 7 have the same action (70% repetition)
+        var entries = new List<ProgressEntry>();
+        for (var i = 0; i < 7; i++)
+        {
+            entries.Add(CreateEntry("repeated_action"));
+        }
+
+        for (var i = 0; i < 3; i++)
+        {
+            entries.Add(CreateEntry($"unique_action_{i}"));
+        }
+
+        var ledger = CreateLedgerWithEntries(entries.ToArray());
+
+        // Act
+        var result = await detector.DetectAsync(ledger).ConfigureAwait(false);
+
+        // Assert - repetition score should be 7/10 = 0.7, contributing 0.4 * 0.7 = 0.28
+        // Use 0.27 to account for floating-point precision
+        // This verifies the optimized calculation path works correctly
+        await Assert.That(result.Confidence).IsGreaterThanOrEqualTo(0.27);
     }
 }
