@@ -1283,6 +1283,37 @@ public static class SourceTexts
     // =============================================================================
 
     /// <summary>
+    /// A state with multiple collection properties (for metadata caching performance test).
+    /// </summary>
+    public const string StateWithManyCollections = """
+        using System.Collections.Generic;
+        using Agentic.Workflow.Attributes;
+
+        namespace TestNamespace;
+
+        [WorkflowState]
+        public record MultiCollectionState
+        {
+            public string Name { get; init; } = "";
+
+            [Append]
+            public IReadOnlyList<string> Items1 { get; init; } = [];
+
+            [Append]
+            public IReadOnlyList<int> Items2 { get; init; } = [];
+
+            [Append]
+            public IReadOnlyList<decimal> Items3 { get; init; } = [];
+
+            [Merge]
+            public IReadOnlyDictionary<string, string> Dict1 { get; init; } = new Dictionary<string, string>();
+
+            [Merge]
+            public IReadOnlyDictionary<string, int> Dict2 { get; init; } = new Dictionary<string, int>();
+        }
+        """;
+
+    /// <summary>
     /// A workflow with Fork but missing Join - should trigger AGWF012.
     /// </summary>
     public const string WorkflowForkWithoutJoin = """

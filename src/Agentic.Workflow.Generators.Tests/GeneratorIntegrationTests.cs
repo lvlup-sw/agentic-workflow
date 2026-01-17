@@ -819,4 +819,78 @@ public class GeneratorIntegrationTests
         var errors = result.Diagnostics.Where(d => d.Severity == DiagnosticSeverity.Error).ToList();
         await Assert.That(errors).IsEmpty();
     }
+
+    // =============================================================================
+    // M. Performance Optimization Tests (A.11 - HashSet Contains)
+    // =============================================================================
+
+    /// <summary>
+    /// Verifies that workflows with many steps from multiple sources (forks, failure handlers)
+    /// correctly include all unique step names in generated artifacts.
+    /// This test ensures the HashSet optimization for Contains checks preserves correctness.
+    /// </summary>
+    [Test]
+    public async Task Generator_WorkflowWithForkAndOnFailure_IncludesAllStepNames()
+    {
+        // Arrange & Act
+        // Using the WorkflowWithFork source which has fork paths with multiple steps
+        var result = GeneratorTestHelper.RunGenerator(SourceTexts.WorkflowWithFork);
+        var phaseSource = GeneratorTestHelper.GetGeneratedSource(result, "Phase.g.cs");
+        var commandsSource = GeneratorTestHelper.GetGeneratedSource(result, "Commands.g.cs");
+
+        // Assert - All step names from fork paths are included in Phase enum
+        await Assert.That(phaseSource).Contains("ValidateOrder");
+        await Assert.That(phaseSource).Contains("ProcessPayment");
+        await Assert.That(phaseSource).Contains("ReserveInventory");
+        await Assert.That(phaseSource).Contains("SynthesizeResults");
+        await Assert.That(phaseSource).Contains("SendConfirmation");
+
+        // Assert - All step commands are generated for unique steps
+        await Assert.That(commandsSource).Contains("ExecuteValidateOrderCommand");
+        await Assert.That(commandsSource).Contains("ExecuteProcessPaymentCommand");
+        await Assert.That(commandsSource).Contains("ExecuteReserveInventoryCommand");
+        await Assert.That(commandsSource).Contains("ExecuteSynthesizeResultsCommand");
+        await Assert.That(commandsSource).Contains("ExecuteSendConfirmationCommand");
+
+        // Assert - No duplicate phases (each step appears once)
+        var phaseCount = phaseSource.Split('\n').Count(line => line.Contains("ValidateOrder") && line.Contains(","));
+        await Assert.That(phaseCount).IsEqualTo(1);
+    }
+
+    // =============================================================================
+    // N. Performance Optimization Tests (A.12 - List Pre-allocation)
+    // =============================================================================
+
+    /// <summary>
+    /// Verifies that workflows with failure handlers and forks generate all artifacts correctly.
+    /// This test ensures the list pre-allocation optimization preserves correctness when
+    /// multiple sources contribute step names.
+    /// </summary>
+    [Test]
+    public async Task Generator_WorkflowWithOnFailure_PreallocatesAndIncludesAllSteps()
+    {
+        // Arrange & Act
+        var result = GeneratorTestHelper.RunGenerator(SourceTexts.WorkflowWithOnFailure);
+        var phaseSource = GeneratorTestHelper.GetGeneratedSource(result, "Phase.g.cs");
+        var commandsSource = GeneratorTestHelper.GetGeneratedSource(result, "Commands.g.cs");
+
+        // Assert - All main workflow steps are present
+        await Assert.That(phaseSource).Contains("ValidateInput");
+        await Assert.That(phaseSource).Contains("ProcessData");
+        await Assert.That(phaseSource).Contains("SaveResult");
+
+        // Assert - Failure handler steps are present
+        await Assert.That(phaseSource).Contains("LogFailure");
+        await Assert.That(phaseSource).Contains("NotifyAdmin");
+
+        // Assert - Commands are generated for failure handler steps
+        await Assert.That(commandsSource).Contains("ExecuteLogFailureCommand");
+        await Assert.That(commandsSource).Contains("ExecuteNotifyAdminCommand");
+
+        // Assert - No errors
+        var errors = result.Diagnostics
+            .Where(d => d.Severity == DiagnosticSeverity.Error)
+            .ToList();
+        await Assert.That(errors).IsEmpty();
+    }
 }

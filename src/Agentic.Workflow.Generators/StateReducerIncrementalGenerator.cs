@@ -98,6 +98,9 @@ public sealed class StateReducerIncrementalGenerator : IIncrementalGenerator
     {
         var properties = new List<StatePropertyModel>();
 
+        // Cache well-known types once per compilation context for all properties
+        var wellKnownTypes = WellKnownTypes.FromCompilation(compilation);
+
         foreach (var member in symbol.GetMembers())
         {
             if (member is not IPropertySymbol property)
@@ -118,7 +121,7 @@ public sealed class StateReducerIncrementalGenerator : IIncrementalGenerator
             }
 
             // Determine property kind based on attributes (with validation)
-            var kind = GetPropertyKind(property, compilation, diagnostics);
+            var kind = GetPropertyKind(property, wellKnownTypes, diagnostics);
 
             properties.Add(new StatePropertyModel(
                 Name: property.Name,
@@ -131,7 +134,7 @@ public sealed class StateReducerIncrementalGenerator : IIncrementalGenerator
 
     private static StatePropertyKind GetPropertyKind(
         IPropertySymbol property,
-        Compilation compilation,
+        WellKnownTypes wellKnownTypes,
         List<Diagnostic> diagnostics)
     {
         foreach (var attribute in property.GetAttributes())
@@ -141,7 +144,7 @@ public sealed class StateReducerIncrementalGenerator : IIncrementalGenerator
             if (fullName == AppendAttributeFullName)
             {
                 // Validate that the property type implements IEnumerable<T>
-                if (!IsCollectionType(property.Type, compilation))
+                if (!IsCollectionType(property.Type, wellKnownTypes))
                 {
                     var location = GetPropertyLocation(property);
                     diagnostics.Add(Diagnostic.Create(
@@ -157,7 +160,7 @@ public sealed class StateReducerIncrementalGenerator : IIncrementalGenerator
             if (fullName == MergeAttributeFullName)
             {
                 // Validate that the property type is a dictionary type
-                if (!IsDictionaryType(property.Type, compilation))
+                if (!IsDictionaryType(property.Type, wellKnownTypes))
                 {
                     var location = GetPropertyLocation(property);
                     diagnostics.Add(Diagnostic.Create(
@@ -174,7 +177,7 @@ public sealed class StateReducerIncrementalGenerator : IIncrementalGenerator
         return StatePropertyKind.Standard;
     }
 
-    private static bool IsCollectionType(ITypeSymbol type, Compilation compilation)
+    private static bool IsCollectionType(ITypeSymbol type, WellKnownTypes wellKnownTypes)
     {
         // Check if type implements IEnumerable<T> (but not string)
         if (type.SpecialType == SpecialType.System_String)
@@ -182,8 +185,7 @@ public sealed class StateReducerIncrementalGenerator : IIncrementalGenerator
             return false;
         }
 
-        var enumerableT = compilation.GetTypeByMetadataName("System.Collections.Generic.IEnumerable`1");
-        if (enumerableT is null)
+        if (wellKnownTypes.EnumerableT is null)
         {
             return false;
         }
@@ -192,7 +194,7 @@ public sealed class StateReducerIncrementalGenerator : IIncrementalGenerator
         if (type is INamedTypeSymbol namedType && namedType.IsGenericType)
         {
             var originalDef = namedType.OriginalDefinition;
-            if (originalDef.Equals(enumerableT, SymbolEqualityComparer.Default))
+            if (originalDef.Equals(wellKnownTypes.EnumerableT, SymbolEqualityComparer.Default))
             {
                 return true;
             }
@@ -200,16 +202,13 @@ public sealed class StateReducerIncrementalGenerator : IIncrementalGenerator
 
         // Check if the type implements IEnumerable<T>
         return type.AllInterfaces.Any(i =>
-            i.OriginalDefinition.Equals(enumerableT, SymbolEqualityComparer.Default));
+            i.OriginalDefinition.Equals(wellKnownTypes.EnumerableT, SymbolEqualityComparer.Default));
     }
 
-    private static bool IsDictionaryType(ITypeSymbol type, Compilation compilation)
+    private static bool IsDictionaryType(ITypeSymbol type, WellKnownTypes wellKnownTypes)
     {
         // Check if type implements IReadOnlyDictionary<TKey, TValue> or IDictionary<TKey, TValue>
-        var readOnlyDict = compilation.GetTypeByMetadataName("System.Collections.Generic.IReadOnlyDictionary`2");
-        var dict = compilation.GetTypeByMetadataName("System.Collections.Generic.IDictionary`2");
-
-        if (readOnlyDict is null && dict is null)
+        if (wellKnownTypes.ReadOnlyDictT is null && wellKnownTypes.DictT is null)
         {
             return false;
         }
@@ -218,8 +217,8 @@ public sealed class StateReducerIncrementalGenerator : IIncrementalGenerator
         if (type is INamedTypeSymbol namedType && namedType.IsGenericType)
         {
             var originalDef = namedType.OriginalDefinition;
-            if ((readOnlyDict is not null && originalDef.Equals(readOnlyDict, SymbolEqualityComparer.Default))
-                || (dict is not null && originalDef.Equals(dict, SymbolEqualityComparer.Default)))
+            if ((wellKnownTypes.ReadOnlyDictT is not null && originalDef.Equals(wellKnownTypes.ReadOnlyDictT, SymbolEqualityComparer.Default))
+                || (wellKnownTypes.DictT is not null && originalDef.Equals(wellKnownTypes.DictT, SymbolEqualityComparer.Default)))
             {
                 return true;
             }
@@ -227,8 +226,41 @@ public sealed class StateReducerIncrementalGenerator : IIncrementalGenerator
 
         // Check if type implements the dictionary interface
         return type.AllInterfaces.Any(i =>
-            (readOnlyDict is not null && i.OriginalDefinition.Equals(readOnlyDict, SymbolEqualityComparer.Default))
-            || (dict is not null && i.OriginalDefinition.Equals(dict, SymbolEqualityComparer.Default)));
+            (wellKnownTypes.ReadOnlyDictT is not null && i.OriginalDefinition.Equals(wellKnownTypes.ReadOnlyDictT, SymbolEqualityComparer.Default))
+            || (wellKnownTypes.DictT is not null && i.OriginalDefinition.Equals(wellKnownTypes.DictT, SymbolEqualityComparer.Default)));
+    }
+
+    /// <summary>
+    /// Caches well-known type symbols from the compilation to avoid repeated lookups.
+    /// </summary>
+    private sealed class WellKnownTypes
+    {
+        /// <summary>
+        /// Gets the IEnumerable{T} type symbol.
+        /// </summary>
+        public INamedTypeSymbol? EnumerableT { get; init; }
+
+        /// <summary>
+        /// Gets the IReadOnlyDictionary{TKey, TValue} type symbol.
+        /// </summary>
+        public INamedTypeSymbol? ReadOnlyDictT { get; init; }
+
+        /// <summary>
+        /// Gets the IDictionary{TKey, TValue} type symbol.
+        /// </summary>
+        public INamedTypeSymbol? DictT { get; init; }
+
+        /// <summary>
+        /// Creates a new <see cref="WellKnownTypes"/> instance from the compilation.
+        /// </summary>
+        /// <param name="compilation">The compilation to extract type symbols from.</param>
+        /// <returns>A new <see cref="WellKnownTypes"/> instance with cached type symbols.</returns>
+        public static WellKnownTypes FromCompilation(Compilation compilation) => new()
+        {
+            EnumerableT = compilation.GetTypeByMetadataName("System.Collections.Generic.IEnumerable`1"),
+            ReadOnlyDictT = compilation.GetTypeByMetadataName("System.Collections.Generic.IReadOnlyDictionary`2"),
+            DictT = compilation.GetTypeByMetadataName("System.Collections.Generic.IDictionary`2"),
+        };
     }
 
     private static Location GetPropertyLocation(IPropertySymbol property)
