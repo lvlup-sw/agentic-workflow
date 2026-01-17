@@ -41,7 +41,7 @@ public sealed class InMemoryStepExecutionLedger : IStepExecutionLedger
     /// <exception cref="ArgumentException">
     /// Thrown when <paramref name="stepName"/> or <paramref name="inputHash"/> is null or whitespace.
     /// </exception>
-    public Task<TResult?> TryGetCachedResultAsync<TResult>(
+    public ValueTask<TResult?> TryGetCachedResultAsync<TResult>(
         string stepName,
         string inputHash,
         CancellationToken cancellationToken)
@@ -54,18 +54,19 @@ public sealed class InMemoryStepExecutionLedger : IStepExecutionLedger
 
         if (!_cache.TryGetValue(key, out var entry))
         {
-            return Task.FromResult<TResult?>(null);
+            // Return default ValueTask without allocation
+            return default;
         }
 
         // Check TTL expiration
         if (entry.ExpiresAt.HasValue && _timeProvider.GetUtcNow() > entry.ExpiresAt.Value)
         {
             _cache.TryRemove(key, out _);
-            return Task.FromResult<TResult?>(null);
+            return default;
         }
 
         var result = JsonSerializer.Deserialize<TResult>(entry.Json);
-        return Task.FromResult(result);
+        return new ValueTask<TResult?>(result);
     }
 
     /// <inheritdoc/>

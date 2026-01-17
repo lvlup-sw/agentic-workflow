@@ -36,7 +36,12 @@ public interface IStepExecutionLedger
     /// <exception cref="ArgumentException">
     /// Thrown when <paramref name="stepName"/> or <paramref name="inputHash"/> is null or whitespace.
     /// </exception>
-    Task<TResult?> TryGetCachedResultAsync<TResult>(
+    /// <remarks>
+    /// Returns <see cref="ValueTask{TResult}"/> to avoid Task allocation for synchronous
+    /// cache lookups. Most implementations use in-memory dictionaries where the result
+    /// is available immediately.
+    /// </remarks>
+    ValueTask<TResult?> TryGetCachedResultAsync<TResult>(
         string stepName,
         string inputHash,
         CancellationToken cancellationToken)
