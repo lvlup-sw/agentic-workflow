@@ -508,6 +508,521 @@ public sealed class ThompsonSamplingSelectorTests
         await Assert.That(result.IsSuccess).IsTrue();
         await Assert.That(context.AvailableAgents).Contains(result.Value.SelectedAgentId);
     }
+
+    // =============================================================================
+    // I. Constructor and Parameter Validation Tests
+    // =============================================================================
+
+    /// <summary>
+    /// Verifies that constructor throws when beliefStore is null.
+    /// </summary>
+    [Test]
+    public async Task Constructor_NullBeliefStore_ThrowsArgumentNullException()
+    {
+        // Act & Assert
+        await Assert.That(() => new ThompsonSamplingAgentSelector(null!))
+            .Throws<ArgumentNullException>();
+    }
+
+    /// <summary>
+    /// Verifies that SelectAgentAsync throws when context is null.
+    /// </summary>
+    [Test]
+    public async Task SelectAgentAsync_NullContext_ThrowsArgumentNullException()
+    {
+        // Arrange
+        var beliefStore = new InMemoryBeliefStore();
+        var selector = new ThompsonSamplingAgentSelector(beliefStore, randomSeed: 42);
+
+        // Act & Assert
+        await Assert.That(() => selector.SelectAgentAsync(null!))
+            .Throws<ArgumentNullException>();
+    }
+
+    /// <summary>
+    /// Verifies that RecordOutcomeAsync throws when agentId is null.
+    /// </summary>
+    [Test]
+    public async Task RecordOutcomeAsync_NullAgentId_ThrowsArgumentNullException()
+    {
+        // Arrange
+        var beliefStore = new InMemoryBeliefStore();
+        var selector = new ThompsonSamplingAgentSelector(beliefStore, randomSeed: 42);
+
+        // Act & Assert
+        await Assert.That(() => selector.RecordOutcomeAsync(null!, "Category", AgentOutcome.Succeeded()))
+            .Throws<ArgumentNullException>();
+    }
+
+    /// <summary>
+    /// Verifies that RecordOutcomeAsync throws when taskCategory is null.
+    /// </summary>
+    [Test]
+    public async Task RecordOutcomeAsync_NullTaskCategory_ThrowsArgumentNullException()
+    {
+        // Arrange
+        var beliefStore = new InMemoryBeliefStore();
+        var selector = new ThompsonSamplingAgentSelector(beliefStore, randomSeed: 42);
+
+        // Act & Assert
+        await Assert.That(() => selector.RecordOutcomeAsync("agent-1", null!, AgentOutcome.Succeeded()))
+            .Throws<ArgumentNullException>();
+    }
+
+    /// <summary>
+    /// Verifies that RecordOutcomeAsync throws when outcome is null.
+    /// </summary>
+    [Test]
+    public async Task RecordOutcomeAsync_NullOutcome_ThrowsArgumentNullException()
+    {
+        // Arrange
+        var beliefStore = new InMemoryBeliefStore();
+        var selector = new ThompsonSamplingAgentSelector(beliefStore, randomSeed: 42);
+
+        // Act & Assert
+        await Assert.That(() => selector.RecordOutcomeAsync("agent-1", "Category", null!))
+            .Throws<ArgumentNullException>();
+    }
+
+    // =============================================================================
+    // J. Belief Fetch Failure Scenarios
+    // =============================================================================
+
+    /// <summary>
+    /// Verifies that SelectAgentAsync uses default prior when belief fetch fails.
+    /// </summary>
+    [Test]
+    public async Task SelectAgentAsync_BeliefFetchFails_UsesPriorBelief()
+    {
+        // Arrange
+        var failingStore = new FailingBeliefStore();
+        var selector = new ThompsonSamplingAgentSelector(failingStore, randomSeed: 42);
+
+        var context = new AgentSelectionContext
+        {
+            WorkflowId = Guid.NewGuid(),
+            StepName = "TestStep",
+            TaskDescription = "Test task",
+            AvailableAgents = ["agent-1", "agent-2"],
+        };
+
+        // Act
+        var result = await selector.SelectAgentAsync(context).ConfigureAwait(false);
+
+        // Assert - Should still succeed using default prior beliefs
+        await Assert.That(result.IsSuccess).IsTrue();
+        await Assert.That(context.AvailableAgents).Contains(result.Value.SelectedAgentId);
+        // With default priors, confidence should be 0 (no observations)
+        await Assert.That(result.Value.SelectionConfidence).IsEqualTo(0.0);
+    }
+
+    /// <summary>
+    /// Verifies that SelectAgentAsync handles partial belief fetch failures gracefully.
+    /// </summary>
+    [Test]
+    public async Task SelectAgentAsync_PartialBeliefFetchFailure_UsesAvailableBeliefsAndPriors()
+    {
+        // Arrange
+        var partialFailStore = new PartialFailingBeliefStore("agent-2");
+        var selector = new ThompsonSamplingAgentSelector(partialFailStore, randomSeed: 42);
+
+        var context = new AgentSelectionContext
+        {
+            WorkflowId = Guid.NewGuid(),
+            StepName = "TestStep",
+            TaskDescription = "Test task",
+            AvailableAgents = ["agent-1", "agent-2", "agent-3"],
+        };
+
+        // Act
+        var result = await selector.SelectAgentAsync(context).ConfigureAwait(false);
+
+        // Assert - Should still succeed, mixing real beliefs with default priors
+        await Assert.That(result.IsSuccess).IsTrue();
+        await Assert.That(context.AvailableAgents).Contains(result.Value.SelectedAgentId);
+    }
+
+    // =============================================================================
+    // K. Beta Sampling Edge Cases
+    // =============================================================================
+
+    /// <summary>
+    /// Verifies that sampled theta is valid with very high alpha (strong success bias).
+    /// </summary>
+    [Test]
+    public async Task SelectAgentAsync_VeryHighAlpha_SampledThetaNearOne()
+    {
+        // Arrange
+        var beliefStore = new InMemoryBeliefStore();
+
+        // Add many successes to create high alpha
+        for (int i = 0; i < 100; i++)
+        {
+            await beliefStore.UpdateBeliefAsync("agent-1", "General", success: true).ConfigureAwait(false);
+        }
+
+        var selector = new ThompsonSamplingAgentSelector(beliefStore, randomSeed: 42);
+
+        var context = new AgentSelectionContext
+        {
+            WorkflowId = Guid.NewGuid(),
+            StepName = "TestStep",
+            TaskDescription = "Hello world",
+            AvailableAgents = ["agent-1"],
+        };
+
+        // Act
+        var result = await selector.SelectAgentAsync(context).ConfigureAwait(false);
+
+        // Assert - Theta should be high (near 1) with many successes
+        await Assert.That(result.Value.SampledTheta).IsGreaterThan(0.8);
+    }
+
+    /// <summary>
+    /// Verifies that sampled theta is valid with very high beta (strong failure bias).
+    /// </summary>
+    [Test]
+    public async Task SelectAgentAsync_VeryHighBeta_SampledThetaNearZero()
+    {
+        // Arrange
+        var beliefStore = new InMemoryBeliefStore();
+
+        // Add many failures to create high beta
+        for (int i = 0; i < 100; i++)
+        {
+            await beliefStore.UpdateBeliefAsync("agent-1", "General", success: false).ConfigureAwait(false);
+        }
+
+        var selector = new ThompsonSamplingAgentSelector(beliefStore, randomSeed: 42);
+
+        var context = new AgentSelectionContext
+        {
+            WorkflowId = Guid.NewGuid(),
+            StepName = "TestStep",
+            TaskDescription = "Hello world",
+            AvailableAgents = ["agent-1"],
+        };
+
+        // Act
+        var result = await selector.SelectAgentAsync(context).ConfigureAwait(false);
+
+        // Assert - Theta should be low (near 0) with many failures
+        await Assert.That(result.Value.SampledTheta).IsLessThan(0.2);
+    }
+
+    /// <summary>
+    /// Verifies that sampling works correctly across multiple iterations with extreme alpha values.
+    /// </summary>
+    [Test]
+    public async Task SelectAgentAsync_ExtremeBelief_SampledThetaAlwaysInValidRange()
+    {
+        // Arrange
+        var beliefStore = new InMemoryBeliefStore();
+
+        // Create extreme beliefs
+        for (int i = 0; i < 200; i++)
+        {
+            await beliefStore.UpdateBeliefAsync("agent-1", "General", success: true).ConfigureAwait(false);
+        }
+
+        var context = new AgentSelectionContext
+        {
+            WorkflowId = Guid.NewGuid(),
+            StepName = "TestStep",
+            TaskDescription = "Hello world",
+            AvailableAgents = ["agent-1"],
+        };
+
+        // Act - Run multiple times with different seeds
+        for (int seed = 0; seed < 50; seed++)
+        {
+            var selector = new ThompsonSamplingAgentSelector(beliefStore, randomSeed: seed);
+            var result = await selector.SelectAgentAsync(context).ConfigureAwait(false);
+
+            // Assert - Theta must always be in valid range
+            await Assert.That(result.Value.SampledTheta).IsGreaterThanOrEqualTo(0.0);
+            await Assert.That(result.Value.SampledTheta).IsLessThanOrEqualTo(1.0);
+        }
+    }
+
+    // =============================================================================
+    // L. Single Candidate Edge Cases
+    // =============================================================================
+
+    /// <summary>
+    /// Verifies that single candidate selection works correctly.
+    /// </summary>
+    [Test]
+    public async Task SelectAgentAsync_SingleCandidate_SelectsThatCandidate()
+    {
+        // Arrange
+        var beliefStore = new InMemoryBeliefStore();
+        var selector = new ThompsonSamplingAgentSelector(beliefStore, randomSeed: 42);
+
+        var context = new AgentSelectionContext
+        {
+            WorkflowId = Guid.NewGuid(),
+            StepName = "TestStep",
+            TaskDescription = "Test task",
+            AvailableAgents = ["only-agent"],
+        };
+
+        // Act
+        var result = await selector.SelectAgentAsync(context).ConfigureAwait(false);
+
+        // Assert
+        await Assert.That(result.IsSuccess).IsTrue();
+        await Assert.That(result.Value.SelectedAgentId).IsEqualTo("only-agent");
+    }
+
+    /// <summary>
+    /// Verifies that single candidate with prior belief maintains correct theta range.
+    /// </summary>
+    [Test]
+    public async Task SelectAgentAsync_SingleCandidateWithPrior_ThetaInValidRange()
+    {
+        // Arrange
+        var beliefStore = new InMemoryBeliefStore();
+
+        // Add some history
+        await beliefStore.UpdateBeliefAsync("only-agent", "General", success: true).ConfigureAwait(false);
+        await beliefStore.UpdateBeliefAsync("only-agent", "General", success: false).ConfigureAwait(false);
+
+        var selector = new ThompsonSamplingAgentSelector(beliefStore, randomSeed: 42);
+
+        var context = new AgentSelectionContext
+        {
+            WorkflowId = Guid.NewGuid(),
+            StepName = "TestStep",
+            TaskDescription = "Hello world",
+            AvailableAgents = ["only-agent"],
+        };
+
+        // Act
+        var result = await selector.SelectAgentAsync(context).ConfigureAwait(false);
+
+        // Assert
+        await Assert.That(result.IsSuccess).IsTrue();
+        await Assert.That(result.Value.SampledTheta).IsGreaterThanOrEqualTo(0.0);
+        await Assert.That(result.Value.SampledTheta).IsLessThanOrEqualTo(1.0);
+    }
+
+    // =============================================================================
+    // M. Task Category Classification Tests
+    // =============================================================================
+
+    /// <summary>
+    /// Verifies that data analysis tasks are classified correctly.
+    /// </summary>
+    [Test]
+    public async Task SelectAgentAsync_DataAnalysisTask_ClassifiesAsDataAnalysis()
+    {
+        // Arrange
+        var beliefStore = new InMemoryBeliefStore();
+        var selector = new ThompsonSamplingAgentSelector(beliefStore, randomSeed: 42);
+
+        var context = new AgentSelectionContext
+        {
+            WorkflowId = Guid.NewGuid(),
+            StepName = "TestStep",
+            TaskDescription = "Analyze the dataset and create visualizations",
+            AvailableAgents = ["agent-1"],
+        };
+
+        // Act
+        var result = await selector.SelectAgentAsync(context).ConfigureAwait(false);
+
+        // Assert
+        await Assert.That(result.Value.TaskCategory).IsEqualTo(TaskCategory.DataAnalysis);
+    }
+
+    /// <summary>
+    /// Verifies that text generation tasks are classified as text generation.
+    /// </summary>
+    [Test]
+    public async Task SelectAgentAsync_TextGenerationTask_ClassifiesAsTextGeneration()
+    {
+        // Arrange
+        var beliefStore = new InMemoryBeliefStore();
+        var selector = new ThompsonSamplingAgentSelector(beliefStore, randomSeed: 42);
+
+        var context = new AgentSelectionContext
+        {
+            WorkflowId = Guid.NewGuid(),
+            StepName = "TestStep",
+            TaskDescription = "Summarize this article for the newsletter",
+            AvailableAgents = ["agent-1"],
+        };
+
+        // Act
+        var result = await selector.SelectAgentAsync(context).ConfigureAwait(false);
+
+        // Assert
+        await Assert.That(result.Value.TaskCategory).IsEqualTo(TaskCategory.TextGeneration);
+    }
+
+    // =============================================================================
+    // N. Confidence Scaling Tests
+    // =============================================================================
+
+    /// <summary>
+    /// Verifies that confidence scales linearly with observations up to 20.
+    /// </summary>
+    [Test]
+    public async Task SelectAgentAsync_VaryingObservations_ConfidenceScalesLinearly()
+    {
+        // Arrange
+        var beliefStore = new InMemoryBeliefStore();
+
+        // Add 10 observations
+        for (int i = 0; i < 10; i++)
+        {
+            await beliefStore.UpdateBeliefAsync("agent-1", "General", success: true).ConfigureAwait(false);
+        }
+
+        var selector = new ThompsonSamplingAgentSelector(beliefStore, randomSeed: 42);
+
+        var context = new AgentSelectionContext
+        {
+            WorkflowId = Guid.NewGuid(),
+            StepName = "TestStep",
+            TaskDescription = "Hello world",
+            AvailableAgents = ["agent-1"],
+        };
+
+        // Act
+        var result = await selector.SelectAgentAsync(context).ConfigureAwait(false);
+
+        // Assert - With 10 observations, confidence should be 0.5 (10/20)
+        await Assert.That(result.Value.SelectionConfidence).IsEqualTo(0.5);
+    }
+
+    /// <summary>
+    /// Verifies that confidence is capped at 1.0 for more than 20 observations.
+    /// </summary>
+    [Test]
+    public async Task SelectAgentAsync_ManyObservations_ConfidenceCappedAtOne()
+    {
+        // Arrange
+        var beliefStore = new InMemoryBeliefStore();
+
+        // Add 50 observations (more than 20)
+        for (int i = 0; i < 50; i++)
+        {
+            await beliefStore.UpdateBeliefAsync("agent-1", "General", success: true).ConfigureAwait(false);
+        }
+
+        var selector = new ThompsonSamplingAgentSelector(beliefStore, randomSeed: 42);
+
+        var context = new AgentSelectionContext
+        {
+            WorkflowId = Guid.NewGuid(),
+            StepName = "TestStep",
+            TaskDescription = "Hello world",
+            AvailableAgents = ["agent-1"],
+        };
+
+        // Act
+        var result = await selector.SelectAgentAsync(context).ConfigureAwait(false);
+
+        // Assert - Confidence should be capped at 1.0
+        await Assert.That(result.Value.SelectionConfidence).IsEqualTo(1.0);
+    }
+}
+
+/// <summary>
+/// Test belief store that always fails GetBeliefAsync to verify fallback to priors.
+/// </summary>
+file sealed class FailingBeliefStore : IBeliefStore
+{
+    public ValueTask<Result<AgentBelief>> GetBeliefAsync(
+        string agentId,
+        string taskCategory,
+        CancellationToken cancellationToken = default)
+    {
+        return new ValueTask<Result<AgentBelief>>(
+            Result<AgentBelief>.Failure(Error.Create(
+                ErrorType.Internal,
+                "STORE_UNAVAILABLE",
+                "Belief store is unavailable")));
+    }
+
+    public ValueTask<Result<Unit>> UpdateBeliefAsync(
+        string agentId,
+        string taskCategory,
+        bool success,
+        CancellationToken cancellationToken = default)
+        => new ValueTask<Result<Unit>>(Result<Unit>.Success(Unit.Value));
+
+    public ValueTask<Result<IReadOnlyList<AgentBelief>>> GetBeliefsForAgentAsync(
+        string agentId,
+        CancellationToken cancellationToken = default)
+        => new ValueTask<Result<IReadOnlyList<AgentBelief>>>(
+            Result<IReadOnlyList<AgentBelief>>.Success(Array.Empty<AgentBelief>()));
+
+    public ValueTask<Result<IReadOnlyList<AgentBelief>>> GetBeliefsForCategoryAsync(
+        string taskCategory,
+        CancellationToken cancellationToken = default)
+        => new ValueTask<Result<IReadOnlyList<AgentBelief>>>(
+            Result<IReadOnlyList<AgentBelief>>.Success(Array.Empty<AgentBelief>()));
+
+    public ValueTask<Result<Unit>> SaveBeliefAsync(
+        AgentBelief belief,
+        CancellationToken cancellationToken = default)
+        => new ValueTask<Result<Unit>>(Result<Unit>.Success(Unit.Value));
+}
+
+/// <summary>
+/// Test belief store that fails for specific agent IDs to verify partial failure handling.
+/// </summary>
+file sealed class PartialFailingBeliefStore : IBeliefStore
+{
+    private readonly string _failingAgentId;
+    private readonly InMemoryBeliefStore _inner = new();
+
+    public PartialFailingBeliefStore(string failingAgentId)
+    {
+        _failingAgentId = failingAgentId;
+    }
+
+    public ValueTask<Result<AgentBelief>> GetBeliefAsync(
+        string agentId,
+        string taskCategory,
+        CancellationToken cancellationToken = default)
+    {
+        if (agentId == _failingAgentId)
+        {
+            return new ValueTask<Result<AgentBelief>>(
+                Result<AgentBelief>.Failure(Error.Create(
+                    ErrorType.Internal,
+                    "AGENT_UNAVAILABLE",
+                    $"Belief for agent {agentId} is unavailable")));
+        }
+
+        return _inner.GetBeliefAsync(agentId, taskCategory, cancellationToken);
+    }
+
+    public ValueTask<Result<Unit>> UpdateBeliefAsync(
+        string agentId,
+        string taskCategory,
+        bool success,
+        CancellationToken cancellationToken = default)
+        => _inner.UpdateBeliefAsync(agentId, taskCategory, success, cancellationToken);
+
+    public ValueTask<Result<IReadOnlyList<AgentBelief>>> GetBeliefsForAgentAsync(
+        string agentId,
+        CancellationToken cancellationToken = default)
+        => _inner.GetBeliefsForAgentAsync(agentId, cancellationToken);
+
+    public ValueTask<Result<IReadOnlyList<AgentBelief>>> GetBeliefsForCategoryAsync(
+        string taskCategory,
+        CancellationToken cancellationToken = default)
+        => _inner.GetBeliefsForCategoryAsync(taskCategory, cancellationToken);
+
+    public ValueTask<Result<Unit>> SaveBeliefAsync(
+        AgentBelief belief,
+        CancellationToken cancellationToken = default)
+        => _inner.SaveBeliefAsync(belief, cancellationToken);
 }
 
 /// <summary>
