@@ -5,6 +5,7 @@
 // =============================================================================
 
 using Agentic.Workflow.Infrastructure.ExecutionLedgers;
+using MemoryPack;
 using Microsoft.Extensions.Time.Testing;
 
 namespace Agentic.Workflow.Infrastructure.Tests.ExecutionLedgers;
@@ -17,7 +18,7 @@ namespace Agentic.Workflow.Infrastructure.Tests.ExecutionLedgers;
 /// This implementation is suitable for testing and development scenarios.
 /// </remarks>
 [Property("Category", "Unit")]
-public sealed class InMemoryStepExecutionLedgerTests
+public sealed partial class InMemoryStepExecutionLedgerTests
 {
     // =========================================================================
     // A. TryGetCachedResultAsync Tests
@@ -50,7 +51,7 @@ public sealed class InMemoryStepExecutionLedgerTests
     {
         // Arrange
         var ledger = CreateLedger();
-        var expected = new TestResult { Value = "cached-value" };
+        var expected = new TestResult("cached-value");
         await ledger.CacheResultAsync(
             "step-name",
             "input-hash",
@@ -119,8 +120,8 @@ public sealed class InMemoryStepExecutionLedgerTests
     {
         // Arrange
         var ledger = CreateLedger();
-        var result1 = new TestResult { Value = "result-1" };
-        var result2 = new TestResult { Value = "result-2" };
+        var result1 = new TestResult("result-1");
+        var result2 = new TestResult("result-2");
 
         await ledger.CacheResultAsync("step-1", "hash", result1, null, CancellationToken.None).ConfigureAwait(false);
         await ledger.CacheResultAsync("step-2", "hash", result2, null, CancellationToken.None).ConfigureAwait(false);
@@ -146,7 +147,7 @@ public sealed class InMemoryStepExecutionLedgerTests
     {
         // Arrange
         var ledger = CreateLedger();
-        var result = new TestResult { Value = "test-value" };
+        var result = new TestResult("test-value");
 
         // Act
         await ledger.CacheResultAsync(
@@ -177,7 +178,7 @@ public sealed class InMemoryStepExecutionLedgerTests
     {
         // Arrange
         var ledger = CreateLedger();
-        var result = new TestResult { Value = "test-value" };
+        var result = new TestResult("test-value");
 
         // Act & Assert
         await Assert.That(() => ledger.CacheResultAsync(
@@ -201,7 +202,7 @@ public sealed class InMemoryStepExecutionLedgerTests
     {
         // Arrange
         var ledger = CreateLedger();
-        var result = new TestResult { Value = "test-value" };
+        var result = new TestResult("test-value");
 
         // Act & Assert
         await Assert.That(() => ledger.CacheResultAsync(
@@ -242,8 +243,8 @@ public sealed class InMemoryStepExecutionLedgerTests
     {
         // Arrange
         var ledger = CreateLedger();
-        var result1 = new TestResult { Value = "first" };
-        var result2 = new TestResult { Value = "second" };
+        var result1 = new TestResult("first");
+        var result2 = new TestResult("second");
 
         await ledger.CacheResultAsync("step", "hash", result1, null, CancellationToken.None).ConfigureAwait(false);
 
@@ -264,7 +265,7 @@ public sealed class InMemoryStepExecutionLedgerTests
         // Arrange
         var timeProvider = new FakeTimeProvider();
         var ledger = CreateLedger(timeProvider);
-        var result = new TestResult { Value = "test-value" };
+        var result = new TestResult("test-value");
         var ttl = TimeSpan.FromMinutes(5);
 
         await ledger.CacheResultAsync("step", "hash", result, ttl, CancellationToken.None).ConfigureAwait(false);
@@ -290,7 +291,7 @@ public sealed class InMemoryStepExecutionLedgerTests
     {
         // Arrange
         var ledger = CreateLedger();
-        var input = new TestInput { Id = 1, Name = "test" };
+        var input = new TestInput(1, "test");
 
         // Act
         var hash1 = ledger.ComputeInputHash(input);
@@ -308,8 +309,8 @@ public sealed class InMemoryStepExecutionLedgerTests
     {
         // Arrange
         var ledger = CreateLedger();
-        var input1 = new TestInput { Id = 1, Name = "test" };
-        var input2 = new TestInput { Id = 2, Name = "test" };
+        var input1 = new TestInput(1, "test");
+        var input2 = new TestInput(2, "test");
 
         // Act
         var hash1 = ledger.ComputeInputHash(input1);
@@ -342,7 +343,7 @@ public sealed class InMemoryStepExecutionLedgerTests
     {
         // Arrange
         var ledger = CreateLedger();
-        var input = new TestInput { Id = 1, Name = "test" };
+        var input = new TestInput(1, "test");
 
         // Act
         var hash = ledger.ComputeInputHash(input);
@@ -370,7 +371,7 @@ public sealed class InMemoryStepExecutionLedgerTests
     {
         // Arrange
         var ledger = CreateLedger();
-        var result = new TestResult { Value = "test-value" };
+        var result = new TestResult("test-value");
         await ledger.CacheResultAsync("step", "hash", result, null, CancellationToken.None).ConfigureAwait(false);
 
         // Act - Get the method return type to verify it's ValueTask
@@ -409,7 +410,7 @@ public sealed class InMemoryStepExecutionLedgerTests
     {
         // Arrange
         var ledger = CreateLedger();
-        var expected = new TestResult { Value = "cached-value" };
+        var expected = new TestResult("cached-value");
         await ledger.CacheResultAsync("step", "hash", expected, null, CancellationToken.None).ConfigureAwait(false);
 
         // Act
@@ -435,8 +436,8 @@ public sealed class InMemoryStepExecutionLedgerTests
     {
         // Arrange
         var ledger = CreateLedger();
-        var input = new TestInput { Id = 42, Name = "workflow-step" };
-        var result = new TestResult { Value = "computed-result" };
+        var input = new TestInput(42, "workflow-step");
+        var result = new TestResult("computed-result");
 
         // Act
         var inputHash = ledger.ComputeInputHash(input);
@@ -464,27 +465,12 @@ public sealed class InMemoryStepExecutionLedgerTests
     /// <summary>
     /// Test result for unit tests.
     /// </summary>
-    private sealed class TestResult
-    {
-        /// <summary>
-        /// Gets or initializes the value.
-        /// </summary>
-        public string Value { get; init; } = string.Empty;
-    }
+    [MemoryPackable]
+    private sealed partial record TestResult(string Value);
 
     /// <summary>
     /// Test input for hash computation tests.
     /// </summary>
-    private sealed class TestInput
-    {
-        /// <summary>
-        /// Gets or initializes the ID.
-        /// </summary>
-        public int Id { get; init; }
-
-        /// <summary>
-        /// Gets or initializes the name.
-        /// </summary>
-        public string Name { get; init; } = string.Empty;
-    }
+    [MemoryPackable]
+    private sealed partial record TestInput(int Id, string Name);
 }
