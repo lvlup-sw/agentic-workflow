@@ -4,6 +4,7 @@
 // </copyright>
 // =============================================================================
 
+using BitFaster.Caching.Lru;
 using MemoryPack;
 
 namespace Agentic.Workflow.Infrastructure.ExecutionLedgers;
@@ -13,30 +14,49 @@ namespace Agentic.Workflow.Infrastructure.ExecutionLedgers;
 /// </summary>
 /// <remarks>
 /// <para>
-/// This implementation stores cached step results in memory using a concurrent dictionary.
+/// This implementation stores cached step results in memory using either a
+/// <see cref="ConcurrentDictionary{TKey, TValue}"/> or BitFaster's <see cref="ConcurrentLru{K, V}"/>.
 /// It is suitable for testing, development, and single-process scenarios.
 /// </para>
 /// <para>
 /// For distributed scenarios, use a Redis or database-backed implementation.
 /// </para>
 /// <list type="bullet">
-///   <item><description>Thread-safe via <see cref="ConcurrentDictionary{TKey, TValue}"/></description></item>
+///   <item><description>Thread-safe via <see cref="ConcurrentDictionary{TKey, TValue}"/> or <see cref="ConcurrentLru{K, V}"/></description></item>
 ///   <item><description>Supports time-based expiration via <see cref="TimeProvider"/></description></item>
 ///   <item><description>Uses SHA256 for deterministic input hashing</description></item>
+///   <item><description>Optional bounded capacity with LRU eviction via BitFaster</description></item>
 /// </list>
 /// </remarks>
 public sealed class InMemoryStepExecutionLedger : IStepExecutionLedger
 {
-    private readonly ConcurrentDictionary<string, CacheEntry> _cache = new();
+    private readonly ICacheStore _cacheStore;
     private readonly TimeProvider _timeProvider;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="InMemoryStepExecutionLedger"/> class.
+    /// Initializes a new instance of the <see cref="InMemoryStepExecutionLedger"/> class
+    /// with default settings using <see cref="ConcurrentDictionary{TKey, TValue}"/>.
     /// </summary>
     /// <param name="timeProvider">The time provider for TTL calculations.</param>
     public InMemoryStepExecutionLedger(TimeProvider timeProvider)
+        : this(timeProvider, null)
+    {
+    }
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="InMemoryStepExecutionLedger"/> class
+    /// with configurable cache options.
+    /// </summary>
+    /// <param name="timeProvider">The time provider for TTL calculations.</param>
+    /// <param name="options">Optional configuration options for cache behavior.</param>
+    public InMemoryStepExecutionLedger(TimeProvider timeProvider, IOptions<StepExecutionLedgerOptions>? options)
     {
         _timeProvider = timeProvider;
+
+        var ledgerOptions = options?.Value ?? new StepExecutionLedgerOptions();
+        _cacheStore = ledgerOptions.UseBitFasterCache
+            ? new BitFasterCacheStore(ledgerOptions.CacheCapacity)
+            : new DictionaryCacheStore();
     }
 
     /// <inheritdoc/>
@@ -54,7 +74,7 @@ public sealed class InMemoryStepExecutionLedger : IStepExecutionLedger
 
         var key = BuildCacheKey(stepName, inputHash);
 
-        if (!_cache.TryGetValue(key, out var entry))
+        if (!_cacheStore.TryGetValue(key, out var entry))
         {
             // Return default ValueTask without allocation
             return default;
@@ -63,7 +83,7 @@ public sealed class InMemoryStepExecutionLedger : IStepExecutionLedger
         // Check TTL expiration
         if (entry.ExpiresAt.HasValue && _timeProvider.GetUtcNow() > entry.ExpiresAt.Value)
         {
-            _cache.TryRemove(key, out _);
+            _cacheStore.TryRemove(key);
             return default;
         }
 
@@ -98,7 +118,7 @@ public sealed class InMemoryStepExecutionLedger : IStepExecutionLedger
             : null;
 
         var entry = new CacheEntry(data, expiresAt);
-        _cache[key] = entry;
+        _cacheStore.AddOrUpdate(key, entry);
 
         return Task.CompletedTask;
     }
@@ -125,5 +145,102 @@ public sealed class InMemoryStepExecutionLedger : IStepExecutionLedger
     private static string BuildCacheKey(string stepName, string inputHash)
         => $"{stepName}:{inputHash}";
 
-    private sealed record CacheEntry(byte[] Data, DateTimeOffset? ExpiresAt);
+    /// <summary>
+    /// Cache entry containing serialized data and optional expiration time.
+    /// </summary>
+    /// <param name="Data">The serialized byte array value.</param>
+    /// <param name="ExpiresAt">The optional expiration time.</param>
+    internal sealed record CacheEntry(byte[] Data, DateTimeOffset? ExpiresAt);
+
+    /// <summary>
+    /// Interface for cache storage abstraction.
+    /// </summary>
+    private interface ICacheStore
+    {
+        /// <summary>
+        /// Tries to get a value from the cache.
+        /// </summary>
+        /// <param name="key">The cache key.</param>
+        /// <param name="entry">The cache entry if found.</param>
+        /// <returns><c>true</c> if found; otherwise, <c>false</c>.</returns>
+        bool TryGetValue(string key, out CacheEntry entry);
+
+        /// <summary>
+        /// Adds or updates a value in the cache.
+        /// </summary>
+        /// <param name="key">The cache key.</param>
+        /// <param name="entry">The cache entry to store.</param>
+        void AddOrUpdate(string key, CacheEntry entry);
+
+        /// <summary>
+        /// Tries to remove a value from the cache.
+        /// </summary>
+        /// <param name="key">The cache key.</param>
+        /// <returns><c>true</c> if removed; otherwise, <c>false</c>.</returns>
+        bool TryRemove(string key);
+    }
+
+    /// <summary>
+    /// Cache store implementation using <see cref="ConcurrentDictionary{TKey, TValue}"/>.
+    /// </summary>
+    private sealed class DictionaryCacheStore : ICacheStore
+    {
+        private readonly ConcurrentDictionary<string, CacheEntry> _cache = new();
+
+        /// <inheritdoc/>
+        public bool TryGetValue(string key, out CacheEntry entry)
+        {
+            return _cache.TryGetValue(key, out entry!);
+        }
+
+        /// <inheritdoc/>
+        public void AddOrUpdate(string key, CacheEntry entry)
+        {
+            _cache[key] = entry;
+        }
+
+        /// <inheritdoc/>
+        public bool TryRemove(string key)
+        {
+            return _cache.TryRemove(key, out _);
+        }
+    }
+
+    /// <summary>
+    /// Cache store implementation using BitFaster's <see cref="ConcurrentLru{K, V}"/>.
+    /// </summary>
+    /// <remarks>
+    /// Provides bounded capacity with LRU eviction for high-throughput scenarios.
+    /// </remarks>
+    private sealed class BitFasterCacheStore : ICacheStore
+    {
+        private readonly ConcurrentLru<string, CacheEntry> _cache;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="BitFasterCacheStore"/> class.
+        /// </summary>
+        /// <param name="capacity">The maximum capacity of the cache.</param>
+        public BitFasterCacheStore(int capacity)
+        {
+            _cache = new ConcurrentLru<string, CacheEntry>(capacity);
+        }
+
+        /// <inheritdoc/>
+        public bool TryGetValue(string key, out CacheEntry entry)
+        {
+            return _cache.TryGet(key, out entry!);
+        }
+
+        /// <inheritdoc/>
+        public void AddOrUpdate(string key, CacheEntry entry)
+        {
+            _cache.AddOrUpdate(key, entry);
+        }
+
+        /// <inheritdoc/>
+        public bool TryRemove(string key)
+        {
+            return _cache.TryRemove(key);
+        }
+    }
 }
