@@ -18,7 +18,7 @@ namespace Agentic.Workflow.Infrastructure.Tests.ExecutionLedgers;
 /// for high-performance caching scenarios with bounded capacity.
 /// </remarks>
 [Property("Category", "Unit")]
-public sealed class StepExecutionLedgerBitFasterTests
+public sealed partial class StepExecutionLedgerBitFasterTests
 {
     // =========================================================================
     // A. BitFaster Configuration Tests
