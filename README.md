@@ -15,6 +15,29 @@
 - [Reference](https://lvlup-sw.github.io/agentic-workflow/reference/) - API documentation
 - [Examples](https://lvlup-sw.github.io/agentic-workflow/examples/) - Real-world workflows
 
+## Why Agentic.Workflow?
+
+Building AI-powered automation? You need more than just "call the LLM":
+
+- **Content pipelines** need human approval gates and rollback
+- **Multi-model systems** need intelligent routing that learns
+- **Agentic coding** needs iteration loops with guardrails
+
+Agentic.Workflow provides these patterns out of the box, with complete audit trails.
+
+### Try the Samples
+
+```bash
+# Content publishing with approval workflow
+dotnet run --project samples/ContentPipeline
+
+# Intelligent model selection with Thompson Sampling
+dotnet run --project samples/MultiModelRouter
+
+# Iterative code generation with human checkpoints
+dotnet run --project samples/AgenticCoder
+```
+
 ## The Problem
 
 AI agents are inherently probabilistic—given the same input, an LLM may produce different outputs. Current solutions force an unsatisfying choice:

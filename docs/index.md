@@ -27,3 +27,31 @@ features:
     details: Built from the ground up for AI agents with first-class support for LLMs, RAG, and tool orchestration.
     icon: 🤖
 ---
+
+<div class="samples-section">
+
+## See It In Action
+
+Real-world sample applications demonstrating core capabilities:
+
+<div class="sample-cards">
+  <div class="sample-card">
+    <h3>Content Pipeline</h3>
+    <p>Draft, Review, Approve, Publish</p>
+    <span class="feature-tag">Human-in-loop + Compensation</span>
+  </div>
+  <div class="sample-card">
+    <h3>Multi-Model Router</h3>
+    <p>Intelligent LLM selection that learns</p>
+    <span class="feature-tag">Thompson Sampling</span>
+  </div>
+  <div class="sample-card">
+    <h3>Agentic Coder</h3>
+    <p>Plan, Code, Test, Iterate</p>
+    <span class="feature-tag">Loops + Checkpoints</span>
+  </div>
+</div>
+
+[View All Samples](/examples/#sample-applications)
+
+</div>
