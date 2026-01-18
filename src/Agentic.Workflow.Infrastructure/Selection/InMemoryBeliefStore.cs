@@ -43,13 +43,25 @@ public sealed class InMemoryBeliefStore : IBeliefStore
 
     /// <summary>
     /// Secondary index: maps agent ID to set of composite keys for that agent's beliefs.
+    /// Uses HashSet with locking for memory efficiency (eliminates byte sentinel overhead).
     /// </summary>
-    private readonly ConcurrentDictionary<string, ConcurrentDictionary<string, byte>> _byAgent = new();
+    private readonly ConcurrentDictionary<string, HashSet<string>> _byAgent = new();
 
     /// <summary>
     /// Secondary index: maps task category to set of composite keys for that category's beliefs.
+    /// Uses HashSet with locking for memory efficiency (eliminates byte sentinel overhead).
     /// </summary>
-    private readonly ConcurrentDictionary<string, ConcurrentDictionary<string, byte>> _byCategory = new();
+    private readonly ConcurrentDictionary<string, HashSet<string>> _byCategory = new();
+
+    /// <summary>
+    /// Lock object for synchronizing access to HashSet instances in _byAgent.
+    /// </summary>
+    private readonly object _agentLock = new();
+
+    /// <summary>
+    /// Lock object for synchronizing access to HashSet instances in _byCategory.
+    /// </summary>
+    private readonly object _categoryLock = new();
 
     /// <inheritdoc/>
     public Task<Result<AgentBelief>> GetBeliefAsync(
@@ -108,8 +120,13 @@ public sealed class InMemoryBeliefStore : IBeliefStore
                 Array.Empty<AgentBelief>()));
         }
 
-        var keys = keySet.Keys;
-        var beliefs = new List<AgentBelief>(keys.Count);
+        string[] keys;
+        lock (_agentLock)
+        {
+            keys = keySet.ToArray();
+        }
+
+        var beliefs = new List<AgentBelief>(keys.Length);
         foreach (var key in keys)
         {
             if (_beliefs.TryGetValue(key, out var belief))
@@ -134,8 +151,13 @@ public sealed class InMemoryBeliefStore : IBeliefStore
                 Array.Empty<AgentBelief>()));
         }
 
-        var keys = keySet.Keys;
-        var beliefs = new List<AgentBelief>(keys.Count);
+        string[] keys;
+        lock (_categoryLock)
+        {
+            keys = keySet.ToArray();
+        }
+
+        var beliefs = new List<AgentBelief>(keys.Length);
         foreach (var key in keys)
         {
             if (_beliefs.TryGetValue(key, out var belief))
@@ -180,11 +202,17 @@ public sealed class InMemoryBeliefStore : IBeliefStore
     /// <param name="key">The composite key.</param>
     private void AddToIndices(string agentId, string taskCategory, string key)
     {
-        var agentKeys = _byAgent.GetOrAdd(agentId, _ => new ConcurrentDictionary<string, byte>());
-        agentKeys.TryAdd(key, 0);
+        var agentKeys = _byAgent.GetOrAdd(agentId, _ => new HashSet<string>());
+        lock (_agentLock)
+        {
+            agentKeys.Add(key);
+        }
 
-        var categoryKeys = _byCategory.GetOrAdd(taskCategory, _ => new ConcurrentDictionary<string, byte>());
-        categoryKeys.TryAdd(key, 0);
+        var categoryKeys = _byCategory.GetOrAdd(taskCategory, _ => new HashSet<string>());
+        lock (_categoryLock)
+        {
+            categoryKeys.Add(key);
+        }
     }
 
     /// <summary>
