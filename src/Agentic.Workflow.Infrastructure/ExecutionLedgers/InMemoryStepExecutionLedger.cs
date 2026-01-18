@@ -4,6 +4,8 @@
 // </copyright>
 // =============================================================================
 
+using MemoryPack;
+
 namespace Agentic.Workflow.Infrastructure.ExecutionLedgers;
 
 /// <summary>
@@ -65,7 +67,7 @@ public sealed class InMemoryStepExecutionLedger : IStepExecutionLedger
             return default;
         }
 
-        var result = JsonSerializer.Deserialize<TResult>(entry.Json);
+        var result = MemoryPackSerializer.Deserialize<TResult>(entry.Data);
         return new ValueTask<TResult?>(result);
     }
 
@@ -89,13 +91,13 @@ public sealed class InMemoryStepExecutionLedger : IStepExecutionLedger
         ArgumentNullException.ThrowIfNull(result, nameof(result));
 
         var key = BuildCacheKey(stepName, inputHash);
-        var json = JsonSerializer.Serialize(result);
+        var data = MemoryPackSerializer.Serialize(result);
 
         DateTimeOffset? expiresAt = ttl.HasValue
             ? _timeProvider.GetUtcNow().Add(ttl.Value)
             : null;
 
-        var entry = new CacheEntry(json, expiresAt);
+        var entry = new CacheEntry(data, expiresAt);
         _cache[key] = entry;
 
         return Task.CompletedTask;
@@ -106,16 +108,15 @@ public sealed class InMemoryStepExecutionLedger : IStepExecutionLedger
     /// Thrown when <paramref name="input"/> is null.
     /// </exception>
     /// <remarks>
-    /// The hash is computed by serializing the input to JSON and then
-    /// computing SHA256 hash of the UTF-8 encoded JSON bytes.
+    /// The hash is computed by serializing the input using MemoryPack and then
+    /// computing SHA256 hash of the serialized bytes.
     /// </remarks>
     public string ComputeInputHash<TInput>(TInput input)
         where TInput : class
     {
         ArgumentNullException.ThrowIfNull(input, nameof(input));
 
-        var json = JsonSerializer.Serialize(input);
-        var bytes = Encoding.UTF8.GetBytes(json);
+        var bytes = MemoryPackSerializer.Serialize(input);
         var hashBytes = SHA256.HashData(bytes);
 
         return Convert.ToHexString(hashBytes).ToLowerInvariant();
@@ -124,5 +125,5 @@ public sealed class InMemoryStepExecutionLedger : IStepExecutionLedger
     private static string BuildCacheKey(string stepName, string inputHash)
         => $"{stepName}:{inputHash}";
 
-    private sealed record CacheEntry(string Json, DateTimeOffset? ExpiresAt);
+    private sealed record CacheEntry(byte[] Data, DateTimeOffset? ExpiresAt);
 }
