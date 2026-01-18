@@ -1,0 +1,218 @@
+# =============================================================================
+# Full Benchmark Suite Workflow
+#
+# Runs the complete benchmark suite on demand. Exports results to JSON and
+# Markdown for analysis and documentation.
+# =============================================================================
+
+name: Full Benchmark Suite
+
+on:
+  workflow_dispatch:
+    inputs:
+      comparison_ref:
+        description: 'Git ref to compare against (branch, tag, or SHA)'
+        required: false
+        default: 'main'
+        type: string
+      filter:
+        description: 'Benchmark filter pattern (e.g., "*Ledger*"). Leave empty for all.'
+        required: false
+        default: ''
+        type: string
+      pr_number:
+        description: 'PR number to comment on (optional)'
+        required: false
+        default: ''
+        type: string
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout current
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+          dotnet-quality: 'preview'
+
+      - name: Restore dependencies
+        run: dotnet restore src/Agentic.Workflow.Benchmarks/Agentic.Workflow.Benchmarks.csproj
+
+      - name: Run full benchmark suite
+        run: |
+          FILTER_ARGS=()
+          if [ -n "${{ inputs.filter }}" ]; then
+            FILTER_ARGS+=(--filter "${{ inputs.filter }}")
+          fi
+
+          dotnet run -c Release --project src/Agentic.Workflow.Benchmarks -- \
+            "${FILTER_ARGS[@]}" \
+            --exporters json markdown \
+            --artifacts ./benchmark-results
+
+      - name: Generate summary
+        run: |
+          echo "## Full Benchmark Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Comparison Ref:** \`${{ inputs.comparison_ref }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Filter:** \`${{ inputs.filter || 'All benchmarks' }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ -d "./benchmark-results/results" ]; then
+            echo "### Results" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+
+            for file in ./benchmark-results/results/*.md; do
+              if [ -f "$file" ]; then
+                echo "#### $(basename "$file")" >> $GITHUB_STEP_SUMMARY
+                echo "" >> $GITHUB_STEP_SUMMARY
+                cat "$file" >> $GITHUB_STEP_SUMMARY
+                echo "" >> $GITHUB_STEP_SUMMARY
+              fi
+            done
+          else
+            echo "_No results found._" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Upload JSON results
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-json-${{ github.sha }}
+          path: ./benchmark-results/**/*.json
+          retention-days: 90
+
+      - name: Upload Markdown results
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-markdown-${{ github.sha }}
+          path: ./benchmark-results/**/*.md
+          retention-days: 90
+
+      - name: Upload full artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-full-${{ github.sha }}
+          path: ./benchmark-results/
+          retention-days: 90
+
+  compare:
+    needs: benchmark
+    if: inputs.comparison_ref != ''
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout comparison ref
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.comparison_ref }}
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+          dotnet-quality: 'preview'
+
+      - name: Restore dependencies
+        run: dotnet restore src/Agentic.Workflow.Benchmarks/Agentic.Workflow.Benchmarks.csproj
+
+      - name: Run baseline benchmarks
+        run: |
+          FILTER_ARGS=()
+          if [ -n "${{ inputs.filter }}" ]; then
+            FILTER_ARGS+=(--filter "${{ inputs.filter }}")
+          fi
+
+          dotnet run -c Release --project src/Agentic.Workflow.Benchmarks -- \
+            "${FILTER_ARGS[@]}" \
+            --exporters json \
+            --artifacts ./baseline-results
+
+      - name: Upload baseline results
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-baseline-${{ inputs.comparison_ref }}
+          path: ./baseline-results/
+          retention-days: 30
+
+      - name: Download current results
+        uses: actions/download-artifact@v4
+        with:
+          name: benchmark-json-${{ github.sha }}
+          path: ./current-results/
+
+      - name: Compare results
+        run: |
+          echo "## Benchmark Comparison" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Current:** \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Baseline:** \`${{ inputs.comparison_ref }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          # Basic comparison (detailed comparison requires custom tooling)
+          echo "### Notes" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- Download artifacts for detailed comparison" >> $GITHUB_STEP_SUMMARY
+          echo "- Use BenchmarkDotNet ResultsComparer for analysis" >> $GITHUB_STEP_SUMMARY
+          echo "- Regression threshold: 20%" >> $GITHUB_STEP_SUMMARY
+
+  comment-pr:
+    needs: benchmark
+    if: github.event.pull_request || inputs.pr_number != ''
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download results
+        uses: actions/download-artifact@v4
+        with:
+          name: benchmark-markdown-${{ github.sha }}
+          path: ./results/
+
+      - name: Comment on PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+
+            let summary = '## Full Benchmark Suite Results\n\n';
+            summary += `**Commit:** \`${{ github.sha }}\`\n\n`;
+
+            const resultsDir = './results';
+            if (fs.existsSync(resultsDir)) {
+              const files = fs.readdirSync(resultsDir, { recursive: true });
+              const mdFiles = files.filter(f => f.toString().endsWith('.md'));
+
+              if (mdFiles.length > 0) {
+                for (const file of mdFiles.slice(0, 5)) {
+                  const content = fs.readFileSync(path.join(resultsDir, file.toString()), 'utf8');
+                  summary += `### ${path.basename(file.toString())}\n\n`;
+                  summary += content.substring(0, 5000);
+                  if (content.length > 5000) {
+                    summary += '\n\n_[Truncated - see artifacts for full results]_\n';
+                  }
+                  summary += '\n\n';
+                }
+              } else {
+                summary += '_No markdown results found._\n';
+              }
+            }
+
+            summary += '\n---\n_Full benchmark suite run. See artifacts for complete data._';
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: Number('${{ inputs.pr_number }}') || context.issue.number,
+              body: summary,
+            });

@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <IsPackable>false</IsPackable>
+    <IsPublishable>false</IsPublishable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="BenchmarkDotNet" />
+    <PackageReference Include="BenchmarkDotNet.Diagnostics.Windows"
+                      Condition="$([MSBuild]::IsOSPlatform('Windows'))" />
+    <PackageReference Include="MemoryPack" />
+    <PackageReference Include="BitFaster.Caching" />
+    <PackageReference Include="CommunityToolkit.HighPerformance" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Agentic.Workflow.Infrastructure\Agentic.Workflow.Infrastructure.csproj" />
+    <ProjectReference Include="..\Agentic.Workflow.Rag\Agentic.Workflow.Rag.csproj" />
+    <ProjectReference Include="..\Agentic.Workflow\Agentic.Workflow.csproj" />
+  </ItemGroup>
+</Project>
