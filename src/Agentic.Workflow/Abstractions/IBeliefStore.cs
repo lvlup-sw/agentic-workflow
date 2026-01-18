@@ -35,10 +35,16 @@ public interface IBeliefStore
     /// The belief state if found, or a default prior if no belief exists.
     /// </returns>
     /// <remarks>
+    /// <para>
     /// This method always returns a valid belief - if no prior observations exist,
     /// it returns a default prior belief with Alpha=2, Beta=2 (uninformative prior).
+    /// </para>
+    /// <para>
+    /// Returns <see cref="ValueTask{TResult}"/> to avoid allocations when the belief
+    /// is retrieved synchronously from an in-memory cache.
+    /// </para>
     /// </remarks>
-    Task<Result<AgentBelief>> GetBeliefAsync(
+    ValueTask<Result<AgentBelief>> GetBeliefAsync(
         string agentId,
         string taskCategory,
         CancellationToken cancellationToken = default);
@@ -59,8 +65,12 @@ public interface IBeliefStore
     /// If no prior belief exists for this (agent, task category) pair, a new belief
     /// is created with default prior values before applying the update.
     /// </para>
+    /// <para>
+    /// Returns <see cref="ValueTask{TResult}"/> to avoid allocations when the update
+    /// completes synchronously against an in-memory store.
+    /// </para>
     /// </remarks>
-    Task<Result<Unit>> UpdateBeliefAsync(
+    ValueTask<Result<Unit>> UpdateBeliefAsync(
         string agentId,
         string taskCategory,
         bool success,
@@ -73,9 +83,15 @@ public interface IBeliefStore
     /// <param name="cancellationToken">Optional cancellation token.</param>
     /// <returns>A list of all beliefs for the specified agent.</returns>
     /// <remarks>
+    /// <para>
     /// Returns an empty list if no beliefs exist for the agent.
+    /// </para>
+    /// <para>
+    /// Returns <see cref="ValueTask{TResult}"/> to avoid allocations when beliefs
+    /// are retrieved synchronously from an in-memory index.
+    /// </para>
     /// </remarks>
-    Task<Result<IReadOnlyList<AgentBelief>>> GetBeliefsForAgentAsync(
+    ValueTask<Result<IReadOnlyList<AgentBelief>>> GetBeliefsForAgentAsync(
         string agentId,
         CancellationToken cancellationToken = default);
 
@@ -86,9 +102,15 @@ public interface IBeliefStore
     /// <param name="cancellationToken">Optional cancellation token.</param>
     /// <returns>A list of all beliefs for the specified task category.</returns>
     /// <remarks>
+    /// <para>
     /// Returns an empty list if no beliefs exist for the task category.
+    /// </para>
+    /// <para>
+    /// Returns <see cref="ValueTask{TResult}"/> to avoid allocations when beliefs
+    /// are retrieved synchronously from an in-memory index.
+    /// </para>
     /// </remarks>
-    Task<Result<IReadOnlyList<AgentBelief>>> GetBeliefsForCategoryAsync(
+    ValueTask<Result<IReadOnlyList<AgentBelief>>> GetBeliefsForCategoryAsync(
         string taskCategory,
         CancellationToken cancellationToken = default);
 
@@ -106,8 +128,12 @@ public interface IBeliefStore
     /// <para>
     /// If a belief already exists for the same (agent, task category) pair, it is replaced.
     /// </para>
+    /// <para>
+    /// Returns <see cref="ValueTask{TResult}"/> to avoid allocations when the save
+    /// completes synchronously against an in-memory store.
+    /// </para>
     /// </remarks>
-    Task<Result<Unit>> SaveBeliefAsync(
+    ValueTask<Result<Unit>> SaveBeliefAsync(
         AgentBelief belief,
         CancellationToken cancellationToken = default);
 }

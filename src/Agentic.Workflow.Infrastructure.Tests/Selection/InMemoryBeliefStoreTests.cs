@@ -280,8 +280,8 @@ public class InMemoryBeliefStoreTests
         var tasks = new List<Task>();
         for (int i = 0; i < iterationCount; i++)
         {
-            tasks.Add(store.UpdateBeliefAsync("agent-1", "CodeGeneration", success: true));
-            tasks.Add(store.UpdateBeliefAsync("agent-1", "CodeGeneration", success: false));
+            tasks.Add(store.UpdateBeliefAsync("agent-1", "CodeGeneration", success: true).AsTask());
+            tasks.Add(store.UpdateBeliefAsync("agent-1", "CodeGeneration", success: false).AsTask());
         }
 
         await Task.WhenAll(tasks).ConfigureAwait(false);
@@ -307,9 +307,9 @@ public class InMemoryBeliefStoreTests
         var tasks = new List<Task>();
         for (int i = 0; i < iterationCount; i++)
         {
-            tasks.Add(store.UpdateBeliefAsync("agent-1", "CodeGeneration", success: true));
-            tasks.Add(store.GetBeliefAsync("agent-1", "CodeGeneration"));
-            tasks.Add(store.GetBeliefsForAgentAsync("agent-1"));
+            tasks.Add(store.UpdateBeliefAsync("agent-1", "CodeGeneration", success: true).AsTask());
+            tasks.Add(store.GetBeliefAsync("agent-1", "CodeGeneration").AsTask());
+            tasks.Add(store.GetBeliefsForAgentAsync("agent-1").AsTask());
         }
 
         await Task.WhenAll(tasks).ConfigureAwait(false);
