@@ -73,13 +73,35 @@ public sealed class LoopDetector : ILoopDetector
         // Calculate repetition score
         var repetitionScore = CalculateRepetitionScore(recentEntries);
 
+        // Early return: Skip expensive semantic similarity when exact repetition detected
+        if (repetitionScore >= 1.0 - double.Epsilon)
+        {
+            var earlyConfidence = _options.RepetitionScoreWeight * repetitionScore;
+            return LoopDetectionResult.Detected(
+                loopType: LoopType.ExactRepetition,
+                confidence: Math.Max(earlyConfidence, _options.RecoveryThreshold),
+                strategy: LoopRecoveryStrategy.InjectVariation,
+                diagnosticMessage: $"All {recentEntries.Count} entries have identical action");
+        }
+
         // Calculate no-progress score
         var noProgressScore = CalculateNoProgressScore(recentEntries);
+
+        // Early return: Skip expensive semantic similarity when perfect no-progress detected
+        if (noProgressScore >= 1.0 - double.Epsilon)
+        {
+            var earlyConfidence = _options.TimeScoreWeight * noProgressScore;
+            return LoopDetectionResult.Detected(
+                loopType: LoopType.NoProgress,
+                confidence: Math.Max(earlyConfidence, _options.RecoveryThreshold),
+                strategy: LoopRecoveryStrategy.Decompose,
+                diagnosticMessage: $"All {recentEntries.Count} entries show no progress");
+        }
 
         // Calculate oscillation score
         var oscillationScore = CalculateOscillationScore(recentEntries);
 
-        // Calculate semantic similarity score
+        // Only compute semantic similarity if no high-confidence signal detected
         var outputs = recentEntries.Select(e => e.Output).ToList();
         var semanticScore = await _similarityCalculator
             .CalculateMaxSimilarityAsync(outputs, cancellationToken)
@@ -94,28 +116,6 @@ public sealed class LoopDetector : ILoopDetector
             + (_options.SemanticScoreWeight * semanticScore)
             + (_options.TimeScoreWeight * noProgressScore)
             + (_options.FrustrationScoreWeight * frustrationScore);
-
-        // Detect ExactRepetition when all actions are identical (highest priority for exact match)
-        if (repetitionScore >= 1.0 - double.Epsilon)
-        {
-            return LoopDetectionResult.Detected(
-                loopType: LoopType.ExactRepetition,
-                confidence: confidence,
-                strategy: LoopRecoveryStrategy.InjectVariation,
-                diagnosticMessage: $"All {recentEntries.Count} entries have identical action");
-        }
-
-        // Detect NoProgress when all entries show no progress
-        if (noProgressScore >= 1.0 - double.Epsilon)
-        {
-            // All entries have no progress - strong signal for NoProgress loop
-            var noProgressConfidence = Math.Max(confidence, _options.RecoveryThreshold);
-            return LoopDetectionResult.Detected(
-                loopType: LoopType.NoProgress,
-                confidence: noProgressConfidence,
-                strategy: LoopRecoveryStrategy.Decompose,
-                diagnosticMessage: $"All {recentEntries.Count} entries show no progress");
-        }
 
         // Detect Oscillation patterns (A-B-A-B or A-B-C-A-B-C)
         if (oscillationScore >= 0.8)
@@ -192,13 +192,8 @@ public sealed class LoopDetector : ILoopDetector
             return 0.0;
         }
 
-        // Group by action and find the most frequent
-        var actionGroups = entries
-            .GroupBy(e => e.Action)
-            .Select(g => g.Count())
-            .ToList();
-
-        var maxCount = actionGroups.Max();
+        // Group by action and find the most frequent - avoid intermediate list allocation
+        var maxCount = entries.GroupBy(e => e.Action).Max(g => g.Count());
         return (double)maxCount / entries.Count;
     }
 
@@ -268,7 +263,7 @@ public sealed class LoopDetector : ILoopDetector
         for (var i = period; i < actions.Length; i++)
         {
             comparisons++;
-            if (actions[i] == actions[i % period])
+            if (string.Equals(actions[i], actions[i % period], StringComparison.Ordinal))
             {
                 matches++;
             }

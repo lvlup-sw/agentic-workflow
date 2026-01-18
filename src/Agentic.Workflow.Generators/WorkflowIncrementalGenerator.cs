@@ -192,17 +192,28 @@ public sealed class WorkflowIncrementalGenerator : IIncrementalGenerator
         // This ensures commands and worker handlers are generated for failure handler steps
         if (failureHandlerModels.Count > 0)
         {
-            var allStepNames = new List<string>(stepNames);
-            var allStepModels = new List<StepModel>(stepModels);
-            var existingStepNames = new HashSet<string>(stepModels.Select(s => s.StepName));
+            // Estimate additional capacity needed from failure handlers
+            var estimatedAdditionalSteps = failureHandlerModels.Sum(h => h.StepNames.Count);
+            var estimatedAdditionalModels = failureHandlerModels.Sum(h => h.Steps?.Count ?? 0);
+
+            // Pre-allocate with estimated capacity to avoid reallocations
+            var allStepNames = new List<string>(stepNames.Count + estimatedAdditionalSteps);
+            allStepNames.AddRange(stepNames);
+            var allStepModels = new List<StepModel>(stepModels.Count + estimatedAdditionalModels);
+            allStepModels.AddRange(stepModels);
+
+            // Use HashSet for O(1) Contains lookups instead of O(n) List.Contains
+            var existingStepNames = new HashSet<string>(stepNames, StringComparer.Ordinal);
+            var existingStepModelNames = new HashSet<string>(stepModels.Select(s => s.StepName), StringComparer.Ordinal);
 
             foreach (var handler in failureHandlerModels)
             {
                 foreach (var handlerStep in handler.StepNames)
                 {
-                    if (!allStepNames.Contains(handlerStep))
+                    if (!existingStepNames.Contains(handlerStep))
                     {
                         allStepNames.Add(handlerStep);
+                        existingStepNames.Add(handlerStep);
                     }
                 }
 
@@ -211,10 +222,10 @@ public sealed class WorkflowIncrementalGenerator : IIncrementalGenerator
                 {
                     foreach (var handlerStepModel in handler.Steps)
                     {
-                        if (!existingStepNames.Contains(handlerStepModel.StepName))
+                        if (!existingStepModelNames.Contains(handlerStepModel.StepName))
                         {
                             allStepModels.Add(handlerStepModel);
-                            existingStepNames.Add(handlerStepModel.StepName);
+                            existingStepModelNames.Add(handlerStepModel.StepName);
                         }
                     }
                 }
@@ -227,7 +238,17 @@ public sealed class WorkflowIncrementalGenerator : IIncrementalGenerator
         // Include fork path step names and join step names in the overall step list
         if (forkModels.Count > 0)
         {
-            var allStepNames = new List<string>(stepNames);
+            // Estimate additional capacity needed from fork paths and join steps
+            var estimatedAdditionalSteps = forkModels.Sum(f =>
+                f.Paths.Sum(p => p.StepNames.Count) + (string.IsNullOrEmpty(f.JoinStepName) ? 0 : 1));
+
+            // Pre-allocate with estimated capacity to avoid reallocations
+            var allStepNames = new List<string>(stepNames.Count + estimatedAdditionalSteps);
+            allStepNames.AddRange(stepNames);
+
+            // Use HashSet for O(1) Contains lookups instead of O(n) List.Contains
+            var existingStepNames = new HashSet<string>(stepNames, StringComparer.Ordinal);
+
             foreach (var fork in forkModels)
             {
                 // Add fork path steps
@@ -235,17 +256,19 @@ public sealed class WorkflowIncrementalGenerator : IIncrementalGenerator
                 {
                     foreach (var pathStep in path.StepNames)
                     {
-                        if (!allStepNames.Contains(pathStep))
+                        if (!existingStepNames.Contains(pathStep))
                         {
                             allStepNames.Add(pathStep);
+                            existingStepNames.Add(pathStep);
                         }
                     }
                 }
 
                 // Add join step name for command generation
-                if (!string.IsNullOrEmpty(fork.JoinStepName) && !allStepNames.Contains(fork.JoinStepName))
+                if (!string.IsNullOrEmpty(fork.JoinStepName) && !existingStepNames.Contains(fork.JoinStepName))
                 {
                     allStepNames.Add(fork.JoinStepName);
+                    existingStepNames.Add(fork.JoinStepName);
                 }
             }
 
@@ -256,7 +279,18 @@ public sealed class WorkflowIncrementalGenerator : IIncrementalGenerator
         // These are steps from Branch constructs that follow RepeatUntil loops
         if (loopModels.Count > 0)
         {
-            var allStepNames = new List<string>(stepNames);
+            // Estimate additional capacity needed from loop exit branches
+            var estimatedAdditionalSteps = loopModels
+                .Where(l => l.BranchOnExit is not null)
+                .Sum(l => l.BranchOnExit!.Cases.Sum(c => c.StepNames.Count));
+
+            // Pre-allocate with estimated capacity to avoid reallocations
+            var allStepNames = new List<string>(stepNames.Count + estimatedAdditionalSteps);
+            allStepNames.AddRange(stepNames);
+
+            // Use HashSet for O(1) Contains lookups instead of O(n) List.Contains
+            var existingStepNames = new HashSet<string>(stepNames, StringComparer.Ordinal);
+
             foreach (var loop in loopModels)
             {
                 if (loop.BranchOnExit is not null)
@@ -265,9 +299,10 @@ public sealed class WorkflowIncrementalGenerator : IIncrementalGenerator
                     {
                         foreach (var branchStep in branchCase.StepNames)
                         {
-                            if (!allStepNames.Contains(branchStep))
+                            if (!existingStepNames.Contains(branchStep))
                             {
                                 allStepNames.Add(branchStep);
+                                existingStepNames.Add(branchStep);
                             }
                         }
                     }
@@ -281,9 +316,36 @@ public sealed class WorkflowIncrementalGenerator : IIncrementalGenerator
         // These are steps from OnRejection and OnTimeout handlers in AwaitApproval constructs
         if (approvalModels.Count > 0)
         {
-            var allStepNames = new List<string>(stepNames);
-            var allStepModels = new List<StepModel>(stepModels);
-            var existingStepNames = new HashSet<string>(stepModels.Select(s => s.StepName));
+            // Estimate additional capacity needed from approval rejection/escalation steps
+            static int CountApprovalSteps(IReadOnlyList<ApprovalModel>? approvals)
+            {
+                if (approvals is null)
+                {
+                    return 0;
+                }
+
+                var count = 0;
+                foreach (var approval in approvals)
+                {
+                    count += approval.RejectionSteps?.Count ?? 0;
+                    count += approval.EscalationSteps?.Count ?? 0;
+                    count += CountApprovalSteps(approval.NestedEscalationApprovals);
+                }
+
+                return count;
+            }
+
+            var estimatedAdditionalSteps = CountApprovalSteps(approvalModels);
+
+            // Pre-allocate with estimated capacity to avoid reallocations
+            var allStepNames = new List<string>(stepNames.Count + estimatedAdditionalSteps);
+            allStepNames.AddRange(stepNames);
+            var allStepModels = new List<StepModel>(stepModels.Count + estimatedAdditionalSteps);
+            allStepModels.AddRange(stepModels);
+
+            // Use HashSet for O(1) Contains lookups instead of O(n) List.Contains
+            var existingStepNamesSet = new HashSet<string>(stepNames, StringComparer.Ordinal);
+            var existingStepModelNames = new HashSet<string>(stepModels.Select(s => s.StepName), StringComparer.Ordinal);
 
             void AddApprovalSteps(IReadOnlyList<ApprovalModel>? approvals)
             {
@@ -299,15 +361,16 @@ public sealed class WorkflowIncrementalGenerator : IIncrementalGenerator
                     {
                         foreach (var step in approval.RejectionSteps)
                         {
-                            if (!allStepNames.Contains(step.StepName))
+                            if (!existingStepNamesSet.Contains(step.StepName))
                             {
                                 allStepNames.Add(step.StepName);
+                                existingStepNamesSet.Add(step.StepName);
                             }
 
-                            if (!existingStepNames.Contains(step.StepName))
+                            if (!existingStepModelNames.Contains(step.StepName))
                             {
                                 allStepModels.Add(step);
-                                existingStepNames.Add(step.StepName);
+                                existingStepModelNames.Add(step.StepName);
                             }
                         }
                     }
@@ -317,15 +380,16 @@ public sealed class WorkflowIncrementalGenerator : IIncrementalGenerator
                     {
                         foreach (var step in approval.EscalationSteps)
                         {
-                            if (!allStepNames.Contains(step.StepName))
+                            if (!existingStepNamesSet.Contains(step.StepName))
                             {
                                 allStepNames.Add(step.StepName);
+                                existingStepNamesSet.Add(step.StepName);
                             }
 
-                            if (!existingStepNames.Contains(step.StepName))
+                            if (!existingStepModelNames.Contains(step.StepName))
                             {
                                 allStepModels.Add(step);
-                                existingStepNames.Add(step.StepName);
+                                existingStepModelNames.Add(step.StepName);
                             }
                         }
                     }

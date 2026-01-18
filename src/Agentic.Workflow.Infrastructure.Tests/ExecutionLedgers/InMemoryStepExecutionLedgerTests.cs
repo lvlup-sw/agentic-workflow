@@ -82,7 +82,7 @@ public sealed class InMemoryStepExecutionLedgerTests
         var ledger = CreateLedger();
 
         // Act & Assert
-        await Assert.That(() => ledger.TryGetCachedResultAsync<TestResult>(
+        await Assert.That(async () => await ledger.TryGetCachedResultAsync<TestResult>(
             stepName!,
             "input-hash",
             CancellationToken.None))
@@ -103,7 +103,7 @@ public sealed class InMemoryStepExecutionLedgerTests
         var ledger = CreateLedger();
 
         // Act & Assert
-        await Assert.That(() => ledger.TryGetCachedResultAsync<TestResult>(
+        await Assert.That(async () => await ledger.TryGetCachedResultAsync<TestResult>(
             "step-name",
             inputHash!,
             CancellationToken.None))
@@ -353,7 +353,78 @@ public sealed class InMemoryStepExecutionLedgerTests
     }
 
     // =========================================================================
-    // D. Integration Tests
+    // D. ValueTask Optimization Tests
+    // =========================================================================
+
+    /// <summary>
+    /// Verifies that TryGetCachedResultAsync returns ValueTask to avoid Task allocations
+    /// for synchronous cache operations.
+    /// </summary>
+    /// <remarks>
+    /// This test validates the optimization where TryGetCachedResultAsync returns
+    /// ValueTask instead of Task, avoiding heap allocations for the common case
+    /// of synchronous dictionary lookups.
+    /// </remarks>
+    [Test]
+    public async Task TryGetCachedResultAsync_ReturnsValueTask()
+    {
+        // Arrange
+        var ledger = CreateLedger();
+        var result = new TestResult { Value = "test-value" };
+        await ledger.CacheResultAsync("step", "hash", result, null, CancellationToken.None).ConfigureAwait(false);
+
+        // Act - Get the method return type to verify it's ValueTask
+        var method = typeof(InMemoryStepExecutionLedger).GetMethod(
+            nameof(InMemoryStepExecutionLedger.TryGetCachedResultAsync));
+
+        // Assert - Method should return ValueTask<TResult?>
+        await Assert.That(method).IsNotNull();
+        await Assert.That(method!.ReturnType.GetGenericTypeDefinition()).IsEqualTo(typeof(ValueTask<>));
+    }
+
+    /// <summary>
+    /// Verifies that cache miss returns default ValueTask without allocation.
+    /// </summary>
+    [Test]
+    public async Task TryGetCachedResultAsync_CacheMiss_ReturnsDefaultValueTask()
+    {
+        // Arrange
+        var ledger = CreateLedger();
+
+        // Act
+        var result = await ledger.TryGetCachedResultAsync<TestResult>(
+            "nonexistent-step",
+            "nonexistent-hash",
+            CancellationToken.None).ConfigureAwait(false);
+
+        // Assert
+        await Assert.That(result).IsNull();
+    }
+
+    /// <summary>
+    /// Verifies that cache hit returns ValueTask with result.
+    /// </summary>
+    [Test]
+    public async Task TryGetCachedResultAsync_CacheHit_ReturnsValueTaskWithResult()
+    {
+        // Arrange
+        var ledger = CreateLedger();
+        var expected = new TestResult { Value = "cached-value" };
+        await ledger.CacheResultAsync("step", "hash", expected, null, CancellationToken.None).ConfigureAwait(false);
+
+        // Act
+        var result = await ledger.TryGetCachedResultAsync<TestResult>(
+            "step",
+            "hash",
+            CancellationToken.None).ConfigureAwait(false);
+
+        // Assert
+        await Assert.That(result).IsNotNull();
+        await Assert.That(result!.Value).IsEqualTo("cached-value");
+    }
+
+    // =========================================================================
+    // E. Integration Tests
     // =========================================================================
 
     /// <summary>

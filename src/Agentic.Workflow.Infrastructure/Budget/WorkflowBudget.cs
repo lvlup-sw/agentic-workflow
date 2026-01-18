@@ -23,6 +23,42 @@ namespace Agentic.Workflow.Infrastructure.Budget;
 /// </remarks>
 public sealed record WorkflowBudget : IWorkflowBudget
 {
+    private readonly Lazy<ScarcityLevel> _cachedScarcity;
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="WorkflowBudget"/> record.
+    /// </summary>
+    public WorkflowBudget()
+    {
+        _cachedScarcity = new Lazy<ScarcityLevel>(ComputeOverallScarcity);
+    }
+
+    /// <summary>
+    /// Copy constructor that reinitializes the lazy cache.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// This constructor is required because C# record copy semantics (<c>this with { ... }</c>)
+    /// copy the <see cref="Lazy{T}"/> field by reference. The original <c>Lazy</c> captures
+    /// <c>this</c> in its closure, causing the copied record to compute scarcity from the
+    /// original instance's resources instead of its own.
+    /// </para>
+    /// <para>
+    /// By providing this copy constructor, we ensure each record instance has its own
+    /// <see cref="Lazy{T}"/> that correctly references its own <see cref="Resources"/>.
+    /// </para>
+    /// </remarks>
+    /// <param name="original">The original record being copied.</param>
+    private WorkflowBudget(WorkflowBudget original)
+    {
+        BudgetId = original.BudgetId;
+        WorkflowId = original.WorkflowId;
+        Resources = original.Resources;
+        CreatedAt = original.CreatedAt;
+        UpdatedAt = original.UpdatedAt;
+        _cachedScarcity = new Lazy<ScarcityLevel>(ComputeOverallScarcity);
+    }
+
     /// <inheritdoc />
     public required string BudgetId { get; init; }
 
@@ -45,18 +81,20 @@ public sealed record WorkflowBudget : IWorkflowBudget
     /// <inheritdoc />
     public ScarcityLevel OverallScarcity
     {
-        get
-        {
-            if (Resources.Count == 0)
-            {
-                return ScarcityLevel.Abundant;
-            }
+        get { return _cachedScarcity.Value; }
+    }
 
-            // Return the most severe (highest ordinal) scarcity level
-            return Resources.Values
-                .Select(r => r.Scarcity)
-                .Max();
+    private ScarcityLevel ComputeOverallScarcity()
+    {
+        if (Resources is null || Resources.Count == 0)
+        {
+            return ScarcityLevel.Abundant;
         }
+
+        // Return the most severe (highest ordinal) scarcity level
+        return Resources.Values
+            .Select(r => r.Scarcity)
+            .Max();
     }
 
     /// <inheritdoc />

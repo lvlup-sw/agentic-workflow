@@ -1,0 +1,6 @@
+{
+  "msbuild-sdks": {},
+  "test": {
+    "runner": "Microsoft.Testing.Platform"
+  }
+}

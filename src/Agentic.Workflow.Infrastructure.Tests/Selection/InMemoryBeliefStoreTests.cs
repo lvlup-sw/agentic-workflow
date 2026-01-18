@@ -319,4 +319,93 @@ public class InMemoryBeliefStoreTests
         await Assert.That(belief.IsSuccess).IsTrue();
         await Assert.That(belief.Value.ObservationCount).IsEqualTo(iterationCount);
     }
+
+    // =============================================================================
+    // F. Performance Optimization Tests (Secondary Indices)
+    // =============================================================================
+
+    /// <summary>
+    /// Verifies that GetBeliefsForAgentAsync returns correct results with many beliefs.
+    /// Note: O(1) lookup performance is guaranteed by implementation using dictionary indices.
+    /// We verify functional correctness here rather than timing, which is flaky in CI.
+    /// </summary>
+    [Test]
+    public async Task GetBeliefsForAgentAsync_ManyBeliefs_ReturnsCorrectResultsViaIndex()
+    {
+        // Arrange
+        var store = new InMemoryBeliefStore();
+        const int agentCount = 100;
+        const int categoriesPerAgent = 100;
+
+        // Populate store with 10,000 beliefs (100 agents x 100 categories)
+        for (int a = 0; a < agentCount; a++)
+        {
+            for (int c = 0; c < categoriesPerAgent; c++)
+            {
+                await store.UpdateBeliefAsync($"agent-{a}", $"category-{c}", success: true).ConfigureAwait(false);
+            }
+        }
+
+        // Act - Lookup beliefs for a specific agent
+        var result = await store.GetBeliefsForAgentAsync("agent-50").ConfigureAwait(false);
+
+        // Assert - Verify correct results are returned (index correctness)
+        await Assert.That(result.IsSuccess).IsTrue();
+        await Assert.That(result.Value.Count).IsEqualTo(categoriesPerAgent);
+        await Assert.That(result.Value.All(b => b.AgentId == "agent-50")).IsTrue();
+    }
+
+    /// <summary>
+    /// Verifies that GetBeliefsForCategoryAsync returns correct results with many beliefs.
+    /// Note: O(1) lookup performance is guaranteed by implementation using dictionary indices.
+    /// We verify functional correctness here rather than timing, which is flaky in CI.
+    /// </summary>
+    [Test]
+    public async Task GetBeliefsForCategoryAsync_ManyBeliefs_ReturnsCorrectResultsViaIndex()
+    {
+        // Arrange
+        var store = new InMemoryBeliefStore();
+        const int agentCount = 100;
+        const int categoriesPerAgent = 100;
+
+        // Populate store with 10,000 beliefs (100 agents x 100 categories)
+        for (int a = 0; a < agentCount; a++)
+        {
+            for (int c = 0; c < categoriesPerAgent; c++)
+            {
+                await store.UpdateBeliefAsync($"agent-{a}", $"category-{c}", success: true).ConfigureAwait(false);
+            }
+        }
+
+        // Act - Lookup beliefs for a specific category
+        var result = await store.GetBeliefsForCategoryAsync("category-50").ConfigureAwait(false);
+
+        // Assert - Verify correct results are returned (index correctness)
+        await Assert.That(result.IsSuccess).IsTrue();
+        await Assert.That(result.Value.Count).IsEqualTo(agentCount);
+        await Assert.That(result.Value.All(b => b.TaskCategory == "category-50")).IsTrue();
+    }
+
+    /// <summary>
+    /// Verifies that SaveBeliefAsync maintains secondary indices.
+    /// </summary>
+    [Test]
+    public async Task SaveBeliefAsync_MaintainsIndices()
+    {
+        // Arrange
+        var store = new InMemoryBeliefStore();
+        var belief = AgentBelief.CreatePrior("agent-1", "CodeGeneration").WithSuccess();
+
+        // Act
+        await store.SaveBeliefAsync(belief).ConfigureAwait(false);
+
+        // Assert - Verify the belief is accessible via both indices
+        var byAgent = await store.GetBeliefsForAgentAsync("agent-1").ConfigureAwait(false);
+        var byCategory = await store.GetBeliefsForCategoryAsync("CodeGeneration").ConfigureAwait(false);
+
+        await Assert.That(byAgent.Value.Count).IsEqualTo(1);
+        await Assert.That(byCategory.Value.Count).IsEqualTo(1);
+        await Assert.That(byAgent.Value[0].Alpha).IsEqualTo(belief.Alpha);
+        await Assert.That(byCategory.Value[0].Alpha).IsEqualTo(belief.Alpha);
+    }
 }
