@@ -9,6 +9,7 @@
   <ItemGroup>
     <PackageReference Include="TUnit" />
     <PackageReference Include="NSubstitute" />
+    <PackageReference Include="MemoryPack" />
   </ItemGroup>
 
   <ItemGroup>
