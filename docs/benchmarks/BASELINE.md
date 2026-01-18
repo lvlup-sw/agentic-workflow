@@ -16,7 +16,7 @@ This document captures baseline performance measurements for the Agentic.Workflo
 |-----------|-----------|-------------|--------|--------|
 | Thompson Sampling | Agent selection (5 candidates) | 819 ns | < 5ms | ✓ |
 | Thompson Sampling | Agent selection (25 candidates) | 3.2 μs | < 5ms | ✓ |
-| Thompson Sampling | Agent selection (100 candidates) | 12.1 μs | < 5ms | ⚠ |
+| Thompson Sampling | Agent selection (100 candidates) | 12.1 μs | < 5ms | ✓ |
 | Loop Detection | Detection (no loop) | 416 ns | < 1ms | ✓ |
 | Loop Detection | Detection (repetition) | 640 ns | < 1ms | ✓ |
 | Loop Detection | Detection (oscillation) | 824 ns | < 1ms | ✓ |
@@ -58,7 +58,7 @@ Agent selection latency scales with candidate count.
 | GetBeliefsForAgentAsync | 357 ns |
 | GetBeliefsForCategoryAsync | 774 ns |
 
-**Optimization Opportunity:** Agent selection at 100 candidates exceeds 5ms target at P95. Consider BitFaster.Caching for belief store.
+**Note:** Agent selection at 100 candidates meets the 5ms target. Consider BitFaster.Caching for belief store if higher-scale scenarios regress.
 
 ---
 
@@ -245,9 +245,9 @@ Based on baseline measurements, prioritize the following for Phase 2:
 
 ### High Priority
 
-1. **Thompson Sampling at scale (100 candidates)** - 12.1 μs exceeds 5ms target
-   - Consider BitFaster.Caching for belief store secondary indices
-   - Evaluate parallel sampling with CommunityToolkit.HighPerformance
+1. **Thompson Sampling at scale (100 candidates)** - 12.1 μs meets 5ms target
+   - Consider BitFaster.Caching for belief store secondary indices if higher-scale scenarios regress
+   - Evaluate parallel sampling with CommunityToolkit.HighPerformance for future scaling
 
 2. **Serialization hot paths** - MemoryPack shows 3-6x improvement
    - Apply to ledger persistence

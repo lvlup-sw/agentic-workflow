@@ -32,13 +32,21 @@ public static class TestWorkflows
     /// <summary>
     /// Creates a dictionary of workflow metadata suitable for benchmark tests.
     /// </summary>
+    /// <param name="workflowId">
+    /// The workflow identifier. Defaults to <see cref="Guid.Empty"/> for deterministic output.
+    /// </param>
+    /// <param name="startTime">
+    /// The workflow start time. Defaults to <see cref="DateTimeOffset.UnixEpoch"/> for deterministic output.
+    /// </param>
     /// <returns>A read-only dictionary containing workflow metadata.</returns>
-    public static IReadOnlyDictionary<string, object> CreateWorkflowMetadata()
+    public static IReadOnlyDictionary<string, object> CreateWorkflowMetadata(
+        Guid? workflowId = null,
+        DateTimeOffset? startTime = null)
     {
         return new Dictionary<string, object>
         {
-            ["workflowId"] = Guid.NewGuid().ToString(),
-            ["startTime"] = DateTimeOffset.UtcNow,
+            ["workflowId"] = (workflowId ?? Guid.Empty).ToString(),
+            ["startTime"] = startTime ?? DateTimeOffset.UnixEpoch,
             ["version"] = "1.0.0",
         };
     }

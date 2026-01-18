@@ -31,7 +31,7 @@ namespace Agentic.Workflow.Benchmarks.Subsystems.LoopDetection;
 /// <para>
 /// The benchmarks demonstrate that:
 /// <list type="bullet">
-///   <item><description>High confidence (repetition/oscillation) may skip similarity entirely</description></item>
+///   <item><description>High confidence (repetition/oscillation) still calls similarity for weighted scoring</description></item>
 ///   <item><description>Low confidence scenarios always invoke similarity calculation</description></item>
 /// </list>
 /// </para>
@@ -93,12 +93,12 @@ public class SemanticSimilarityBenchmarks
 
     /// <summary>
     /// Benchmarks detection with high confidence pattern.
-    /// Repetition pattern achieves high confidence early, but similarity is still called
+    /// Repetition pattern achieves high confidence early; similarity is still called
     /// as part of the weighted scoring calculation before loop type determination.
     /// </summary>
     /// <returns>A task representing the asynchronous benchmark operation.</returns>
     [Benchmark(Baseline = true)]
-    public async Task<LoopDetectionResult> DetectAsync_HighConfidence_SkipsSimilarity()
+    public async Task<LoopDetectionResult> DetectAsync_HighConfidence_CallsSimilarity()
     {
         return await _detectorWithTracking.DetectAsync(_highConfidenceLedger).ConfigureAwait(false);
     }

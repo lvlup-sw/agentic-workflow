@@ -85,7 +85,7 @@ Results are written to `BenchmarkDotNet.Artifacts/` by default.
 
 ### Example Output
 
-```
+```text
 | Method          | CandidateCount |     Mean |     Error |   StdDev |      P95 | Rank |   Gen0 | Allocated |
 |---------------- |--------------- |---------:|----------:|---------:|---------:|-----:|-------:|----------:|
 | SelectAgent     |              5 | 1.234 us | 0.0123 us | 0.011 us | 1.256 us |    1 | 0.0153 |     128 B |
@@ -149,7 +149,7 @@ public class YourBenchmarks
 
 ### 2. Benchmark Patterns
 
-**Pattern A: Latency at Scale**
+#### Pattern A: Latency at Scale
 
 Test how performance scales with input size:
 
@@ -158,7 +158,7 @@ Test how performance scales with input size:
 public int CandidateCount { get; set; }
 ```
 
-**Pattern B: Zero-Allocation Validation**
+#### Pattern B: Zero-Allocation Validation
 
 Verify hot paths allocate no memory:
 
@@ -167,7 +167,7 @@ Verify hot paths allocate no memory:
 // Expected: Gen0 = 0, Allocated = 0 B
 ```
 
-**Pattern C: Comparative Analysis**
+#### Pattern C: Comparative Analysis
 
 Compare implementations side-by-side:
 
@@ -183,7 +183,7 @@ public Result NewApproach() { }
 
 Place benchmarks in the appropriate subsystem directory:
 
-```
+```text
 src/Agentic.Workflow.Benchmarks/
 ├── Subsystems/
 │   ├── ThompsonSampling/     # Agent selection benchmarks

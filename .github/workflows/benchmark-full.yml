@@ -20,6 +20,11 @@ on:
         required: false
         default: ''
         type: string
+      pr_number:
+        description: 'PR number to comment on (optional)'
+        required: false
+        default: ''
+        type: string
 
 env:
   DOTNET_NOLOGO: true
@@ -46,13 +51,13 @@ jobs:
 
       - name: Run full benchmark suite
         run: |
-          FILTER_ARG=""
+          FILTER_ARGS=()
           if [ -n "${{ inputs.filter }}" ]; then
-            FILTER_ARG="--filter ${{ inputs.filter }}"
+            FILTER_ARGS+=(--filter "${{ inputs.filter }}")
           fi
 
           dotnet run -c Release --project src/Agentic.Workflow.Benchmarks -- \
-            $FILTER_ARG \
+            "${FILTER_ARGS[@]}" \
             --exporters json markdown \
             --artifacts ./benchmark-results
 
@@ -124,13 +129,13 @@ jobs:
 
       - name: Run baseline benchmarks
         run: |
-          FILTER_ARG=""
+          FILTER_ARGS=()
           if [ -n "${{ inputs.filter }}" ]; then
-            FILTER_ARG="--filter ${{ inputs.filter }}"
+            FILTER_ARGS+=(--filter "${{ inputs.filter }}")
           fi
 
           dotnet run -c Release --project src/Agentic.Workflow.Benchmarks -- \
-            $FILTER_ARG \
+            "${FILTER_ARGS[@]}" \
             --exporters json \
             --artifacts ./baseline-results
 
@@ -164,7 +169,7 @@ jobs:
 
   comment-pr:
     needs: benchmark
-    if: github.event.pull_request
+    if: github.event.pull_request || inputs.pr_number != ''
     runs-on: ubuntu-latest
     steps:
       - name: Download results
@@ -208,6 +213,6 @@ jobs:
             await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              issue_number: context.issue.number,
+              issue_number: Number('${{ inputs.pr_number }}') || context.issue.number,
               body: summary,
             });
