@@ -11,7 +11,7 @@ namespace Agentic.Workflow.Infrastructure.Tests.LoopDetection;
 /// allocation optimizations pass IEnumerable directly.
 /// </summary>
 [Property("Category", "Unit")]
-public class LoopDetectorSemanticAllocationTests
+public sealed class LoopDetectorSemanticAllocationTests
 {
     /// <summary>
     /// Semantic similarity calculator that accepts IEnumerable and returns configurable similarity.

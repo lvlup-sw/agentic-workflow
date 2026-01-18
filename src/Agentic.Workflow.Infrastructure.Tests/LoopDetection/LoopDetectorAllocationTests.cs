@@ -19,7 +19,7 @@ namespace Agentic.Workflow.Infrastructure.Tests.LoopDetection;
 /// reduce heap allocations in hot paths.
 /// </summary>
 [Property("Category", "Unit")]
-public class LoopDetectorAllocationTests
+public sealed class LoopDetectorAllocationTests
 {
     /// <summary>
     /// Test semantic similarity calculator that returns zero similarity.

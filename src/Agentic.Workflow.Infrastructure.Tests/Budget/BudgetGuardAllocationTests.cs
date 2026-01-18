@@ -28,23 +28,14 @@ public sealed class BudgetGuardAllocationTests
     // =============================================================================
 
     /// <summary>
-    /// Verifies that GetInsufficientResources uses stackalloc for small counts,
-    /// avoiding heap allocation when all resources are sufficient.
+    /// Verifies that CanAffordReservation succeeds when all resources are sufficient.
     /// </summary>
     /// <remarks>
-    /// <para>
-    /// When checking a reservation against a budget where all resources are sufficient,
-    /// the method should not allocate a List&lt;ResourceType&gt; on the heap. Instead,
-    /// it should use a stack-allocated span to collect results and only allocate
-    /// when there are actual insufficient resources to return.
-    /// </para>
-    /// <para>
-    /// This test validates the optimization by checking that CanAffordReservation
-    /// returns Success without needing to enumerate insufficient resources.
-    /// </para>
+    /// When all resources are sufficient, CanAffordReservation should return Success.
+    /// This test validates the happy-path result.
     /// </remarks>
     [Test]
-    public async Task CanAffordReservation_AllSufficient_ReturnsSuccessWithoutListAllocation()
+    public async Task CanAffordReservation_AllSufficient_ReturnsSuccess()
     {
         // Arrange
         var budget = CreateSufficientBudget();

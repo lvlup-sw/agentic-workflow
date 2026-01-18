@@ -16,7 +16,7 @@ namespace Agentic.Workflow.Infrastructure.Tests.Selection;
 /// Thompson Sampling implementation of agent selection.
 /// </summary>
 [Property("Category", "Unit")]
-public class ThompsonSamplingSelectorTests
+public sealed class ThompsonSamplingSelectorTests
 {
     // =============================================================================
     // A. SelectAgentAsync Basic Tests

@@ -30,7 +30,7 @@ namespace Agentic.Workflow.Benchmarks.Subsystems.LargeScale;
 /// </para>
 /// </remarks>
 [MemoryDiagnoser]
-public class CandidateSelectionBenchmarks
+public sealed class CandidateSelectionBenchmarks
 {
     private ThompsonSamplingAgentSelector selector = null!;
     private AgentSelectionContext context = null!;

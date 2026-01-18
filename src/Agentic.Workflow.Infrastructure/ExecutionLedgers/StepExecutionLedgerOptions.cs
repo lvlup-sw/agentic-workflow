@@ -47,5 +47,16 @@ public sealed class StepExecutionLedgerOptions
     /// This setting only applies when <see cref="UseBitFasterCache"/> is <c>true</c>.
     /// When capacity is exceeded, the least-recently-used entries are evicted.
     /// </remarks>
-    public int CacheCapacity { get; set; } = 10000;
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when value is zero or negative.</exception>
+    public int CacheCapacity
+    {
+        get => this.cacheCapacity;
+        set
+        {
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(value);
+            this.cacheCapacity = value;
+        }
+    }
+
+    private int cacheCapacity = 10000;
 }

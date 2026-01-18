@@ -2,7 +2,7 @@ using TUnit.Core;
 
 namespace Agentic.Workflow.Infrastructure.Tests;
 
-public class DependencyTests
+public sealed class DependencyTests
 {
     [Test]
     public async Task InfrastructureProject_HighPerformancePackages_CanResolve()

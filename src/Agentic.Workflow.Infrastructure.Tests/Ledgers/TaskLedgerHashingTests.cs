@@ -111,29 +111,3 @@ public sealed class TaskLedgerHashingTests
         await Assert.That(updatedLedger.ContentHash).IsNotEqualTo(ledger.ContentHash);
     }
 }
-
-/// <summary>
-/// MemoryPackable content structure for TaskLedger hashing.
-/// </summary>
-/// <remarks>
-/// This type is used to compute content hashes using MemoryPack binary serialization.
-/// It mirrors the structure used in TaskLedger.ComputeContentHash.
-/// </remarks>
-[MemoryPackable]
-public partial class TaskLedgerHashContent
-{
-    /// <summary>
-    /// Gets or sets the original request.
-    /// </summary>
-    public string OriginalRequest { get; set; } = string.Empty;
-
-    /// <summary>
-    /// Gets or sets the task IDs.
-    /// </summary>
-    public List<string> TaskIds { get; set; } = [];
-
-    /// <summary>
-    /// Gets or sets the task descriptions.
-    /// </summary>
-    public List<string> TaskDescriptions { get; set; } = [];
-}

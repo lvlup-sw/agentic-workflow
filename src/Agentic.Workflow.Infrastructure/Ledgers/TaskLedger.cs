@@ -175,7 +175,7 @@ public sealed record TaskLedger : ITaskLedger
 /// It mirrors the structure used in TaskLedger.ComputeContentHash.
 /// </remarks>
 [MemoryPackable]
-public partial class TaskLedgerHashContent
+public sealed partial class TaskLedgerHashContent
 {
     /// <summary>
     /// Gets or sets the original request.

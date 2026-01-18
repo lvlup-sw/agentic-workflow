@@ -29,7 +29,7 @@ namespace Agentic.Workflow.Benchmarks.Subsystems.LargeScale;
 /// </para>
 /// </remarks>
 [MemoryDiagnoser]
-public class DocumentSearchBenchmarks
+public sealed class DocumentSearchBenchmarks
 {
     private InMemoryVectorSearchAdapter adapter = null!;
     private IReadOnlyList<string> queries = null!;

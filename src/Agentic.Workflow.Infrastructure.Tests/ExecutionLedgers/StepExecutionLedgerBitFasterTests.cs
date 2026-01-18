@@ -63,6 +63,48 @@ public sealed partial class StepExecutionLedgerBitFasterTests
     }
 
     /// <summary>
+    /// Verifies that CacheCapacity rejects zero value.
+    /// </summary>
+    [Test]
+    public async Task StepExecutionLedgerOptions_CacheCapacityZero_ThrowsArgumentOutOfRangeException()
+    {
+        // Arrange
+        var options = new StepExecutionLedgerOptions();
+
+        // Act & Assert
+        await Assert.That(() => options.CacheCapacity = 0).Throws<ArgumentOutOfRangeException>();
+    }
+
+    /// <summary>
+    /// Verifies that CacheCapacity rejects negative values.
+    /// </summary>
+    [Test]
+    public async Task StepExecutionLedgerOptions_CacheCapacityNegative_ThrowsArgumentOutOfRangeException()
+    {
+        // Arrange
+        var options = new StepExecutionLedgerOptions();
+
+        // Act & Assert
+        await Assert.That(() => options.CacheCapacity = -1).Throws<ArgumentOutOfRangeException>();
+    }
+
+    /// <summary>
+    /// Verifies that CacheCapacity accepts positive values.
+    /// </summary>
+    [Test]
+    public async Task StepExecutionLedgerOptions_CacheCapacityPositive_SetsValue()
+    {
+        // Arrange
+        var options = new StepExecutionLedgerOptions();
+
+        // Act
+        options.CacheCapacity = 500;
+
+        // Assert
+        await Assert.That(options.CacheCapacity).IsEqualTo(500);
+    }
+
+    /// <summary>
     /// Verifies that ledger without options constructor uses default ConcurrentDictionary.
     /// </summary>
     [Test]
@@ -86,8 +128,24 @@ public sealed partial class StepExecutionLedgerBitFasterTests
     // =========================================================================
 
     /// <summary>
-    /// Verifies that BitFaster cache evicts oldest entries when capacity is exceeded.
+    /// Verifies that BitFaster cache evicts entries when capacity is exceeded.
     /// </summary>
+    /// <remarks>
+    /// <para>
+    /// BitFaster's ConcurrentLru uses a pseudo-LRU eviction policy with a 3-queue system
+    /// (hot, warm, cold) rather than strict LRU. Key behavioral differences:
+    /// </para>
+    /// <list type="bullet">
+    /// <item><description>Cache hits do NOT update queue position; only writes do.</description></item>
+    /// <item><description>Items cycle through queues: new items enter cold, get promoted on subsequent writes.</description></item>
+    /// <item><description>Eviction occurs from the cold queue when capacity is exceeded.</description></item>
+    /// </list>
+    /// <para>
+    /// This test verifies that with capacity=3 and 4 sequential writes, the first entry
+    /// (step-1) gets evicted. This works because each entry is written only once and thus
+    /// remains in the cold queue, making the oldest write the eviction candidate.
+    /// </para>
+    /// </remarks>
     [Test]
     public async Task BitFasterCache_WhenCapacityExceeded_EvictsOldestEntries()
     {
