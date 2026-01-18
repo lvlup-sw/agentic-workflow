@@ -531,7 +531,7 @@ file sealed class DelayingBeliefStore : IBeliefStore
         _delay = delay;
     }
 
-    public async Task<Result<AgentBelief>> GetBeliefAsync(
+    public async ValueTask<Result<AgentBelief>> GetBeliefAsync(
         string agentId,
         string taskCategory,
         CancellationToken cancellationToken = default)
@@ -566,24 +566,24 @@ file sealed class DelayingBeliefStore : IBeliefStore
         while (Interlocked.CompareExchange(ref _maxConcurrentFetches, current, max) != max);
     }
 
-    public Task<Result<Unit>> UpdateBeliefAsync(
+    public ValueTask<Result<Unit>> UpdateBeliefAsync(
         string agentId,
         string taskCategory,
         bool success,
         CancellationToken cancellationToken = default)
         => _inner.UpdateBeliefAsync(agentId, taskCategory, success, cancellationToken);
 
-    public Task<Result<IReadOnlyList<AgentBelief>>> GetBeliefsForAgentAsync(
+    public ValueTask<Result<IReadOnlyList<AgentBelief>>> GetBeliefsForAgentAsync(
         string agentId,
         CancellationToken cancellationToken = default)
         => _inner.GetBeliefsForAgentAsync(agentId, cancellationToken);
 
-    public Task<Result<IReadOnlyList<AgentBelief>>> GetBeliefsForCategoryAsync(
+    public ValueTask<Result<IReadOnlyList<AgentBelief>>> GetBeliefsForCategoryAsync(
         string taskCategory,
         CancellationToken cancellationToken = default)
         => _inner.GetBeliefsForCategoryAsync(taskCategory, cancellationToken);
 
-    public Task<Result<Unit>> SaveBeliefAsync(
+    public ValueTask<Result<Unit>> SaveBeliefAsync(
         AgentBelief belief,
         CancellationToken cancellationToken = default)
         => _inner.SaveBeliefAsync(belief, cancellationToken);

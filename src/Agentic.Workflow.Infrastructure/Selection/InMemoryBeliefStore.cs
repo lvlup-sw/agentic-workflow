@@ -52,7 +52,7 @@ public sealed class InMemoryBeliefStore : IBeliefStore
     private readonly ConcurrentDictionary<string, ConcurrentDictionary<string, byte>> _byCategory = new();
 
     /// <inheritdoc/>
-    public Task<Result<AgentBelief>> GetBeliefAsync(
+    public ValueTask<Result<AgentBelief>> GetBeliefAsync(
         string agentId,
         string taskCategory,
         CancellationToken cancellationToken = default)
@@ -68,11 +68,11 @@ public sealed class InMemoryBeliefStore : IBeliefStore
             return newBelief;
         });
 
-        return Task.FromResult(Result<AgentBelief>.Success(belief));
+        return new ValueTask<Result<AgentBelief>>(Result<AgentBelief>.Success(belief));
     }
 
     /// <inheritdoc/>
-    public Task<Result<Unit>> UpdateBeliefAsync(
+    public ValueTask<Result<Unit>> UpdateBeliefAsync(
         string agentId,
         string taskCategory,
         bool success,
@@ -92,11 +92,11 @@ public sealed class InMemoryBeliefStore : IBeliefStore
             },
             (_, existing) => success ? existing.WithSuccess() : existing.WithFailure());
 
-        return Task.FromResult(Result<Unit>.Success(Unit.Value));
+        return new ValueTask<Result<Unit>>(Result<Unit>.Success(Unit.Value));
     }
 
     /// <inheritdoc/>
-    public Task<Result<IReadOnlyList<AgentBelief>>> GetBeliefsForAgentAsync(
+    public ValueTask<Result<IReadOnlyList<AgentBelief>>> GetBeliefsForAgentAsync(
         string agentId,
         CancellationToken cancellationToken = default)
     {
@@ -104,8 +104,8 @@ public sealed class InMemoryBeliefStore : IBeliefStore
 
         if (!_byAgent.TryGetValue(agentId, out var keySet))
         {
-            return Task.FromResult(Result<IReadOnlyList<AgentBelief>>.Success(
-                Array.Empty<AgentBelief>()));
+            return new ValueTask<Result<IReadOnlyList<AgentBelief>>>(
+                Result<IReadOnlyList<AgentBelief>>.Success(Array.Empty<AgentBelief>()));
         }
 
         var keys = keySet.Keys;
@@ -118,11 +118,12 @@ public sealed class InMemoryBeliefStore : IBeliefStore
             }
         }
 
-        return Task.FromResult(Result<IReadOnlyList<AgentBelief>>.Success(beliefs));
+        return new ValueTask<Result<IReadOnlyList<AgentBelief>>>(
+            Result<IReadOnlyList<AgentBelief>>.Success(beliefs));
     }
 
     /// <inheritdoc/>
-    public Task<Result<IReadOnlyList<AgentBelief>>> GetBeliefsForCategoryAsync(
+    public ValueTask<Result<IReadOnlyList<AgentBelief>>> GetBeliefsForCategoryAsync(
         string taskCategory,
         CancellationToken cancellationToken = default)
     {
@@ -130,8 +131,8 @@ public sealed class InMemoryBeliefStore : IBeliefStore
 
         if (!_byCategory.TryGetValue(taskCategory, out var keySet))
         {
-            return Task.FromResult(Result<IReadOnlyList<AgentBelief>>.Success(
-                Array.Empty<AgentBelief>()));
+            return new ValueTask<Result<IReadOnlyList<AgentBelief>>>(
+                Result<IReadOnlyList<AgentBelief>>.Success(Array.Empty<AgentBelief>()));
         }
 
         var keys = keySet.Keys;
@@ -144,11 +145,12 @@ public sealed class InMemoryBeliefStore : IBeliefStore
             }
         }
 
-        return Task.FromResult(Result<IReadOnlyList<AgentBelief>>.Success(beliefs));
+        return new ValueTask<Result<IReadOnlyList<AgentBelief>>>(
+            Result<IReadOnlyList<AgentBelief>>.Success(beliefs));
     }
 
     /// <inheritdoc/>
-    public Task<Result<Unit>> SaveBeliefAsync(
+    public ValueTask<Result<Unit>> SaveBeliefAsync(
         AgentBelief belief,
         CancellationToken cancellationToken = default)
     {
@@ -158,7 +160,7 @@ public sealed class InMemoryBeliefStore : IBeliefStore
         _beliefs[key] = belief;
         AddToIndices(belief.AgentId, belief.TaskCategory, key);
 
-        return Task.FromResult(Result<Unit>.Success(Unit.Value));
+        return new ValueTask<Result<Unit>>(Result<Unit>.Success(Unit.Value));
     }
 
     /// <summary>
