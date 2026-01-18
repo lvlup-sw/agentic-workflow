@@ -33,6 +33,32 @@ public sealed record WorkflowBudget : IWorkflowBudget
         _cachedScarcity = new Lazy<ScarcityLevel>(ComputeOverallScarcity);
     }
 
+    /// <summary>
+    /// Copy constructor that reinitializes the lazy cache.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// This constructor is required because C# record copy semantics (<c>this with { ... }</c>)
+    /// copy the <see cref="Lazy{T}"/> field by reference. The original <c>Lazy</c> captures
+    /// <c>this</c> in its closure, causing the copied record to compute scarcity from the
+    /// original instance's resources instead of its own.
+    /// </para>
+    /// <para>
+    /// By providing this copy constructor, we ensure each record instance has its own
+    /// <see cref="Lazy{T}"/> that correctly references its own <see cref="Resources"/>.
+    /// </para>
+    /// </remarks>
+    /// <param name="original">The original record being copied.</param>
+    private WorkflowBudget(WorkflowBudget original)
+    {
+        BudgetId = original.BudgetId;
+        WorkflowId = original.WorkflowId;
+        Resources = original.Resources;
+        CreatedAt = original.CreatedAt;
+        UpdatedAt = original.UpdatedAt;
+        _cachedScarcity = new Lazy<ScarcityLevel>(ComputeOverallScarcity);
+    }
+
     /// <inheritdoc />
     public required string BudgetId { get; init; }
 
@@ -53,7 +79,10 @@ public sealed record WorkflowBudget : IWorkflowBudget
     public DateTimeOffset UpdatedAt { get; init; } = DateTimeOffset.UtcNow;
 
     /// <inheritdoc />
-    public ScarcityLevel OverallScarcity => _cachedScarcity.Value;
+    public ScarcityLevel OverallScarcity
+    {
+        get { return _cachedScarcity.Value; }
+    }
 
     private ScarcityLevel ComputeOverallScarcity()
     {

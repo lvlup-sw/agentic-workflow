@@ -49,7 +49,7 @@ public sealed class ProgressLedgerTests
     /// multiple internal reallocations.
     /// </remarks>
     [Test]
-    public async Task WithEntry_LargeEntryCount_PreallocatesCapacity()
+    public async Task WithEntry_LargeEntryCount_PreservesAllEntries()
     {
         // Arrange - Create ledger with many entries
         var ledger = ProgressLedger.Create("task-ledger-1");

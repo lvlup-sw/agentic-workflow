@@ -425,6 +425,7 @@ public class ThompsonSamplingSelectorTests
 
     /// <summary>
     /// Verifies that belief fetching for multiple candidates happens concurrently.
+    /// Uses deterministic concurrency tracking instead of flaky timing assertions.
     /// </summary>
     [Test]
     public async Task SelectAgentAsync_MultipleCandidates_FetchesBeliefsConcurrently()
@@ -444,17 +445,14 @@ public class ThompsonSamplingSelectorTests
             AvailableAgents = agents,
         };
 
-        // Act - Measure elapsed time
-        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        // Act
         var result = await selector.SelectAgentAsync(context).ConfigureAwait(false);
-        stopwatch.Stop();
 
-        // Assert
-        // If sequential: would take ~250ms (5 * 50ms)
-        // If parallel: should take ~50-100ms (all at once, plus overhead)
-        // We use 150ms as threshold: much less than sequential 250ms
+        // Assert - Verify parallel execution via concurrency counter
+        // If fetches ran sequentially, MaxConcurrentFetches would be 1
+        // If fetches ran in parallel, MaxConcurrentFetches should be > 1 (ideally equal to candidateCount)
         await Assert.That(result.IsSuccess).IsTrue();
-        await Assert.That(stopwatch.ElapsedMilliseconds).IsLessThan(150);
+        await Assert.That(delayingStore.MaxConcurrentFetches).IsGreaterThan(1);
     }
 
     /// <summary>
@@ -514,11 +512,19 @@ public class ThompsonSamplingSelectorTests
 
 /// <summary>
 /// Test belief store that introduces artificial delay to verify parallel fetching.
+/// Tracks concurrent fetches to deterministically verify concurrency without timing assertions.
 /// </summary>
 file sealed class DelayingBeliefStore : IBeliefStore
 {
     private readonly TimeSpan _delay;
     private readonly InMemoryBeliefStore _inner = new();
+    private int _currentConcurrentFetches;
+    private int _maxConcurrentFetches;
+
+    /// <summary>
+    /// Gets the maximum number of concurrent fetches observed during the lifetime of this store.
+    /// </summary>
+    public int MaxConcurrentFetches => _maxConcurrentFetches;
 
     public DelayingBeliefStore(TimeSpan delay)
     {
@@ -530,8 +536,34 @@ file sealed class DelayingBeliefStore : IBeliefStore
         string taskCategory,
         CancellationToken cancellationToken = default)
     {
-        await Task.Delay(_delay, cancellationToken).ConfigureAwait(false);
-        return await _inner.GetBeliefAsync(agentId, taskCategory, cancellationToken).ConfigureAwait(false);
+        // Track concurrent fetches to verify parallel execution
+        var current = Interlocked.Increment(ref _currentConcurrentFetches);
+        UpdateMaxConcurrent(current);
+
+        try
+        {
+            await Task.Delay(_delay, cancellationToken).ConfigureAwait(false);
+            return await _inner.GetBeliefAsync(agentId, taskCategory, cancellationToken).ConfigureAwait(false);
+        }
+        finally
+        {
+            Interlocked.Decrement(ref _currentConcurrentFetches);
+        }
+    }
+
+    private void UpdateMaxConcurrent(int current)
+    {
+        // Thread-safe update of max concurrent fetches
+        int max;
+        do
+        {
+            max = _maxConcurrentFetches;
+            if (current <= max)
+            {
+                return;
+            }
+        }
+        while (Interlocked.CompareExchange(ref _maxConcurrentFetches, current, max) != max);
     }
 
     public Task<Result<Unit>> UpdateBeliefAsync(

@@ -796,7 +796,7 @@ public class LoopDetectorTests
     /// This tests the optimized LINQ path that avoids intermediate list allocation.
     /// </summary>
     [Test]
-    public async Task CalculateRepetitionScore_LargeEntrySet_CalculatesCorrectly()
+    public async Task DetectAsync_LargeEntrySet_CalculatesRepetitionCorrectly()
     {
         // Arrange - create a ledger with many repeated actions
         var options = LoopDetectionOptions.CreateProductionDefaults();

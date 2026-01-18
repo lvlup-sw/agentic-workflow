@@ -104,7 +104,7 @@ public sealed class ThompsonSamplingAgentSelector : IAgentSelector
             }
         }
 
-        // 4. Compute confidence based on observation count
+        // 5. Compute confidence based on observation count
         var confidence = Math.Min(1.0, bestBelief.ObservationCount / 20.0);
 
         return Result<AgentSelection>.Success(new AgentSelection

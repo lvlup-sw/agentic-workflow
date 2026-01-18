@@ -145,4 +145,96 @@ public sealed class WorkflowBudgetTests
         // Assert - Scarce level should have multiplier of 3.0
         await Assert.That(multiplier).IsEqualTo(3.0);
     }
+
+    // =============================================================================
+    // B. Cache Invalidation Tests (Record Copy Behavior)
+    // =============================================================================
+
+    /// <summary>
+    /// Verifies that OverallScarcity is recomputed after WithResource creates a copy.
+    /// </summary>
+    /// <remarks>
+    /// This test validates that the Lazy cache is properly reset when a record copy
+    /// is created via WithResource. Without proper cache invalidation, the copied
+    /// record would return stale scarcity values from the original instance.
+    /// </remarks>
+    [Test]
+    public async Task OverallScarcity_AfterWithResource_RecomputesFromNewResources()
+    {
+        // Arrange - Create budget with Abundant resource
+        var abundantBudget = Substitute.For<IResourceBudget>();
+        abundantBudget.Scarcity.Returns(ScarcityLevel.Abundant);
+
+        var originalBudget = new WorkflowBudget
+        {
+            BudgetId = "test-budget",
+            WorkflowId = "test-workflow",
+            Resources = new Dictionary<ResourceType, IResourceBudget>
+            {
+                [ResourceType.Steps] = abundantBudget
+            }
+        };
+
+        // Access scarcity to force caching on original
+        var originalScarcity = originalBudget.OverallScarcity;
+        await Assert.That(originalScarcity).IsEqualTo(ScarcityLevel.Abundant);
+
+        // Act - Add a Critical resource via WithResource
+        var criticalBudget = Substitute.For<IResourceBudget>();
+        criticalBudget.Scarcity.Returns(ScarcityLevel.Critical);
+
+        var updatedBudget = (WorkflowBudget)originalBudget.WithResource(ResourceType.Tokens, criticalBudget);
+
+        // Assert - New budget should compute Critical (not stale Abundant)
+        var updatedScarcity = updatedBudget.OverallScarcity;
+        await Assert.That(updatedScarcity).IsEqualTo(ScarcityLevel.Critical);
+
+        // Original should still be Abundant (immutability preserved)
+        await Assert.That(originalBudget.OverallScarcity).IsEqualTo(ScarcityLevel.Abundant);
+    }
+
+    /// <summary>
+    /// Verifies that OverallScarcity is recomputed after WithConsumption creates a copy.
+    /// </summary>
+    /// <remarks>
+    /// When consumption changes a resource's scarcity level, the copied budget
+    /// must reflect the new scarcity, not the cached value from before consumption.
+    /// </remarks>
+    [Test]
+    public async Task OverallScarcity_AfterWithConsumption_RecomputesFromUpdatedResources()
+    {
+        // Arrange - Create budget with Normal scarcity resource
+        var normalBudget = Substitute.For<IResourceBudget>();
+        normalBudget.Scarcity.Returns(ScarcityLevel.Normal);
+        normalBudget.HasSufficient(Arg.Any<double>()).Returns(true);
+
+        // When consumed, scarcity becomes Critical
+        var consumedBudget = Substitute.For<IResourceBudget>();
+        consumedBudget.Scarcity.Returns(ScarcityLevel.Critical);
+        normalBudget.WithConsumption(Arg.Any<double>()).Returns(consumedBudget);
+
+        var originalBudget = new WorkflowBudget
+        {
+            BudgetId = "test-budget",
+            WorkflowId = "test-workflow",
+            Resources = new Dictionary<ResourceType, IResourceBudget>
+            {
+                [ResourceType.Steps] = normalBudget
+            }
+        };
+
+        // Access scarcity to force caching on original
+        var originalScarcity = originalBudget.OverallScarcity;
+        await Assert.That(originalScarcity).IsEqualTo(ScarcityLevel.Normal);
+
+        // Act - Consume resources (causing scarcity change)
+        var updatedBudget = (WorkflowBudget)originalBudget.WithConsumption(ResourceType.Steps, 100);
+
+        // Assert - New budget should compute Critical (not stale Normal)
+        var updatedScarcity = updatedBudget.OverallScarcity;
+        await Assert.That(updatedScarcity).IsEqualTo(ScarcityLevel.Critical);
+
+        // Original should still be Normal (immutability preserved)
+        await Assert.That(originalBudget.OverallScarcity).IsEqualTo(ScarcityLevel.Normal);
+    }
 }

@@ -108,11 +108,15 @@ public sealed class InMemoryBeliefStore : IBeliefStore
                 Array.Empty<AgentBelief>()));
         }
 
-        var beliefs = keySet.Keys
-            .Select(key => _beliefs.TryGetValue(key, out var belief) ? belief : null)
-            .Where(b => b is not null)
-            .Cast<AgentBelief>()
-            .ToList();
+        var keys = keySet.Keys;
+        var beliefs = new List<AgentBelief>(keys.Count);
+        foreach (var key in keys)
+        {
+            if (_beliefs.TryGetValue(key, out var belief))
+            {
+                beliefs.Add(belief);
+            }
+        }
 
         return Task.FromResult(Result<IReadOnlyList<AgentBelief>>.Success(beliefs));
     }
@@ -130,11 +134,15 @@ public sealed class InMemoryBeliefStore : IBeliefStore
                 Array.Empty<AgentBelief>()));
         }
 
-        var beliefs = keySet.Keys
-            .Select(key => _beliefs.TryGetValue(key, out var belief) ? belief : null)
-            .Where(b => b is not null)
-            .Cast<AgentBelief>()
-            .ToList();
+        var keys = keySet.Keys;
+        var beliefs = new List<AgentBelief>(keys.Count);
+        foreach (var key in keys)
+        {
+            if (_beliefs.TryGetValue(key, out var belief))
+            {
+                beliefs.Add(belief);
+            }
+        }
 
         return Task.FromResult(Result<IReadOnlyList<AgentBelief>>.Success(beliefs));
     }
