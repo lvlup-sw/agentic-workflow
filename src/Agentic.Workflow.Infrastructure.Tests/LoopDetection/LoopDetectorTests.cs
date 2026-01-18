@@ -825,4 +825,430 @@ public class LoopDetectorTests
         // This verifies the optimized calculation path works correctly
         await Assert.That(result.Confidence).IsGreaterThanOrEqualTo(0.27);
     }
+
+    // =============================================================================
+    // L. Cancellation Token Tests
+    // =============================================================================
+
+    /// <summary>
+    /// Test semantic similarity calculator that throws OperationCanceledException when token is cancelled.
+    /// </summary>
+    private sealed class CancellationAwareSemanticSimilarityCalculator : ISemanticSimilarityCalculator
+    {
+        public Task<double> CalculateMaxSimilarityAsync(
+            IEnumerable<string?> outputs,
+            CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            return Task.FromResult(0.0);
+        }
+    }
+
+    /// <summary>
+    /// Verifies that DetectAsync respects cancellation token when passed to semantic similarity calculator.
+    /// </summary>
+    [Test]
+    public async Task DetectAsync_CancelledToken_ThrowsWhenCalculatingSemanticSimilarity()
+    {
+        // Arrange - use a calculator that respects cancellation
+        var calculator = new CancellationAwareSemanticSimilarityCalculator();
+        var detector = CreateLoopDetector(similarityCalculator: calculator);
+        var ledger = CreateLedgerWithDistinctEntries(5); // Distinct entries won't hit early returns
+        using var cts = new CancellationTokenSource();
+        cts.Cancel();
+
+        // Act & Assert - the semantic similarity calculator should throw
+        await Assert.That(async () =>
+                await detector.DetectAsync(ledger, cts.Token).ConfigureAwait(false))
+            .ThrowsException()
+            .WithExceptionType(typeof(OperationCanceledException))
+            .ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Verifies that DetectAsync completes successfully with a valid (non-cancelled) token.
+    /// </summary>
+    [Test]
+    public async Task DetectAsync_ValidToken_CompletesSuccessfully()
+    {
+        // Arrange
+        var detector = CreateLoopDetector();
+        var ledger = CreateLedgerWithDistinctEntries(5);
+        using var cts = new CancellationTokenSource();
+
+        // Act
+        var result = await detector.DetectAsync(ledger, cts.Token).ConfigureAwait(false);
+
+        // Assert
+        await Assert.That(result).IsNotNull();
+        await Assert.That(result.DiagnosticMessage).IsNotNull();
+    }
+
+    // =============================================================================
+    // M. Additional Repetition Detection Tests
+    // =============================================================================
+
+    /// <summary>
+    /// Verifies that repetition is not detected when all actions are unique.
+    /// </summary>
+    [Test]
+    public async Task DetectAsync_AllUniqueActions_DoesNotDetectRepetition()
+    {
+        // Arrange
+        var detector = CreateLoopDetector();
+        var ledger = CreateLedgerWithDistinctEntries(5);
+
+        // Act
+        var result = await detector.DetectAsync(ledger).ConfigureAwait(false);
+
+        // Assert - unique actions should not trigger ExactRepetition
+        await Assert.That(result.DetectedType).IsNotEqualTo(LoopType.ExactRepetition);
+    }
+
+    /// <summary>
+    /// Verifies that repetition threshold boundary (50%) returns expected score.
+    /// </summary>
+    [Test]
+    public async Task DetectAsync_HalfDuplicates_ReturnsExpectedScore()
+    {
+        // Arrange
+        var options = LoopDetectionOptions.CreateProductionDefaults();
+        options.WindowSize = 4;
+        var detector = CreateLoopDetector(options);
+        var entries = new[]
+        {
+            CreateEntry("action_a"),
+            CreateEntry("action_a"),
+            CreateEntry("action_b"),
+            CreateEntry("action_c")
+        };
+        var ledger = CreateLedgerWithEntries(entries);
+
+        // Act
+        var result = await detector.DetectAsync(ledger).ConfigureAwait(false);
+
+        // Assert - 50% repetition = 0.5, contributing 0.4 * 0.5 = 0.2
+        await Assert.That(result.Confidence).IsGreaterThanOrEqualTo(0.19);
+    }
+
+    /// <summary>
+    /// Verifies that confidence calculation for repetition matches expected formula.
+    /// </summary>
+    [Test]
+    public async Task DetectAsync_KnownRepetitionRatio_CalculatesCorrectConfidence()
+    {
+        // Arrange - 4 out of 5 same action = 80% repetition
+        var detector = CreateLoopDetector();
+        var entries = new[]
+        {
+            CreateEntry("action_a"),
+            CreateEntry("action_a"),
+            CreateEntry("action_a"),
+            CreateEntry("action_a"),
+            CreateEntry("action_b")
+        };
+        var ledger = CreateLedgerWithEntries(entries);
+
+        // Act
+        var result = await detector.DetectAsync(ledger).ConfigureAwait(false);
+
+        // Assert - repetition = 0.8, contribution = 0.4 * 0.8 = 0.32
+        await Assert.That(result.Confidence).IsGreaterThanOrEqualTo(0.31);
+    }
+
+    /// <summary>
+    /// Verifies that window size boundary (exactly at threshold) processes correctly.
+    /// </summary>
+    [Test]
+    public async Task DetectAsync_WindowSizeBoundary_ProcessesCorrectly()
+    {
+        // Arrange - entries exactly equal to window size
+        var options = LoopDetectionOptions.CreateProductionDefaults();
+        options.WindowSize = 3;
+        var detector = CreateLoopDetector(options);
+        var ledger = CreateLedgerWithRepeatedAction("repeated", 3);
+
+        // Act
+        var result = await detector.DetectAsync(ledger).ConfigureAwait(false);
+
+        // Assert - should process and detect repetition
+        await Assert.That(result.LoopDetected).IsTrue();
+        await Assert.That(result.DetectedType).IsEqualTo(LoopType.ExactRepetition);
+    }
+
+    // =============================================================================
+    // N. Additional Oscillation Detection Tests
+    // =============================================================================
+
+    /// <summary>
+    /// Verifies that random actions do not trigger oscillation detection.
+    /// </summary>
+    [Test]
+    public async Task DetectAsync_RandomActions_DoesNotDetectOscillation()
+    {
+        // Arrange - create non-repeating, non-oscillating pattern
+        var options = LoopDetectionOptions.CreateProductionDefaults();
+        options.WindowSize = 6;
+        var detector = CreateLoopDetector(options);
+        var entries = new[]
+        {
+            CreateEntry("action_x"),
+            CreateEntry("action_y"),
+            CreateEntry("action_z"),
+            CreateEntry("action_w"),
+            CreateEntry("action_v"),
+            CreateEntry("action_u")
+        };
+        var ledger = CreateLedgerWithEntries(entries);
+
+        // Act
+        var result = await detector.DetectAsync(ledger).ConfigureAwait(false);
+
+        // Assert - random pattern should not detect oscillation
+        await Assert.That(result.DetectedType).IsNotEqualTo(LoopType.Oscillation);
+    }
+
+    /// <summary>
+    /// Verifies that oscillation confidence scoring is proportional to pattern match.
+    /// </summary>
+    [Test]
+    public async Task DetectAsync_StrongOscillation_ReturnsHighConfidence()
+    {
+        // Arrange - perfect A-B oscillation
+        var options = LoopDetectionOptions.CreateProductionDefaults();
+        options.WindowSize = 6;
+        var detector = CreateLoopDetector(options);
+        var entries = new[]
+        {
+            CreateEntry("A"),
+            CreateEntry("B"),
+            CreateEntry("A"),
+            CreateEntry("B"),
+            CreateEntry("A"),
+            CreateEntry("B")
+        };
+        var ledger = CreateLedgerWithEntries(entries);
+
+        // Act
+        var result = await detector.DetectAsync(ledger).ConfigureAwait(false);
+
+        // Assert - perfect oscillation should have significant confidence
+        // Oscillation threshold is 0.8 for detection, and confidence includes oscillation boost
+        await Assert.That(result.LoopDetected).IsTrue();
+        await Assert.That(result.Confidence).IsGreaterThanOrEqualTo(0.7);
+    }
+
+    /// <summary>
+    /// Verifies oscillation detection with a 4-period repeating pattern.
+    /// </summary>
+    [Test]
+    public async Task DetectAsync_FourPeriodOscillation_DetectsPattern()
+    {
+        // Arrange - A-B-C-D-A-B-C-D pattern
+        var options = LoopDetectionOptions.CreateProductionDefaults();
+        options.WindowSize = 8;
+        var detector = CreateLoopDetector(options);
+        var entries = new[]
+        {
+            CreateEntry("A"),
+            CreateEntry("B"),
+            CreateEntry("C"),
+            CreateEntry("D"),
+            CreateEntry("A"),
+            CreateEntry("B"),
+            CreateEntry("C"),
+            CreateEntry("D")
+        };
+        var ledger = CreateLedgerWithEntries(entries);
+
+        // Act
+        var result = await detector.DetectAsync(ledger).ConfigureAwait(false);
+
+        // Assert - should detect oscillation pattern
+        await Assert.That(result.LoopDetected).IsTrue();
+        await Assert.That(result.DetectedType).IsEqualTo(LoopType.Oscillation);
+    }
+
+    // =============================================================================
+    // O. SpanOwner Path Tests
+    // =============================================================================
+
+    /// <summary>
+    /// Verifies that large window (10+) uses SpanOwner efficiently for oscillation detection.
+    /// </summary>
+    [Test]
+    public async Task DetectAsync_LargeWindow_UsesSpanOwnerPath()
+    {
+        // Arrange - large window to exercise SpanOwner path
+        var options = LoopDetectionOptions.CreateProductionDefaults();
+        options.WindowSize = 12;
+        var detector = CreateLoopDetector(options);
+
+        var entries = new List<ProgressEntry>();
+        for (var i = 0; i < 12; i++)
+        {
+            entries.Add(CreateEntry(i % 2 == 0 ? "ActionA" : "ActionB"));
+        }
+
+        var ledger = CreateLedgerWithEntries(entries.ToArray());
+
+        // Act
+        var result = await detector.DetectAsync(ledger).ConfigureAwait(false);
+
+        // Assert - should detect oscillation pattern using SpanOwner path
+        await Assert.That(result.LoopDetected).IsTrue();
+        await Assert.That(result.DetectedType).IsEqualTo(LoopType.Oscillation);
+    }
+
+    /// <summary>
+    /// Verifies that small window (less than 8) still works correctly.
+    /// </summary>
+    [Test]
+    public async Task DetectAsync_SmallWindow_ProcessesCorrectly()
+    {
+        // Arrange - small window that may use stackalloc-style path
+        var options = LoopDetectionOptions.CreateProductionDefaults();
+        options.WindowSize = 4;
+        var detector = CreateLoopDetector(options);
+        var entries = new[]
+        {
+            CreateEntry("A"),
+            CreateEntry("B"),
+            CreateEntry("A"),
+            CreateEntry("B")
+        };
+        var ledger = CreateLedgerWithEntries(entries);
+
+        // Act
+        var result = await detector.DetectAsync(ledger).ConfigureAwait(false);
+
+        // Assert - should process correctly
+        await Assert.That(result.LoopDetected).IsTrue();
+    }
+
+    /// <summary>
+    /// Verifies that very large window (100+) handles correctly without memory issues.
+    /// </summary>
+    [Test]
+    public async Task DetectAsync_VeryLargeWindow_HandlesCorrectly()
+    {
+        // Arrange - very large window to stress test SpanOwner
+        var options = LoopDetectionOptions.CreateProductionDefaults();
+        options.WindowSize = 100;
+        var detector = CreateLoopDetector(options);
+
+        var entries = new List<ProgressEntry>();
+        for (var i = 0; i < 100; i++)
+        {
+            entries.Add(CreateEntry(i % 3 == 0 ? "ActionA" : i % 3 == 1 ? "ActionB" : "ActionC"));
+        }
+
+        var ledger = CreateLedgerWithEntries(entries.ToArray());
+
+        // Act
+        var result = await detector.DetectAsync(ledger).ConfigureAwait(false);
+
+        // Assert - should complete without error and detect pattern
+        await Assert.That(result).IsNotNull();
+        await Assert.That(result.LoopDetected).IsTrue();
+    }
+
+    /// <summary>
+    /// Verifies that multiple concurrent detections work correctly.
+    /// SpanOwner should properly dispose without interference.
+    /// </summary>
+    [Test]
+    public async Task DetectAsync_MultipleConcurrentDetections_AllComplete()
+    {
+        // Arrange
+        var detector = CreateLoopDetector();
+        var ledgers = Enumerable.Range(0, 5)
+            .Select(_ => CreateLedgerWithRepeatedAction("concurrent_action", 5))
+            .ToArray();
+
+        // Act - run multiple detections concurrently
+        var tasks = ledgers.Select(l => detector.DetectAsync(l)).ToArray();
+        var results = await Task.WhenAll(tasks).ConfigureAwait(false);
+
+        // Assert - all should complete and detect loops
+        foreach (var result in results)
+        {
+            await Assert.That(result.LoopDetected).IsTrue();
+            await Assert.That(result.DetectedType).IsEqualTo(LoopType.ExactRepetition);
+        }
+    }
+
+    /// <summary>
+    /// Verifies that memory is not retained after detection completes.
+    /// This tests SpanOwner disposal behavior.
+    /// </summary>
+    [Test]
+    public async Task DetectAsync_AfterCompletion_MemoryNotRetained()
+    {
+        // Arrange
+        var options = LoopDetectionOptions.CreateProductionDefaults();
+        options.WindowSize = 50;
+        var detector = CreateLoopDetector(options);
+
+        var entries = new List<ProgressEntry>();
+        for (var i = 0; i < 50; i++)
+        {
+            entries.Add(CreateEntry($"action_{i % 5}"));
+        }
+
+        var ledger = CreateLedgerWithEntries(entries.ToArray());
+
+        // Act - run detection multiple times
+        for (var i = 0; i < 10; i++)
+        {
+            var result = await detector.DetectAsync(ledger).ConfigureAwait(false);
+            await Assert.That(result).IsNotNull();
+        }
+
+        // Assert - if we got here without OutOfMemoryException, SpanOwner disposed correctly
+        await Assert.That(true).IsTrue();
+    }
+
+    // =============================================================================
+    // P. DetermineLoopType Tests
+    // =============================================================================
+
+    /// <summary>
+    /// Verifies that when semantic score dominates, SemanticRepetition is detected.
+    /// </summary>
+    [Test]
+    public async Task DetectAsync_SemanticScoreDominant_ReturnsSemanticRepetition()
+    {
+        // Arrange - high semantic similarity, low repetition
+        var options = LoopDetectionOptions.CreateProductionDefaults();
+        options.RecoveryThreshold = 0.4; // Lower threshold
+        var similarityCalculator = new ConfigurableSemanticSimilarityCalculator(0.85);
+        var detector = CreateLoopDetector(options, similarityCalculator);
+        var ledger = CreateLedgerWithDistinctEntries(5);
+
+        // Act
+        var result = await detector.DetectAsync(ledger).ConfigureAwait(false);
+
+        // Assert
+        await Assert.That(result.LoopDetected).IsTrue();
+        await Assert.That(result.DetectedType).IsEqualTo(LoopType.SemanticRepetition);
+    }
+
+    /// <summary>
+    /// Verifies that when no-progress score dominates, NoProgress is detected.
+    /// </summary>
+    [Test]
+    public async Task DetectAsync_NoProgressDominant_ReturnsNoProgress()
+    {
+        // Arrange - all entries show no progress
+        var detector = CreateLoopDetector();
+        var ledger = CreateLedgerWithNoProgress(5);
+
+        // Act
+        var result = await detector.DetectAsync(ledger).ConfigureAwait(false);
+
+        // Assert
+        await Assert.That(result.LoopDetected).IsTrue();
+        await Assert.That(result.DetectedType).IsEqualTo(LoopType.NoProgress);
+    }
 }

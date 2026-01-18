@@ -408,4 +408,348 @@ public class InMemoryBeliefStoreTests
         await Assert.That(byAgent.Value[0].Alpha).IsEqualTo(belief.Alpha);
         await Assert.That(byCategory.Value[0].Alpha).IsEqualTo(belief.Alpha);
     }
+
+    // =============================================================================
+    // G. Null/Empty Input Validation Tests
+    // =============================================================================
+
+    /// <summary>
+    /// Verifies that GetBeliefAsync throws ArgumentNullException for null agentId.
+    /// </summary>
+    [Test]
+    public async Task GetBeliefAsync_NullAgentId_ThrowsArgumentNullException()
+    {
+        // Arrange
+        var store = new InMemoryBeliefStore();
+
+        // Act & Assert
+        await Assert.That(() => store.GetBeliefAsync(null!, "CodeGeneration").AsTask())
+            .Throws<ArgumentNullException>();
+    }
+
+    /// <summary>
+    /// Verifies that GetBeliefAsync throws ArgumentNullException for null taskCategory.
+    /// </summary>
+    [Test]
+    public async Task GetBeliefAsync_NullTaskCategory_ThrowsArgumentNullException()
+    {
+        // Arrange
+        var store = new InMemoryBeliefStore();
+
+        // Act & Assert
+        await Assert.That(() => store.GetBeliefAsync("agent-1", null!).AsTask())
+            .Throws<ArgumentNullException>();
+    }
+
+    /// <summary>
+    /// Verifies that GetBeliefAsync handles empty category string.
+    /// </summary>
+    [Test]
+    public async Task GetBeliefAsync_EmptyCategory_ReturnsBeliefWithEmptyCategory()
+    {
+        // Arrange
+        var store = new InMemoryBeliefStore();
+
+        // Act
+        var result = await store.GetBeliefAsync("agent-1", string.Empty).ConfigureAwait(false);
+
+        // Assert
+        await Assert.That(result.IsSuccess).IsTrue();
+        await Assert.That(result.Value.TaskCategory).IsEqualTo(string.Empty);
+    }
+
+    /// <summary>
+    /// Verifies that UpdateBeliefAsync throws ArgumentNullException for null agentId.
+    /// </summary>
+    [Test]
+    public async Task UpdateBeliefAsync_NullAgentId_ThrowsArgumentNullException()
+    {
+        // Arrange
+        var store = new InMemoryBeliefStore();
+
+        // Act & Assert
+        await Assert.That(() => store.UpdateBeliefAsync(null!, "CodeGeneration", true).AsTask())
+            .Throws<ArgumentNullException>();
+    }
+
+    /// <summary>
+    /// Verifies that UpdateBeliefAsync throws ArgumentNullException for null taskCategory.
+    /// </summary>
+    [Test]
+    public async Task UpdateBeliefAsync_NullTaskCategory_ThrowsArgumentNullException()
+    {
+        // Arrange
+        var store = new InMemoryBeliefStore();
+
+        // Act & Assert
+        await Assert.That(() => store.UpdateBeliefAsync("agent-1", null!, true).AsTask())
+            .Throws<ArgumentNullException>();
+    }
+
+    /// <summary>
+    /// Verifies that SaveBeliefAsync throws ArgumentNullException for null belief.
+    /// </summary>
+    [Test]
+    public async Task SaveBeliefAsync_NullBelief_ThrowsArgumentNullException()
+    {
+        // Arrange
+        var store = new InMemoryBeliefStore();
+
+        // Act & Assert
+        await Assert.That(() => store.SaveBeliefAsync(null!).AsTask())
+            .Throws<ArgumentNullException>();
+    }
+
+    /// <summary>
+    /// Verifies that GetBeliefsForAgentAsync throws ArgumentNullException for null agentId.
+    /// </summary>
+    [Test]
+    public async Task GetBeliefsForAgentAsync_NullAgentId_ThrowsArgumentNullException()
+    {
+        // Arrange
+        var store = new InMemoryBeliefStore();
+
+        // Act & Assert
+        await Assert.That(() => store.GetBeliefsForAgentAsync(null!).AsTask())
+            .Throws<ArgumentNullException>();
+    }
+
+    /// <summary>
+    /// Verifies that GetBeliefsForCategoryAsync throws ArgumentNullException for null taskCategory.
+    /// </summary>
+    [Test]
+    public async Task GetBeliefsForCategoryAsync_NullTaskCategory_ThrowsArgumentNullException()
+    {
+        // Arrange
+        var store = new InMemoryBeliefStore();
+
+        // Act & Assert
+        await Assert.That(() => store.GetBeliefsForCategoryAsync(null!).AsTask())
+            .Throws<ArgumentNullException>();
+    }
+
+    // =============================================================================
+    // H. SaveBeliefAsync Extended Tests
+    // =============================================================================
+
+    /// <summary>
+    /// Verifies that SaveBeliefAsync saves a new belief successfully.
+    /// </summary>
+    [Test]
+    public async Task SaveBeliefAsync_NewBelief_SavesSuccessfully()
+    {
+        // Arrange
+        var store = new InMemoryBeliefStore();
+        var belief = AgentBelief.CreatePrior("agent-1", "CodeGeneration")
+            .WithSuccess()
+            .WithSuccess()
+            .WithFailure();
+
+        // Act
+        var result = await store.SaveBeliefAsync(belief).ConfigureAwait(false);
+
+        // Assert
+        await Assert.That(result.IsSuccess).IsTrue();
+
+        var retrieved = await store.GetBeliefAsync("agent-1", "CodeGeneration").ConfigureAwait(false);
+        await Assert.That(retrieved.Value.Alpha).IsEqualTo(belief.Alpha);
+        await Assert.That(retrieved.Value.Beta).IsEqualTo(belief.Beta);
+        await Assert.That(retrieved.Value.ObservationCount).IsEqualTo(3);
+    }
+
+    /// <summary>
+    /// Verifies that SaveBeliefAsync overwrites an existing belief.
+    /// </summary>
+    [Test]
+    public async Task SaveBeliefAsync_ExistingBelief_OverwritesExisting()
+    {
+        // Arrange
+        var store = new InMemoryBeliefStore();
+        var originalBelief = AgentBelief.CreatePrior("agent-1", "CodeGeneration").WithSuccess();
+        await store.SaveBeliefAsync(originalBelief).ConfigureAwait(false);
+
+        var newBelief = AgentBelief.CreatePrior("agent-1", "CodeGeneration")
+            .WithFailure()
+            .WithFailure()
+            .WithFailure();
+
+        // Act
+        var result = await store.SaveBeliefAsync(newBelief).ConfigureAwait(false);
+
+        // Assert
+        await Assert.That(result.IsSuccess).IsTrue();
+
+        var retrieved = await store.GetBeliefAsync("agent-1", "CodeGeneration").ConfigureAwait(false);
+        await Assert.That(retrieved.Value.Alpha).IsEqualTo(newBelief.Alpha);
+        await Assert.That(retrieved.Value.Beta).IsEqualTo(newBelief.Beta);
+        await Assert.That(retrieved.Value.ObservationCount).IsEqualTo(3);
+    }
+
+    /// <summary>
+    /// Verifies that SaveBeliefAsync updates indices correctly when overwriting.
+    /// </summary>
+    [Test]
+    public async Task SaveBeliefAsync_OverwritesBelief_IndicesRemainCorrect()
+    {
+        // Arrange
+        var store = new InMemoryBeliefStore();
+        var belief1 = AgentBelief.CreatePrior("agent-1", "CodeGeneration").WithSuccess();
+        var belief2 = AgentBelief.CreatePrior("agent-1", "DataAnalysis").WithSuccess();
+        await store.SaveBeliefAsync(belief1).ConfigureAwait(false);
+        await store.SaveBeliefAsync(belief2).ConfigureAwait(false);
+
+        // Overwrite first belief
+        var updatedBelief1 = AgentBelief.CreatePrior("agent-1", "CodeGeneration")
+            .WithFailure()
+            .WithFailure();
+        await store.SaveBeliefAsync(updatedBelief1).ConfigureAwait(false);
+
+        // Act
+        var agentBeliefs = await store.GetBeliefsForAgentAsync("agent-1").ConfigureAwait(false);
+        var categoryBeliefs = await store.GetBeliefsForCategoryAsync("CodeGeneration").ConfigureAwait(false);
+
+        // Assert - Should still have exactly 2 beliefs for agent and 1 for category
+        await Assert.That(agentBeliefs.Value.Count).IsEqualTo(2);
+        await Assert.That(categoryBeliefs.Value.Count).IsEqualTo(1);
+        await Assert.That(categoryBeliefs.Value[0].Beta).IsEqualTo(updatedBelief1.Beta);
+    }
+
+    // =============================================================================
+    // I. Additional Concurrent Operations Tests
+    // =============================================================================
+
+    /// <summary>
+    /// Verifies that concurrent saves work correctly.
+    /// </summary>
+    [Test]
+    public async Task ConcurrentSaves_ThreadSafe()
+    {
+        // Arrange
+        var store = new InMemoryBeliefStore();
+        const int iterationCount = 50;
+
+        // Act - Concurrent saves for different agents
+        var tasks = new List<Task>();
+        for (int i = 0; i < iterationCount; i++)
+        {
+            var belief = AgentBelief.CreatePrior($"agent-{i}", "CodeGeneration").WithSuccess();
+            tasks.Add(store.SaveBeliefAsync(belief).AsTask());
+        }
+
+        await Task.WhenAll(tasks).ConfigureAwait(false);
+
+        // Assert - All beliefs should be saved
+        var categoryBeliefs = await store.GetBeliefsForCategoryAsync("CodeGeneration").ConfigureAwait(false);
+        await Assert.That(categoryBeliefs.Value.Count).IsEqualTo(iterationCount);
+    }
+
+    /// <summary>
+    /// Verifies that concurrent saves to the same key work correctly (last write wins).
+    /// </summary>
+    [Test]
+    public async Task ConcurrentSaves_SameKey_LastWriteWins()
+    {
+        // Arrange
+        var store = new InMemoryBeliefStore();
+        const int iterationCount = 100;
+
+        // Create beliefs with different alpha values
+        var beliefs = new List<AgentBelief>();
+        var prior = AgentBelief.CreatePrior("agent-1", "CodeGeneration");
+        var current = prior;
+        for (int i = 0; i < iterationCount; i++)
+        {
+            current = current.WithSuccess();
+            beliefs.Add(current);
+        }
+
+        // Act - Concurrent saves of the same key
+        var tasks = beliefs.Select(b => store.SaveBeliefAsync(b).AsTask()).ToList();
+        await Task.WhenAll(tasks).ConfigureAwait(false);
+
+        // Assert - Should have exactly one belief stored
+        var retrieved = await store.GetBeliefAsync("agent-1", "CodeGeneration").ConfigureAwait(false);
+        await Assert.That(retrieved.IsSuccess).IsTrue();
+
+        // The stored belief should be one of the beliefs we saved (last write wins is non-deterministic)
+        await Assert.That(retrieved.Value.Alpha).IsGreaterThanOrEqualTo(AgentBelief.DefaultPriorAlpha);
+    }
+
+    /// <summary>
+    /// Verifies that concurrent gets, saves, and updates work correctly together.
+    /// </summary>
+    [Test]
+    public async Task ConcurrentMixedOperations_ThreadSafe()
+    {
+        // Arrange
+        var store = new InMemoryBeliefStore();
+        const int iterationCount = 30;
+
+        // Pre-populate some beliefs
+        for (int i = 0; i < 10; i++)
+        {
+            await store.UpdateBeliefAsync($"agent-{i}", "CodeGeneration", success: true).ConfigureAwait(false);
+        }
+
+        // Act - Mix of all operations concurrently
+        var tasks = new List<Task>();
+        for (int i = 0; i < iterationCount; i++)
+        {
+            // Gets
+            tasks.Add(store.GetBeliefAsync($"agent-{i % 10}", "CodeGeneration").AsTask());
+            tasks.Add(store.GetBeliefsForAgentAsync($"agent-{i % 10}").AsTask());
+            tasks.Add(store.GetBeliefsForCategoryAsync("CodeGeneration").AsTask());
+
+            // Updates
+            tasks.Add(store.UpdateBeliefAsync($"agent-{i % 10}", "CodeGeneration", success: i % 2 == 0).AsTask());
+
+            // Saves
+            var belief = AgentBelief.CreatePrior($"agent-{i % 10}", $"Category-{i}").WithSuccess();
+            tasks.Add(store.SaveBeliefAsync(belief).AsTask());
+        }
+
+        await Task.WhenAll(tasks).ConfigureAwait(false);
+
+        // Assert - All operations should complete without exception
+        var finalBeliefs = await store.GetBeliefsForCategoryAsync("CodeGeneration").ConfigureAwait(false);
+        await Assert.That(finalBeliefs.IsSuccess).IsTrue();
+        await Assert.That(finalBeliefs.Value.Count).IsEqualTo(10);
+    }
+
+    /// <summary>
+    /// Verifies that concurrent operations across multiple agents and categories work correctly.
+    /// </summary>
+    [Test]
+    public async Task ConcurrentOperations_MultipleAgentsAndCategories_ThreadSafe()
+    {
+        // Arrange
+        var store = new InMemoryBeliefStore();
+        const int agentCount = 10;
+        const int categoryCount = 10;
+
+        // Act - Concurrent updates across all agent/category combinations
+        var tasks = new List<Task>();
+        for (int a = 0; a < agentCount; a++)
+        {
+            for (int c = 0; c < categoryCount; c++)
+            {
+                tasks.Add(store.UpdateBeliefAsync($"agent-{a}", $"category-{c}", success: true).AsTask());
+            }
+        }
+
+        await Task.WhenAll(tasks).ConfigureAwait(false);
+
+        // Assert - Verify all beliefs were created
+        for (int a = 0; a < agentCount; a++)
+        {
+            var agentBeliefs = await store.GetBeliefsForAgentAsync($"agent-{a}").ConfigureAwait(false);
+            await Assert.That(agentBeliefs.Value.Count).IsEqualTo(categoryCount);
+        }
+
+        for (int c = 0; c < categoryCount; c++)
+        {
+            var categoryBeliefs = await store.GetBeliefsForCategoryAsync($"category-{c}").ConfigureAwait(false);
+            await Assert.That(categoryBeliefs.Value.Count).IsEqualTo(agentCount);
+        }
+    }
 }

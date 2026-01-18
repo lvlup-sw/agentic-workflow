@@ -450,6 +450,532 @@ public sealed partial class InMemoryStepExecutionLedgerTests
     }
 
     // =========================================================================
+    // F. TTL Boundary Tests (ConcurrentDictionary Backend)
+    // =========================================================================
+
+    /// <summary>
+    /// Verifies that entry is still valid at exact TTL boundary.
+    /// </summary>
+    [Test]
+    public async Task TryGetCachedResultAsync_AtExactTtlBoundary_EntryStillValid()
+    {
+        // Arrange
+        var timeProvider = new FakeTimeProvider();
+        var ledger = CreateLedger(timeProvider);
+        var result = new TestResult("boundary-test");
+        var ttl = TimeSpan.FromMinutes(5);
+
+        await ledger.CacheResultAsync("step", "hash", result, ttl, CancellationToken.None).ConfigureAwait(false);
+
+        // Act - Advance time to exactly TTL (not past it)
+        timeProvider.Advance(ttl);
+
+        var cached = await ledger.TryGetCachedResultAsync<TestResult>("step", "hash", CancellationToken.None).ConfigureAwait(false);
+
+        // Assert - Entry should still be valid at exact boundary
+        await Assert.That(cached).IsNotNull();
+        await Assert.That(cached!.Value).IsEqualTo("boundary-test");
+    }
+
+    /// <summary>
+    /// Verifies that entry expires just after TTL boundary.
+    /// </summary>
+    [Test]
+    public async Task TryGetCachedResultAsync_JustAfterTtlBoundary_EntryExpired()
+    {
+        // Arrange
+        var timeProvider = new FakeTimeProvider();
+        var ledger = CreateLedger(timeProvider);
+        var result = new TestResult("boundary-test");
+        var ttl = TimeSpan.FromMinutes(5);
+
+        await ledger.CacheResultAsync("step", "hash", result, ttl, CancellationToken.None).ConfigureAwait(false);
+
+        // Act - Advance time to just past TTL
+        timeProvider.Advance(ttl + TimeSpan.FromTicks(1));
+
+        var cached = await ledger.TryGetCachedResultAsync<TestResult>("step", "hash", CancellationToken.None).ConfigureAwait(false);
+
+        // Assert - Entry should be expired
+        await Assert.That(cached).IsNull();
+    }
+
+    /// <summary>
+    /// Verifies that entries without TTL never expire.
+    /// </summary>
+    [Test]
+    public async Task TryGetCachedResultAsync_WithoutTtl_NeverExpires()
+    {
+        // Arrange
+        var timeProvider = new FakeTimeProvider();
+        var ledger = CreateLedger(timeProvider);
+        var result = new TestResult("persistent-value");
+
+        await ledger.CacheResultAsync("step", "hash", result, null, CancellationToken.None).ConfigureAwait(false);
+
+        // Act - Advance time significantly
+        timeProvider.Advance(TimeSpan.FromDays(365));
+
+        var cached = await ledger.TryGetCachedResultAsync<TestResult>("step", "hash", CancellationToken.None).ConfigureAwait(false);
+
+        // Assert - Entry should still exist
+        await Assert.That(cached).IsNotNull();
+        await Assert.That(cached!.Value).IsEqualTo("persistent-value");
+    }
+
+    /// <summary>
+    /// Verifies that expired entry is removed and returns null.
+    /// </summary>
+    [Test]
+    public async Task TryGetCachedResultAsync_ExpiredEntry_RemovesAndReturnsNull()
+    {
+        // Arrange
+        var timeProvider = new FakeTimeProvider();
+        var ledger = CreateLedger(timeProvider);
+        var result = new TestResult("will-expire");
+        var ttl = TimeSpan.FromMinutes(1);
+
+        await ledger.CacheResultAsync("step", "hash", result, ttl, CancellationToken.None).ConfigureAwait(false);
+
+        // Act - Advance time past TTL and try to get twice
+        timeProvider.Advance(TimeSpan.FromMinutes(2));
+        var firstAttempt = await ledger.TryGetCachedResultAsync<TestResult>("step", "hash", CancellationToken.None).ConfigureAwait(false);
+        var secondAttempt = await ledger.TryGetCachedResultAsync<TestResult>("step", "hash", CancellationToken.None).ConfigureAwait(false);
+
+        // Assert - Both attempts should return null (entry removed on first attempt)
+        await Assert.That(firstAttempt).IsNull();
+        await Assert.That(secondAttempt).IsNull();
+    }
+
+    // =========================================================================
+    // G. Concurrent Access Tests (ConcurrentDictionary Backend)
+    // =========================================================================
+
+    /// <summary>
+    /// Verifies that concurrent writes to the cache all succeed.
+    /// </summary>
+    [Test]
+    public async Task CacheResultAsync_ConcurrentWrites_AllSucceed()
+    {
+        // Arrange
+        var ledger = CreateLedger();
+        const int taskCount = 100;
+
+        // Act - Execute concurrent writes
+        var tasks = Enumerable.Range(0, taskCount)
+            .Select(async i =>
+            {
+                var result = new TestResult($"value-{i}");
+                await ledger.CacheResultAsync($"step-{i}", "hash", result, null, CancellationToken.None).ConfigureAwait(false);
+            });
+
+        await Task.WhenAll(tasks).ConfigureAwait(false);
+
+        // Assert - All entries should be retrievable
+        var retrievedCount = 0;
+        for (var i = 0; i < taskCount; i++)
+        {
+            var cached = await ledger.TryGetCachedResultAsync<TestResult>($"step-{i}", "hash", CancellationToken.None).ConfigureAwait(false);
+            if (cached != null)
+            {
+                retrievedCount++;
+            }
+        }
+
+        await Assert.That(retrievedCount).IsEqualTo(taskCount);
+    }
+
+    /// <summary>
+    /// Verifies that concurrent reads from the cache all succeed.
+    /// </summary>
+    [Test]
+    public async Task TryGetCachedResultAsync_ConcurrentReads_AllSucceed()
+    {
+        // Arrange
+        var ledger = CreateLedger();
+        var result = new TestResult("shared-value");
+        await ledger.CacheResultAsync("shared-step", "hash", result, null, CancellationToken.None).ConfigureAwait(false);
+        const int taskCount = 100;
+
+        // Act - Execute concurrent reads
+        var tasks = Enumerable.Range(0, taskCount)
+            .Select(async _ =>
+            {
+                var cached = await ledger.TryGetCachedResultAsync<TestResult>("shared-step", "hash", CancellationToken.None).ConfigureAwait(false);
+                return cached?.Value;
+            });
+
+        var results = await Task.WhenAll(tasks).ConfigureAwait(false);
+
+        // Assert - All reads should return the same value
+        await Assert.That(results.All(v => v == "shared-value")).IsTrue();
+    }
+
+    /// <summary>
+    /// Verifies that concurrent reads and writes do not throw exceptions.
+    /// </summary>
+    [Test]
+    public async Task CacheResultAsync_ConcurrentReadsAndWrites_NoExceptions()
+    {
+        // Arrange
+        var ledger = CreateLedger();
+
+        // Pre-populate some entries
+        for (var i = 0; i < 50; i++)
+        {
+            var result = new TestResult($"initial-{i}");
+            await ledger.CacheResultAsync($"step-{i}", "hash", result, null, CancellationToken.None).ConfigureAwait(false);
+        }
+
+        // Act - Execute concurrent reads and writes
+        var writeTasks = Enumerable.Range(50, 50)
+            .Select(async i =>
+            {
+                var result = new TestResult($"new-{i}");
+                await ledger.CacheResultAsync($"step-{i}", "hash", result, null, CancellationToken.None).ConfigureAwait(false);
+            });
+
+        var readTasks = Enumerable.Range(0, 50)
+            .Select(async i =>
+            {
+                await ledger.TryGetCachedResultAsync<TestResult>($"step-{i}", "hash", CancellationToken.None).ConfigureAwait(false);
+            });
+
+        // Assert - No exceptions should be thrown
+        await Assert.That(async () => await Task.WhenAll(writeTasks.Concat(readTasks)).ConfigureAwait(false))
+            .ThrowsNothing();
+    }
+
+    /// <summary>
+    /// Verifies that concurrent overwrites to the same key work correctly.
+    /// </summary>
+    [Test]
+    public async Task CacheResultAsync_ConcurrentOverwrites_LastWriteWins()
+    {
+        // Arrange
+        var ledger = CreateLedger();
+        const int taskCount = 50;
+
+        // Act - Execute concurrent overwrites to the same key
+        var tasks = Enumerable.Range(0, taskCount)
+            .Select(async i =>
+            {
+                var result = new TestResult($"value-{i}");
+                await ledger.CacheResultAsync("same-step", "same-hash", result, null, CancellationToken.None).ConfigureAwait(false);
+            });
+
+        await Task.WhenAll(tasks).ConfigureAwait(false);
+
+        // Assert - Should have some value (last write wins, but order is non-deterministic)
+        var cached = await ledger.TryGetCachedResultAsync<TestResult>("same-step", "same-hash", CancellationToken.None).ConfigureAwait(false);
+        await Assert.That(cached).IsNotNull();
+        await Assert.That(cached!.Value).Contains("value-");
+    }
+
+    // =========================================================================
+    // H. Edge Case Tests
+    // =========================================================================
+
+    /// <summary>
+    /// Verifies that very long step names are handled correctly.
+    /// </summary>
+    [Test]
+    public async Task CacheResultAsync_VeryLongStepName_WorksCorrectly()
+    {
+        // Arrange
+        var ledger = CreateLedger();
+        var longStepName = new string('x', 10000);
+        var result = new TestResult("long-key-value");
+
+        // Act
+        await ledger.CacheResultAsync(longStepName, "hash", result, null, CancellationToken.None).ConfigureAwait(false);
+        var cached = await ledger.TryGetCachedResultAsync<TestResult>(longStepName, "hash", CancellationToken.None).ConfigureAwait(false);
+
+        // Assert
+        await Assert.That(cached).IsNotNull();
+        await Assert.That(cached!.Value).IsEqualTo("long-key-value");
+    }
+
+    /// <summary>
+    /// Verifies that very long input hashes are handled correctly.
+    /// </summary>
+    [Test]
+    public async Task CacheResultAsync_VeryLongInputHash_WorksCorrectly()
+    {
+        // Arrange
+        var ledger = CreateLedger();
+        var longHash = new string('a', 10000);
+        var result = new TestResult("long-hash-value");
+
+        // Act
+        await ledger.CacheResultAsync("step", longHash, result, null, CancellationToken.None).ConfigureAwait(false);
+        var cached = await ledger.TryGetCachedResultAsync<TestResult>("step", longHash, CancellationToken.None).ConfigureAwait(false);
+
+        // Assert
+        await Assert.That(cached).IsNotNull();
+        await Assert.That(cached!.Value).IsEqualTo("long-hash-value");
+    }
+
+    /// <summary>
+    /// Verifies that large result values are handled correctly.
+    /// </summary>
+    [Test]
+    public async Task CacheResultAsync_LargeResultValue_WorksCorrectly()
+    {
+        // Arrange
+        var ledger = CreateLedger();
+        var largeValue = new string('z', 100000);
+        var result = new TestResult(largeValue);
+
+        // Act
+        await ledger.CacheResultAsync("step", "hash", result, null, CancellationToken.None).ConfigureAwait(false);
+        var cached = await ledger.TryGetCachedResultAsync<TestResult>("step", "hash", CancellationToken.None).ConfigureAwait(false);
+
+        // Assert
+        await Assert.That(cached).IsNotNull();
+        await Assert.That(cached!.Value.Length).IsEqualTo(100000);
+        await Assert.That(cached.Value).IsEqualTo(largeValue);
+    }
+
+    /// <summary>
+    /// Verifies that rapid set/get cycles work correctly.
+    /// </summary>
+    [Test]
+    public async Task CacheResultAsync_RapidSetGetCycles_WorksCorrectly()
+    {
+        // Arrange
+        var ledger = CreateLedger();
+        const int cycleCount = 100;
+
+        // Act & Assert - Rapid set/get cycles
+        for (var i = 0; i < cycleCount; i++)
+        {
+            var result = new TestResult($"cycle-{i}");
+            await ledger.CacheResultAsync("step", "hash", result, null, CancellationToken.None).ConfigureAwait(false);
+            var cached = await ledger.TryGetCachedResultAsync<TestResult>("step", "hash", CancellationToken.None).ConfigureAwait(false);
+
+            await Assert.That(cached).IsNotNull();
+            await Assert.That(cached!.Value).IsEqualTo($"cycle-{i}");
+        }
+    }
+
+    /// <summary>
+    /// Verifies that different input hashes for the same step name are isolated.
+    /// </summary>
+    [Test]
+    public async Task CacheResultAsync_DifferentHashes_SameStepName_AreIsolated()
+    {
+        // Arrange
+        var ledger = CreateLedger();
+        var result1 = new TestResult("hash1-value");
+        var result2 = new TestResult("hash2-value");
+
+        // Act
+        await ledger.CacheResultAsync("step", "hash1", result1, null, CancellationToken.None).ConfigureAwait(false);
+        await ledger.CacheResultAsync("step", "hash2", result2, null, CancellationToken.None).ConfigureAwait(false);
+
+        var cached1 = await ledger.TryGetCachedResultAsync<TestResult>("step", "hash1", CancellationToken.None).ConfigureAwait(false);
+        var cached2 = await ledger.TryGetCachedResultAsync<TestResult>("step", "hash2", CancellationToken.None).ConfigureAwait(false);
+
+        // Assert
+        await Assert.That(cached1).IsNotNull();
+        await Assert.That(cached1!.Value).IsEqualTo("hash1-value");
+        await Assert.That(cached2).IsNotNull();
+        await Assert.That(cached2!.Value).IsEqualTo("hash2-value");
+    }
+
+    /// <summary>
+    /// Verifies that special characters in step names are handled correctly.
+    /// </summary>
+    [Test]
+    public async Task CacheResultAsync_SpecialCharactersInStepName_WorksCorrectly()
+    {
+        // Arrange
+        var ledger = CreateLedger();
+        var specialStepName = "step:with/special\\chars!@#$%^&*()";
+        var result = new TestResult("special-chars-value");
+
+        // Act
+        await ledger.CacheResultAsync(specialStepName, "hash", result, null, CancellationToken.None).ConfigureAwait(false);
+        var cached = await ledger.TryGetCachedResultAsync<TestResult>(specialStepName, "hash", CancellationToken.None).ConfigureAwait(false);
+
+        // Assert
+        await Assert.That(cached).IsNotNull();
+        await Assert.That(cached!.Value).IsEqualTo("special-chars-value");
+    }
+
+    /// <summary>
+    /// Verifies that Unicode characters in step names are handled correctly.
+    /// </summary>
+    [Test]
+    public async Task CacheResultAsync_UnicodeInStepName_WorksCorrectly()
+    {
+        // Arrange
+        var ledger = CreateLedger();
+        var unicodeStepName = "step-\u4e2d\u6587-\u0420\u0443\u0441\u0441\u043a\u0438\u0439-\u0639\u0631\u0628\u064a";
+        var result = new TestResult("unicode-value");
+
+        // Act
+        await ledger.CacheResultAsync(unicodeStepName, "hash", result, null, CancellationToken.None).ConfigureAwait(false);
+        var cached = await ledger.TryGetCachedResultAsync<TestResult>(unicodeStepName, "hash", CancellationToken.None).ConfigureAwait(false);
+
+        // Assert
+        await Assert.That(cached).IsNotNull();
+        await Assert.That(cached!.Value).IsEqualTo("unicode-value");
+    }
+
+    // =========================================================================
+    // I. ComputeInputHash Additional Tests
+    // =========================================================================
+
+    /// <summary>
+    /// Verifies that ComputeInputHash returns lowercase hex string.
+    /// </summary>
+    [Test]
+    public async Task ComputeInputHash_ReturnsLowercaseHex()
+    {
+        // Arrange
+        var ledger = CreateLedger();
+        var input = new TestInput(1, "test");
+
+        // Act
+        var hash = ledger.ComputeInputHash(input);
+
+        // Assert - SHA256 produces 64 hex characters, all lowercase
+        await Assert.That(hash.All(c => char.IsDigit(c) || (c >= 'a' && c <= 'f'))).IsTrue();
+    }
+
+    /// <summary>
+    /// Verifies that equivalent inputs produce identical hashes.
+    /// </summary>
+    [Test]
+    public async Task ComputeInputHash_EquivalentInputs_ProduceSameHash()
+    {
+        // Arrange
+        var ledger = CreateLedger();
+        var input1 = new TestInput(42, "test");
+        var input2 = new TestInput(42, "test");
+
+        // Act
+        var hash1 = ledger.ComputeInputHash(input1);
+        var hash2 = ledger.ComputeInputHash(input2);
+
+        // Assert
+        await Assert.That(hash1).IsEqualTo(hash2);
+    }
+
+    /// <summary>
+    /// Verifies that inputs with different IDs produce different hashes.
+    /// </summary>
+    [Test]
+    public async Task ComputeInputHash_DifferentIds_ProduceDifferentHashes()
+    {
+        // Arrange
+        var ledger = CreateLedger();
+        var input1 = new TestInput(1, "test");
+        var input2 = new TestInput(2, "test");
+
+        // Act
+        var hash1 = ledger.ComputeInputHash(input1);
+        var hash2 = ledger.ComputeInputHash(input2);
+
+        // Assert
+        await Assert.That(hash1).IsNotEqualTo(hash2);
+    }
+
+    /// <summary>
+    /// Verifies that inputs with different names produce different hashes.
+    /// </summary>
+    [Test]
+    public async Task ComputeInputHash_DifferentNames_ProduceDifferentHashes()
+    {
+        // Arrange
+        var ledger = CreateLedger();
+        var input1 = new TestInput(1, "test1");
+        var input2 = new TestInput(1, "test2");
+
+        // Act
+        var hash1 = ledger.ComputeInputHash(input1);
+        var hash2 = ledger.ComputeInputHash(input2);
+
+        // Assert
+        await Assert.That(hash1).IsNotEqualTo(hash2);
+    }
+
+    // =========================================================================
+    // J. TTL Edge Cases
+    // =========================================================================
+
+    /// <summary>
+    /// Verifies that very short TTL works correctly.
+    /// </summary>
+    [Test]
+    public async Task CacheResultAsync_VeryShortTtl_ExpiresQuickly()
+    {
+        // Arrange
+        var timeProvider = new FakeTimeProvider();
+        var ledger = CreateLedger(timeProvider);
+        var result = new TestResult("short-lived");
+        var ttl = TimeSpan.FromTicks(1);
+
+        // Act
+        await ledger.CacheResultAsync("step", "hash", result, ttl, CancellationToken.None).ConfigureAwait(false);
+        timeProvider.Advance(TimeSpan.FromTicks(2));
+        var cached = await ledger.TryGetCachedResultAsync<TestResult>("step", "hash", CancellationToken.None).ConfigureAwait(false);
+
+        // Assert
+        await Assert.That(cached).IsNull();
+    }
+
+    /// <summary>
+    /// Verifies that very long TTL does not expire prematurely.
+    /// </summary>
+    [Test]
+    public async Task CacheResultAsync_VeryLongTtl_DoesNotExpirePrematurely()
+    {
+        // Arrange
+        var timeProvider = new FakeTimeProvider();
+        var ledger = CreateLedger(timeProvider);
+        var result = new TestResult("long-lived");
+        var ttl = TimeSpan.FromDays(365);
+
+        // Act
+        await ledger.CacheResultAsync("step", "hash", result, ttl, CancellationToken.None).ConfigureAwait(false);
+        timeProvider.Advance(TimeSpan.FromDays(364));
+        var cached = await ledger.TryGetCachedResultAsync<TestResult>("step", "hash", CancellationToken.None).ConfigureAwait(false);
+
+        // Assert
+        await Assert.That(cached).IsNotNull();
+        await Assert.That(cached!.Value).IsEqualTo("long-lived");
+    }
+
+    /// <summary>
+    /// Verifies that updating TTL on existing entry works correctly.
+    /// </summary>
+    [Test]
+    public async Task CacheResultAsync_UpdateTtl_ExtendsExpiration()
+    {
+        // Arrange
+        var timeProvider = new FakeTimeProvider();
+        var ledger = CreateLedger(timeProvider);
+        var result = new TestResult("will-be-extended");
+        var shortTtl = TimeSpan.FromMinutes(1);
+        var longTtl = TimeSpan.FromMinutes(10);
+
+        // Act - Cache with short TTL, then update with longer TTL
+        await ledger.CacheResultAsync("step", "hash", result, shortTtl, CancellationToken.None).ConfigureAwait(false);
+        await ledger.CacheResultAsync("step", "hash", result, longTtl, CancellationToken.None).ConfigureAwait(false);
+
+        // Advance past original TTL but before new TTL
+        timeProvider.Advance(TimeSpan.FromMinutes(5));
+        var cached = await ledger.TryGetCachedResultAsync<TestResult>("step", "hash", CancellationToken.None).ConfigureAwait(false);
+
+        // Assert - Entry should still be valid due to extended TTL
+        await Assert.That(cached).IsNotNull();
+        await Assert.That(cached!.Value).IsEqualTo("will-be-extended");
+    }
+
+    // =========================================================================
     // Helper Methods
     // =========================================================================
 
