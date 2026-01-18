@@ -60,6 +60,11 @@ public sealed class ClassifyQuery : IWorkflowStep<RouterState>
         ArgumentNullException.ThrowIfNull(state);
         ArgumentNullException.ThrowIfNull(context);
 
+        if (string.IsNullOrWhiteSpace(state.UserQuery))
+        {
+            throw new ArgumentException("User query is required.", nameof(state));
+        }
+
         var query = state.UserQuery.ToLowerInvariant();
         var category = ClassifyByKeywords(query);
 

@@ -211,4 +211,160 @@ public class RecordFeedbackTests
         await Assert.That(result.UpdatedState.Confidence).IsEqualTo(0.85m);
         await Assert.That(result.UpdatedState.Feedback).IsEqualTo(feedback);
     }
+
+    /// <summary>
+    /// Verifies that Technical query category maps to CodeGeneration task category.
+    /// </summary>
+    [Test]
+    public async Task ExecuteAsync_TechnicalCategory_UsesCodeGenerationTaskCategory()
+    {
+        // Arrange
+        var agentSelector = Substitute.For<IAgentSelector>();
+        agentSelector.RecordOutcomeAsync(
+            Arg.Any<string>(),
+            Arg.Any<string>(),
+            Arg.Any<AgentOutcome>(),
+            Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(Result<Unit>.Success(Unit.Value)));
+
+        var step = new RecordFeedback(agentSelector);
+        var state = new RouterState
+        {
+            WorkflowId = Guid.NewGuid(),
+            UserQuery = "Implement an algorithm",
+            Category = QueryCategory.Technical,
+            SelectedModel = "gpt-4",
+            Response = "Here is the code...",
+            Confidence = 0.9m,
+            Feedback = new UserFeedback(5, "Great!", DateTimeOffset.UtcNow),
+        };
+        var context = StepContext.Create(state.WorkflowId, nameof(RecordFeedback), "Record");
+
+        // Act
+        await step.ExecuteAsync(state, context, CancellationToken.None);
+
+        // Assert - Technical should map to CodeGeneration (TaskCategory)
+        await agentSelector.Received(1).RecordOutcomeAsync(
+            "gpt-4",
+            TaskCategory.CodeGeneration.ToString(),
+            Arg.Any<AgentOutcome>(),
+            Arg.Any<CancellationToken>());
+    }
+
+    /// <summary>
+    /// Verifies that Creative query category maps to TextGeneration task category.
+    /// </summary>
+    [Test]
+    public async Task ExecuteAsync_CreativeCategory_UsesTextGenerationTaskCategory()
+    {
+        // Arrange
+        var agentSelector = Substitute.For<IAgentSelector>();
+        agentSelector.RecordOutcomeAsync(
+            Arg.Any<string>(),
+            Arg.Any<string>(),
+            Arg.Any<AgentOutcome>(),
+            Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(Result<Unit>.Success(Unit.Value)));
+
+        var step = new RecordFeedback(agentSelector);
+        var state = new RouterState
+        {
+            WorkflowId = Guid.NewGuid(),
+            UserQuery = "Write a poem",
+            Category = QueryCategory.Creative,
+            SelectedModel = "claude-3",
+            Response = "Roses are red...",
+            Confidence = 0.8m,
+            Feedback = new UserFeedback(4, "Nice!", DateTimeOffset.UtcNow),
+        };
+        var context = StepContext.Create(state.WorkflowId, nameof(RecordFeedback), "Record");
+
+        // Act
+        await step.ExecuteAsync(state, context, CancellationToken.None);
+
+        // Assert - Creative should map to TextGeneration (TaskCategory)
+        await agentSelector.Received(1).RecordOutcomeAsync(
+            "claude-3",
+            TaskCategory.TextGeneration.ToString(),
+            Arg.Any<AgentOutcome>(),
+            Arg.Any<CancellationToken>());
+    }
+
+    /// <summary>
+    /// Verifies that Factual query category maps to General task category.
+    /// </summary>
+    [Test]
+    public async Task ExecuteAsync_FactualCategory_UsesGeneralTaskCategory()
+    {
+        // Arrange
+        var agentSelector = Substitute.For<IAgentSelector>();
+        agentSelector.RecordOutcomeAsync(
+            Arg.Any<string>(),
+            Arg.Any<string>(),
+            Arg.Any<AgentOutcome>(),
+            Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(Result<Unit>.Success(Unit.Value)));
+
+        var step = new RecordFeedback(agentSelector);
+        var state = new RouterState
+        {
+            WorkflowId = Guid.NewGuid(),
+            UserQuery = "What is AI?",
+            Category = QueryCategory.Factual,
+            SelectedModel = "gpt-4",
+            Response = "AI is artificial intelligence.",
+            Confidence = 0.9m,
+            Feedback = new UserFeedback(5, "Perfect!", DateTimeOffset.UtcNow),
+        };
+        var context = StepContext.Create(state.WorkflowId, nameof(RecordFeedback), "Record");
+
+        // Act
+        await step.ExecuteAsync(state, context, CancellationToken.None);
+
+        // Assert - Factual should map to General (TaskCategory)
+        await agentSelector.Received(1).RecordOutcomeAsync(
+            "gpt-4",
+            TaskCategory.General.ToString(),
+            Arg.Any<AgentOutcome>(),
+            Arg.Any<CancellationToken>());
+    }
+
+    /// <summary>
+    /// Verifies that Conversational query category maps to General task category.
+    /// </summary>
+    [Test]
+    public async Task ExecuteAsync_ConversationalCategory_UsesGeneralTaskCategory()
+    {
+        // Arrange
+        var agentSelector = Substitute.For<IAgentSelector>();
+        agentSelector.RecordOutcomeAsync(
+            Arg.Any<string>(),
+            Arg.Any<string>(),
+            Arg.Any<AgentOutcome>(),
+            Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(Result<Unit>.Success(Unit.Value)));
+
+        var step = new RecordFeedback(agentSelector);
+        var state = new RouterState
+        {
+            WorkflowId = Guid.NewGuid(),
+            UserQuery = "Hello there",
+            Category = QueryCategory.Conversational,
+            SelectedModel = "local-model",
+            Response = "Hi! How can I help?",
+            Confidence = 0.7m,
+            Feedback = new UserFeedback(4, "Friendly!", DateTimeOffset.UtcNow),
+        };
+        var context = StepContext.Create(state.WorkflowId, nameof(RecordFeedback), "Record");
+
+        // Act
+        await step.ExecuteAsync(state, context, CancellationToken.None);
+
+        // Assert - Conversational should map to General (TaskCategory)
+        await agentSelector.Received(1).RecordOutcomeAsync(
+            "local-model",
+            TaskCategory.General.ToString(),
+            Arg.Any<AgentOutcome>(),
+            Arg.Any<CancellationToken>());
+    }
 }

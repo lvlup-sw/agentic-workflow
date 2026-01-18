@@ -4,6 +4,7 @@
 // </copyright>
 // =============================================================================
 
+using Agentic.Workflow.Selection;
 using Agentic.Workflow.Steps;
 using MultiModelRouter;
 using MultiModelRouter.Services;
@@ -130,7 +131,7 @@ Console.WriteLine();
 Console.WriteLine("Final Belief States (Success Rates):");
 var beliefs = agentSelector.GetBeliefs();
 var models = new[] { "gpt-4", "claude-3", "local-model" };
-var categories = new[] { "General", "Factual", "Creative", "Technical", "Conversational", "TextGeneration", "CodeGeneration" };
+var categories = Enum.GetNames<TaskCategory>();
 
 foreach (var model in models)
 {

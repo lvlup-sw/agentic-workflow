@@ -12,9 +12,8 @@ namespace ContentPipeline.Services;
 /// Mock implementation of <see cref="IApprovalService"/> for testing purposes.
 /// </summary>
 /// <remarks>
-/// This service simulates human approval by auto-approving content after
-/// a configurable delay. It can be configured to reject content for testing
-/// rejection scenarios.
+/// This service simulates human approval by returning a preconfigured decision.
+/// It can be configured to reject content for testing rejection scenarios.
 /// </remarks>
 public sealed class MockApprovalService : IApprovalService
 {

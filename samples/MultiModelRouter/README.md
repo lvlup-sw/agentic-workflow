@@ -13,7 +13,7 @@ The Multi-Model Router shows how to:
 
 ## Workflow Architecture
 
-```
+```text
 Classify Query -> Select Model (Thompson Sampling) -> Generate Response -> Record Feedback
                          |
               [GPT-4 | Claude-3 | Local Model]
@@ -28,7 +28,7 @@ Classify Query -> Select Model (Thompson Sampling) -> Generate Response -> Recor
 
 Each model maintains a Beta distribution for each task category:
 
-```
+```text
 Model "gpt-4" for "Factual" tasks:
   Beta(alpha=15, beta=3)  ->  High success rate, confident
 
@@ -54,7 +54,7 @@ dotnet run --project samples/MultiModelRouter
 
 ### Sample Output
 
-```
+```text
 ==============================================
   Multi-Model Router Sample
   Thompson Sampling for Model Selection

@@ -16,9 +16,12 @@ public sealed class MockTaskAnalyzer : ITaskAnalyzer
         string taskDescription,
         CancellationToken cancellationToken = default)
     {
+        // Normalize input to avoid NRE on null taskDescription
+        var normalizedDescription = taskDescription ?? string.Empty;
+
         // Simple mock analysis based on task description content
-        var isValid = !string.IsNullOrWhiteSpace(taskDescription);
-        var complexity = taskDescription.Length > 100 ? "High" : "Low";
+        var isValid = !string.IsNullOrWhiteSpace(normalizedDescription);
+        var complexity = normalizedDescription.Length > 100 ? "High" : "Low";
 
         var requirements = new List<string>
         {
@@ -27,7 +30,7 @@ public sealed class MockTaskAnalyzer : ITaskAnalyzer
             "Must return expected type",
         };
 
-        if (taskDescription.Contains("FizzBuzz", StringComparison.OrdinalIgnoreCase))
+        if (normalizedDescription.Contains("FizzBuzz", StringComparison.OrdinalIgnoreCase))
         {
             requirements.Add("Return 'Fizz' for multiples of 3");
             requirements.Add("Return 'Buzz' for multiples of 5");

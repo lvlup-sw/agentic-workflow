@@ -50,9 +50,25 @@ public sealed class UnpublishContent : IWorkflowStep<ContentState>
             return StepResult<ContentState>.FromState(state);
         }
 
-        await _publishingService.UnpublishAsync(state.PublishedUrl, cancellationToken);
-
+        var unpublished = await _publishingService.UnpublishAsync(state.PublishedUrl, cancellationToken);
         var timestamp = _timeProvider.GetUtcNow();
+
+        if (!unpublished)
+        {
+            var failedAudit = new AuditEntry(
+                Timestamp: timestamp,
+                Action: "Content Unpublish Failed (Compensation)",
+                Actor: "System",
+                Details: $"Failed to remove: {state.PublishedUrl}");
+
+            var failedState = state with
+            {
+                AuditEntries = [.. state.AuditEntries, failedAudit],
+            };
+
+            return StepResult<ContentState>.FromState(failedState);
+        }
+
         var auditEntry = new AuditEntry(
             Timestamp: timestamp,
             Action: "Content Unpublished (Compensation)",

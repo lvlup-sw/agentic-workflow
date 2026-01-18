@@ -58,18 +58,50 @@ public sealed class RecordFeedback : IWorkflowStep<RouterState>
             return StepResult<RouterState>.FromState(state);
         }
 
+        if (string.IsNullOrWhiteSpace(state.SelectedModel))
+        {
+            throw new ArgumentException("Selected model is required to record feedback.", nameof(state));
+        }
+
         var isSuccess = state.Feedback.Rating >= SuccessThreshold;
         var outcome = isSuccess
             ? AgentOutcome.Succeeded(confidence: (double)state.Confidence)
             : AgentOutcome.Failed(confidence: (double)state.Confidence);
 
+        // Map QueryCategory to TaskCategory for consistent belief keys
+        var taskCategory = MapToTaskCategory(state.Category);
+
         // Record outcome to update Thompson Sampling beliefs
         await _agentSelector.RecordOutcomeAsync(
             state.SelectedModel,
-            state.Category.ToString(),
+            taskCategory.ToString(),
             outcome,
             cancellationToken);
 
         return StepResult<RouterState>.FromState(state);
+    }
+
+    /// <summary>
+    /// Maps a query category to the corresponding task category for Thompson Sampling.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// This mapping ensures belief key alignment between model selection and feedback recording.
+    /// The MockAgentSelector uses TaskCategory for belief keys, so feedback must use the same
+    /// taxonomy to ensure Thompson Sampling learns correctly.
+    /// </para>
+    /// </remarks>
+    /// <param name="queryCategory">The query category from classification.</param>
+    /// <returns>The corresponding task category for belief tracking.</returns>
+    private static TaskCategory MapToTaskCategory(QueryCategory queryCategory)
+    {
+        return queryCategory switch
+        {
+            QueryCategory.Technical => TaskCategory.CodeGeneration,
+            QueryCategory.Creative => TaskCategory.TextGeneration,
+            QueryCategory.Factual => TaskCategory.General,
+            QueryCategory.Conversational => TaskCategory.General,
+            _ => TaskCategory.General,
+        };
     }
 }

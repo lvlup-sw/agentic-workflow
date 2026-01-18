@@ -14,7 +14,7 @@ This sample implements a content publishing pipeline that demonstrates:
 
 ## Workflow Flow
 
-```
+```text
 Draft -> AI Review -> Human Approval -> Publish
                            |
                            v (compensation if issues)
@@ -23,7 +23,7 @@ Draft -> AI Review -> Human Approval -> Publish
 
 ## Project Structure
 
-```
+```text
 ContentPipeline/
   State/
     ContentState.cs        # Workflow state record
@@ -53,7 +53,7 @@ dotnet run --project samples/ContentPipeline
 ```
 
 Expected output:
-```
+```text
 ===========================================
   Content Pipeline Sample Application
 ===========================================

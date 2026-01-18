@@ -42,9 +42,16 @@ public sealed class SelectModel : IWorkflowStep<RouterState>
     /// </summary>
     /// <param name="agentSelector">The agent selector for Thompson Sampling.</param>
     /// <param name="confidenceThreshold">Minimum confidence to accept selection (default 0.5).</param>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when confidenceThreshold is not between 0.0 and 1.0.</exception>
     public SelectModel(IAgentSelector agentSelector, decimal confidenceThreshold = 0.5m)
     {
         ArgumentNullException.ThrowIfNull(agentSelector);
+
+        if (confidenceThreshold is < 0m or > 1m)
+        {
+            throw new ArgumentOutOfRangeException(nameof(confidenceThreshold), "Must be between 0.0 and 1.0.");
+        }
+
         _agentSelector = agentSelector;
         _confidenceThreshold = confidenceThreshold;
     }

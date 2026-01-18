@@ -72,12 +72,24 @@ public sealed class MockLlmService : ILlmService
 
     private static string ExtractTopic(string prompt)
     {
-        // Simple extraction: look for common patterns
-        var lowerPrompt = prompt.ToLowerInvariant();
-
-        if (lowerPrompt.Contains("about "))
+        // Case-insensitive search for "about" followed by optional colon and/or whitespace
+        var aboutIndex = prompt.IndexOf("about", StringComparison.OrdinalIgnoreCase);
+        if (aboutIndex >= 0)
         {
-            var startIndex = lowerPrompt.IndexOf("about ", StringComparison.Ordinal) + 6;
+            var startIndex = aboutIndex + "about".Length;
+
+            // Skip optional colon after "about"
+            if (startIndex < prompt.Length && prompt[startIndex] == ':')
+            {
+                startIndex++;
+            }
+
+            // Skip optional whitespace after "about" or "about:"
+            if (startIndex < prompt.Length && prompt[startIndex] == ' ')
+            {
+                startIndex++;
+            }
+
             var endIndex = prompt.IndexOfAny(['.', ',', '!', '?'], startIndex);
             if (endIndex == -1)
             {

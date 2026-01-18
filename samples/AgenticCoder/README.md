@@ -14,7 +14,7 @@ This sample demonstrates an AI-powered code generation workflow using Agentic.Wo
 
 ## Workflow Structure
 
-```
+```text
 AnalyzeTask -> PlanImplementation -> [GenerateCode -> RunTests -> ReviewResults] -> HumanCheckpoint -> Complete
                                              ^                    |
                                              |-- tests fail ------+

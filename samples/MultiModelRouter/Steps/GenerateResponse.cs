@@ -43,6 +43,16 @@ public sealed class GenerateResponse : IWorkflowStep<RouterState>
         ArgumentNullException.ThrowIfNull(state);
         ArgumentNullException.ThrowIfNull(context);
 
+        if (string.IsNullOrWhiteSpace(state.SelectedModel))
+        {
+            throw new ArgumentException("Selected model is required.", nameof(state));
+        }
+
+        if (string.IsNullOrWhiteSpace(state.UserQuery))
+        {
+            throw new ArgumentException("User query is required.", nameof(state));
+        }
+
         var response = await _modelProvider.GenerateAsync(
             state.SelectedModel,
             state.UserQuery,

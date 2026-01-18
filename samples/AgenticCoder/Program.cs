@@ -88,10 +88,10 @@ for (var iteration = 1; iteration <= maxIterations; iteration++)
     result = await testStep.ExecuteAsync(state, context, CancellationToken.None);
     state = result.UpdatedState;
 
-    if (state.LatestTestResults!.Passed)
+    var testsPassed = state.LatestTestResults!.Passed;
+    if (testsPassed)
     {
         Console.WriteLine("All tests passed!");
-        break;
     }
     else
     {
@@ -104,18 +104,23 @@ for (var iteration = 1; iteration <= maxIterations; iteration++)
 
     Console.WriteLine();
 
-    // Review Results
+    // Review Results (always run, even on success)
     Console.WriteLine("[ReviewResults]");
     var reviewStep = new ReviewResults();
     context = StepContext.Create(state.WorkflowId, nameof(ReviewResults), $"Refinement_ReviewResults_{iteration}");
     result = await reviewStep.ExecuteAsync(state, context, CancellationToken.None);
     state = result.UpdatedState;
 
-    if (!state.LatestTestResults.Passed && iteration < maxIterations)
+    if (testsPassed)
+    {
+        break;
+    }
+
+    if (iteration < maxIterations)
     {
         Console.WriteLine("Loop condition not met. Continuing refinement...");
     }
-    else if (!state.LatestTestResults.Passed)
+    else
     {
         Console.WriteLine();
         Console.WriteLine("!!! MAX ITERATIONS REACHED !!!");

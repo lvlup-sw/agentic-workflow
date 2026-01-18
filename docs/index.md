@@ -30,9 +30,9 @@ features:
 
 <div class="samples-section">
 
-## See It In Action
+<h2>See It In Action</h2>
 
-Real-world sample applications demonstrating core capabilities:
+<p>Real-world sample applications demonstrating core capabilities:</p>
 
 <div class="sample-cards">
   <div class="sample-card">
@@ -52,6 +52,6 @@ Real-world sample applications demonstrating core capabilities:
   </div>
 </div>
 
-[View All Samples](/examples/#sample-applications)
+<p><a href="/examples/#sample-applications">View All Samples</a></p>
 
 </div>

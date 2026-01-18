@@ -155,4 +155,69 @@ public class UnpublishContentTests
             Arg.Any<CancellationToken>());
         await Assert.That(result.UpdatedState.AuditEntries).HasCount().EqualTo(0);
     }
+
+    /// <summary>
+    /// Verifies that ExecuteAsync preserves state when UnpublishAsync returns false.
+    /// </summary>
+    [Test]
+    public async Task ExecuteAsync_UnpublishFails_PreservesPublishedState()
+    {
+        // Arrange
+        var step = new UnpublishContent(_mockPublishingService, _mockTimeProvider);
+        var timestamp = DateTimeOffset.UtcNow;
+        var publishedUrl = "https://example.com/articles/test-article";
+        var publishedAt = timestamp.AddMinutes(-10);
+        var state = new ContentState
+        {
+            WorkflowId = Guid.NewGuid(),
+            Title = "Test Article",
+            PublishedUrl = publishedUrl,
+            PublishedAt = publishedAt,
+        };
+        var context = StepContext.Create(state.WorkflowId, nameof(UnpublishContent), "UnpublishContent");
+
+        _mockPublishingService.UnpublishAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(false);
+        _mockTimeProvider.GetUtcNow().Returns(timestamp);
+
+        // Act
+        var result = await step.ExecuteAsync(state, context, CancellationToken.None);
+
+        // Assert
+        await Assert.That(result.UpdatedState.PublishedUrl).IsEqualTo(publishedUrl);
+        await Assert.That(result.UpdatedState.PublishedAt).IsEqualTo(publishedAt);
+    }
+
+    /// <summary>
+    /// Verifies that ExecuteAsync adds failure audit entry when UnpublishAsync returns false.
+    /// </summary>
+    [Test]
+    public async Task ExecuteAsync_UnpublishFails_AddsFailureAuditEntry()
+    {
+        // Arrange
+        var step = new UnpublishContent(_mockPublishingService, _mockTimeProvider);
+        var timestamp = DateTimeOffset.UtcNow;
+        var publishedUrl = "https://example.com/articles/test-article";
+        var state = new ContentState
+        {
+            WorkflowId = Guid.NewGuid(),
+            Title = "Test Article",
+            PublishedUrl = publishedUrl,
+            PublishedAt = timestamp.AddMinutes(-10),
+        };
+        var context = StepContext.Create(state.WorkflowId, nameof(UnpublishContent), "UnpublishContent");
+
+        _mockPublishingService.UnpublishAsync(Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(false);
+        _mockTimeProvider.GetUtcNow().Returns(timestamp);
+
+        // Act
+        var result = await step.ExecuteAsync(state, context, CancellationToken.None);
+
+        // Assert
+        await Assert.That(result.UpdatedState.AuditEntries).HasCount().EqualTo(1);
+        await Assert.That(result.UpdatedState.AuditEntries[0].Action).IsEqualTo("Content Unpublish Failed (Compensation)");
+        await Assert.That(result.UpdatedState.AuditEntries[0].Actor).IsEqualTo("System");
+        await Assert.That(result.UpdatedState.AuditEntries[0].Details).Contains(publishedUrl);
+    }
 }

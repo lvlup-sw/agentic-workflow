@@ -57,6 +57,11 @@ public sealed class MockAgentSelector : IAgentSelector
     {
         ArgumentNullException.ThrowIfNull(context);
 
+        if (context.AvailableAgents.Count == 0)
+        {
+            return Task.FromResult(Result<AgentSelection>.Failure(new Error("NO_AGENTS", "No available agents")));
+        }
+
         // Classify task
         var taskCategory = ClassifyTask(context.TaskDescription);
 
