@@ -107,7 +107,20 @@ public sealed record ProgressLedger : IProgressLedger
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(windowSize, nameof(windowSize));
 
-        return Entries.TakeLast(windowSize).ToList();
+        // Optimization: Return the same reference when window covers all entries (no allocation)
+        if (Entries.Count <= windowSize)
+        {
+            return Entries;
+        }
+
+        // Optimized: Avoid TakeLast().ToList() intermediate allocation
+        var start = Entries.Count - windowSize;
+        if (Entries is List<ProgressEntry> list)
+        {
+            return list.GetRange(start, windowSize);
+        }
+
+        return Entries.Skip(start).ToList();
     }
 
     /// <summary>
