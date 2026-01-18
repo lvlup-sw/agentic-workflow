@@ -74,42 +74,42 @@
     ".worktrees/bench-thompson": {
       "branch": "feature/bench-thompson",
       "taskId": "B",
-      "status": "active"
+      "status": "complete"
     },
     ".worktrees/bench-loop": {
       "branch": "feature/bench-loop",
       "taskId": "C",
-      "status": "active"
+      "status": "complete"
     },
     ".worktrees/bench-ledgers": {
       "branch": "feature/bench-ledgers",
       "taskId": "D",
-      "status": "active"
+      "status": "complete"
     },
     ".worktrees/bench-budget": {
       "branch": "feature/bench-budget",
       "taskId": "E",
-      "status": "active"
+      "status": "complete"
     },
     ".worktrees/bench-vector": {
       "branch": "feature/bench-vector",
       "taskId": "F",
-      "status": "active"
+      "status": "complete"
     },
     ".worktrees/bench-comparative": {
       "branch": "feature/bench-comparative",
       "taskId": "G",
-      "status": "active"
+      "status": "complete"
     },
     ".worktrees/bench-integration": {
       "branch": "feature/bench-integration",
       "taskId": "H",
-      "status": "active"
+      "status": "complete"
     },
     ".worktrees/bench-ci": {
       "branch": "feature/bench-ci",
       "taskId": "I",
-      "status": "active"
+      "status": "complete"
     }
   },
   "julesSessions": {},

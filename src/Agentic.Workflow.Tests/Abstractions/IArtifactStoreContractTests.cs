@@ -765,19 +765,29 @@ public sealed class IArtifactStoreContractTests
         var store = new TestableArtifactStore();
         var completedOperations = new ConcurrentBag<string>();
 
-        // Pre-store some artifacts
-        var preStoredUris = new ConcurrentBag<Uri>();
-        for (int i = 0; i < 5; i++)
+        // Pre-store artifacts in two disjoint sets to avoid race conditions
+        // Set 1: URIs for retrieval only (3 artifacts)
+        var retrieveOnlyUris = new List<Uri>();
+        for (int i = 0; i < 3; i++)
         {
-            var artifact = new SimpleTestArtifact { Name = $"pre-{i}" };
+            var artifact = new SimpleTestArtifact { Name = $"retrieve-only-{i}" };
             var uri = await store.StoreAsync(artifact, "mixed", CancellationToken.None);
-            preStoredUris.Add(uri);
+            retrieveOnlyUris.Add(uri);
+        }
+
+        // Set 2: URIs for deletion only (2 artifacts)
+        var deleteOnlyUris = new List<Uri>();
+        for (int i = 0; i < 2; i++)
+        {
+            var artifact = new SimpleTestArtifact { Name = $"delete-only-{i}" };
+            var uri = await store.StoreAsync(artifact, "mixed", CancellationToken.None);
+            deleteOnlyUris.Add(uri);
         }
 
         // Act - launch mixed operations
         var tasks = new List<Task>();
 
-        // Store tasks
+        // Store tasks (10 new artifacts)
         for (int i = 0; i < 10; i++)
         {
             var idx = i;
@@ -789,8 +799,8 @@ public sealed class IArtifactStoreContractTests
             }));
         }
 
-        // Retrieve tasks
-        foreach (var uri in preStoredUris)
+        // Retrieve tasks (only from retrieve-only set)
+        foreach (var uri in retrieveOnlyUris)
         {
             var localUri = uri;
             tasks.Add(Task.Run(async () =>
@@ -800,8 +810,8 @@ public sealed class IArtifactStoreContractTests
             }));
         }
 
-        // Delete tasks (on copies to avoid race)
-        foreach (var uri in preStoredUris.Take(2))
+        // Delete tasks (only from delete-only set, no overlap with retrieve)
+        foreach (var uri in deleteOnlyUris)
         {
             var localUri = uri;
             tasks.Add(Task.Run(async () =>
@@ -813,7 +823,7 @@ public sealed class IArtifactStoreContractTests
 
         await Task.WhenAll(tasks);
 
-        // Assert - all operations completed
+        // Assert - all operations completed (10 stores + 3 retrieves + 2 deletes = 15)
         await Assert.That(completedOperations.Count).IsGreaterThanOrEqualTo(15);
     }
 

@@ -341,3 +341,4 @@ public class InMemoryVectorSearchAdapterTests
         await Assert.That(adapter).IsAssignableTo<IVectorSearchAdapter>();
     }
 }
+

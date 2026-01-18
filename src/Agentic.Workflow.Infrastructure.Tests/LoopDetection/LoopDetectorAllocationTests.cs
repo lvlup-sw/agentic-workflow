@@ -15,8 +15,8 @@ using NSubstitute;
 namespace Agentic.Workflow.Infrastructure.Tests.LoopDetection;
 
 /// <summary>
-/// Allocation-focused tests for <see cref="LoopDetector"/> that exercise SpanOwner-based
-/// paths while validating loop-detection behavior.
+/// Unit tests for <see cref="LoopDetector"/> verifying functional loop-detection behavior
+/// including oscillation pattern detection and window-based analysis.
 /// </summary>
 [Property("Category", "Unit")]
 public sealed class LoopDetectorAllocationTests

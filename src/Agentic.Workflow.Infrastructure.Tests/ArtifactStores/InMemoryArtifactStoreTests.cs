@@ -513,21 +513,24 @@ public sealed class InMemoryArtifactStoreTests
     }
 
     /// <summary>
-    /// Verifies that retrieve works with URI that has different path format.
+    /// Verifies that retrieve works with URI that has different host format.
     /// </summary>
     [Test]
-    public async Task RetrieveAsync_WithPathNotStartingWithArtifacts_ExtractsKey()
+    public async Task RetrieveAsync_WithDifferentHost_ExtractsKeyFromPath()
     {
         // Arrange
         var store = new InMemoryArtifactStore();
         var artifact = new TestArtifact { Data = "test-data" };
         var uri = await store.StoreAsync(artifact, "category", CancellationToken.None).ConfigureAwait(false);
 
-        // Create equivalent URI without /artifacts/ prefix to test path extraction
-        var altUri = new Uri($"memory://test{uri.AbsolutePath}");
+        // Create equivalent URI with different host but same path to test key extraction
+        var altUri = new Uri($"memory://alternate-host{uri.AbsolutePath}");
 
-        // Act & Assert - The original URI should work, alternate may not depending on implementation
-        var result = await store.RetrieveAsync<TestArtifact>(uri, CancellationToken.None).ConfigureAwait(false);
+        // Act - Use altUri which has the same path but different host
+        var result = await store.RetrieveAsync<TestArtifact>(altUri, CancellationToken.None).ConfigureAwait(false);
+
+        // Assert - Should find the artifact since the path (key) is the same
+        await Assert.That(result).IsNotNull();
         await Assert.That(result.Data).IsEqualTo("test-data");
     }
 

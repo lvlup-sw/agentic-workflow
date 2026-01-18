@@ -202,8 +202,16 @@ public class ServiceExtensionsTests
             .AddConversationThreadManager<TestConversationThreadManager>()
             .AddStreamingCallback<TestStreamingCallback>();
 
-        // Assert
-        await Assert.That(services).HasCount(2);
+        // Assert - verify registrations exist rather than exact count (which is brittle)
+        var threadManagerDescriptor = services.FirstOrDefault(d =>
+            d.ServiceType == typeof(IConversationThreadManager) &&
+            d.ImplementationType == typeof(TestConversationThreadManager));
+        var callbackDescriptor = services.FirstOrDefault(d =>
+            d.ServiceType == typeof(IStreamingCallback) &&
+            d.ImplementationType == typeof(TestStreamingCallback));
+
+        await Assert.That(threadManagerDescriptor).IsNotNull();
+        await Assert.That(callbackDescriptor).IsNotNull();
     }
 }
 

@@ -147,7 +147,13 @@ public sealed class BudgetGuardAllocationTests
             }
         };
 
-        var reservation = CreateSmallReservation();
+        // Only request Steps and Tokens to match the budget's defined resources
+        var reservation = new TestReservation(
+            Steps: 1,
+            Tokens: 100,
+            Executions: 0,
+            ToolCalls: 0,
+            WallTime: TimeSpan.Zero);
         var guard = new BudgetGuard();
 
         // Act

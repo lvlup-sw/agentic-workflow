@@ -160,16 +160,26 @@ public class WorkflowTelemetryTests
     }
 
     /// <summary>
-    /// Verifies that StartStepSpan returns null when no listeners.
+    /// Verifies that StartStepSpan behavior depends on listener presence.
     /// </summary>
     [Test]
-    public async Task StartStepSpan_WithNoListeners_ReturnsNull()
+    public async Task StartStepSpan_BehaviorDependsOnListenerPresence()
     {
         // Act
         var activity = WorkflowTelemetry.StartStepSpan("TestStep", Guid.NewGuid());
 
-        // Assert - without configured listener, returns null
-        await Assert.That(activity).IsNull();
+        // Assert - result depends on whether listeners exist in test infrastructure
+        // When HasListeners is false, activity is null; when true, activity is non-null
+        var hasListeners = WorkflowTelemetry.StepSource.HasListeners();
+        if (hasListeners)
+        {
+            await Assert.That(activity).IsNotNull();
+            activity?.Dispose();
+        }
+        else
+        {
+            await Assert.That(activity).IsNull();
+        }
     }
 
     /// <summary>

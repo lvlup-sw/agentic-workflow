@@ -17,7 +17,7 @@ This document captures performance measurements for the Agentic.Workflow library
 |-----------|-----------|-------------|--------|--------|
 | Thompson Sampling | Agent selection (5 candidates) | 819 ns | < 5ms | ✓ |
 | Thompson Sampling | Agent selection (25 candidates) | 3.2 μs | < 5ms | ✓ |
-| Thompson Sampling | Agent selection (100 candidates) | 12.1 μs | < 5ms | ✓ |
+| Thompson Sampling | Agent selection (100 candidates) | 12.6 μs | < 5ms | ✓ |
 | Loop Detection | Detection (no loop) | 416 ns | < 1ms | ✓ |
 | Loop Detection | Detection (repetition) | 640 ns | < 1ms | ✓ |
 | Loop Detection | Detection (oscillation) | 824 ns | < 1ms | ✓ |
@@ -81,7 +81,7 @@ Agent selection latency scales with candidate count.
 |------------|-------------|--------|
 | 5 | 819 ns | - |
 | 25 | 3.2 μs | - |
-| 100 | 12.1 μs | - |
+| 100 | 12.6 μs | - |
 
 **Belief Store Operations:**
 
@@ -92,7 +92,7 @@ Agent selection latency scales with candidate count.
 | GetBeliefsForAgentAsync | 357 ns |
 | GetBeliefsForCategoryAsync | 774 ns |
 
-**Note:** Agent selection at 100 candidates meets the 5ms target. Consider BitFaster.Caching for belief store if higher-scale scenarios regress.
+**Note:** Agent selection at 100 candidates meets the 5ms target. BitFaster.Caching is now available as an optional cache backend (see Phase 2 integration).
 
 ---
 
