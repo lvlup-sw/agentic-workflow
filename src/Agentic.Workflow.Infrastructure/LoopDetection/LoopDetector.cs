@@ -8,6 +8,7 @@ using Agentic.Workflow.Configuration;
 using Agentic.Workflow.Abstractions;
 using Agentic.Workflow.Orchestration.Ledgers;
 using Agentic.Workflow.Orchestration.LoopDetection;
+using CommunityToolkit.HighPerformance.Buffers;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -229,7 +230,14 @@ public sealed class LoopDetector : ILoopDetector
             return 0.0;
         }
 
-        var actions = entries.Select(e => e.Action).ToArray();
+        // Use SpanOwner to avoid heap allocation in hot path
+        using var actionsOwner = SpanOwner<string>.Allocate(entries.Count);
+        var actions = actionsOwner.Span;
+        for (var i = 0; i < entries.Count; i++)
+        {
+            actions[i] = entries[i].Action;
+        }
+
         var maxScore = 0.0;
 
         // Try different period lengths (2 to half of window size)
@@ -249,7 +257,7 @@ public sealed class LoopDetector : ILoopDetector
     /// <param name="actions">The action sequence to analyze.</param>
     /// <param name="period">The period length to check.</param>
     /// <returns>Score between 0.0 and 1.0.</returns>
-    private static double CalculatePeriodScore(string[] actions, int period)
+    private static double CalculatePeriodScore(ReadOnlySpan<string> actions, int period)
     {
         if (actions.Length < period * 2)
         {
