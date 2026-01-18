@@ -4,6 +4,8 @@
 // </copyright>
 // =============================================================================
 
+using MemoryPack;
+
 namespace Agentic.Workflow.Orchestration.Ledgers;
 
 /// <summary>
@@ -19,7 +21,8 @@ namespace Agentic.Workflow.Orchestration.Ledgers;
 /// The progress ledger is analyzed for loop detection and used for checkpointing.
 /// </para>
 /// </remarks>
-public record ProgressEntry
+[MemoryPackable]
+public partial record ProgressEntry
 {
     /// <summary>
     /// Gets the unique identifier for this entry.

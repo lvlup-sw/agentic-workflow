@@ -18,5 +18,8 @@
     <InternalsVisibleTo Include="$(AssemblyName).Tests" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="MemoryPack" />
+  </ItemGroup>
 
 </Project>
