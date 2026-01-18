@@ -39,14 +39,13 @@ public sealed class ProgressLedgerTests
     }
 
     /// <summary>
-    /// Verifies that WithEntry correctly pre-allocates capacity for the new list
-    /// by testing behavior with many entries.
+    /// Verifies that WithEntry correctly handles large entry counts.
     /// </summary>
     /// <remarks>
-    /// This test validates that pre-allocation works by verifying the behavior
-    /// is correct with large entry counts. The optimization ensures that
-    /// List capacity is pre-allocated to (Entries.Count + 1) to avoid
-    /// multiple internal reallocations.
+    /// This test validates correctness at scale with large entry counts.
+    /// Pre-allocation optimizations (capacity set to Entries.Count + 1) are
+    /// verified implicitly through correct behavior; allocation impact is
+    /// measured via benchmarks, not unit tests.
     /// </remarks>
     [Test]
     public async Task WithEntry_LargeEntryCount_PreservesAllEntries()

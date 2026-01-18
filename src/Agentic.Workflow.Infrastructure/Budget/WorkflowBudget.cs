@@ -86,7 +86,7 @@ public sealed record WorkflowBudget : IWorkflowBudget
 
     private ScarcityLevel ComputeOverallScarcity()
     {
-        if (Resources.Count == 0)
+        if (Resources is null || Resources.Count == 0)
         {
             return ScarcityLevel.Abundant;
         }

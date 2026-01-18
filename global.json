@@ -1,8 +1,6 @@
 {
   "msbuild-sdks": {},
-  "testing": {
-    "commandLine": {
-      "microsoftTestingPlatform": true
-    }
+  "test": {
+    "runner": "Microsoft.Testing.Platform"
   }
 }
