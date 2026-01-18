@@ -5,10 +5,9 @@
 // =============================================================================
 
 using System.Security.Cryptography;
-using System.Text;
-using System.Text.Json;
 using Agentic.Workflow.Abstractions;
 using Agentic.Workflow.Orchestration.Ledgers;
+using MemoryPack;
 
 namespace Agentic.Workflow.Infrastructure.Ledgers;
 
@@ -137,17 +136,42 @@ public sealed record TaskLedger : ITaskLedger
     /// </summary>
     private static string ComputeContentHash(string originalRequest, IReadOnlyList<TaskEntry> tasks)
     {
-        var content = new
+        var content = new TaskLedgerHashContent
         {
             OriginalRequest = originalRequest,
             TaskIds = tasks.Select(t => t.TaskId).ToList(),
-            TaskDescriptions = tasks.Select(t => t.Description).ToList()
+            TaskDescriptions = tasks.Select(t => t.Description).ToList(),
         };
 
-        var json = JsonSerializer.Serialize(content);
-        var bytes = Encoding.UTF8.GetBytes(json);
+        var bytes = MemoryPackSerializer.Serialize(content);
         var hash = SHA256.HashData(bytes);
 
         return Convert.ToHexString(hash).ToLowerInvariant();
     }
+}
+
+/// <summary>
+/// MemoryPackable content structure for TaskLedger hashing.
+/// </summary>
+/// <remarks>
+/// This type is used to compute content hashes using MemoryPack binary serialization.
+/// It mirrors the structure used in TaskLedger.ComputeContentHash.
+/// </remarks>
+[MemoryPackable]
+public partial class TaskLedgerHashContent
+{
+    /// <summary>
+    /// Gets or sets the original request.
+    /// </summary>
+    public string OriginalRequest { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Gets or sets the task IDs.
+    /// </summary>
+    public List<string> TaskIds { get; set; } = [];
+
+    /// <summary>
+    /// Gets or sets the task descriptions.
+    /// </summary>
+    public List<string> TaskDescriptions { get; set; } = [];
 }
