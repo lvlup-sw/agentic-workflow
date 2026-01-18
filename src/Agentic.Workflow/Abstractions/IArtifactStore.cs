@@ -33,14 +33,18 @@ public interface IArtifactStore
     /// <param name="artifact">The artifact to store.</param>
     /// <param name="category">Category for organization (e.g., "llm-response", "context").</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>A URI reference to the stored artifact.</returns>
+    /// <returns>A ValueTask containing the URI reference to the stored artifact.</returns>
     /// <exception cref="ArgumentNullException">
     /// Thrown when <paramref name="artifact"/> is null.
     /// </exception>
     /// <exception cref="ArgumentException">
     /// Thrown when <paramref name="category"/> is null or whitespace.
     /// </exception>
-    Task<Uri> StoreAsync<T>(T artifact, string category, CancellationToken cancellationToken)
+    /// <remarks>
+    /// Returns ValueTask to eliminate allocations on synchronous completion paths,
+    /// which is beneficial for in-memory implementations that complete synchronously.
+    /// </remarks>
+    ValueTask<Uri> StoreAsync<T>(T artifact, string category, CancellationToken cancellationToken)
         where T : class;
 
     /// <summary>
@@ -49,14 +53,18 @@ public interface IArtifactStore
     /// <typeparam name="T">The expected artifact type.</typeparam>
     /// <param name="reference">The URI reference from a previous StoreAsync call.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>The deserialized artifact.</returns>
+    /// <returns>A ValueTask containing the deserialized artifact.</returns>
     /// <exception cref="ArgumentNullException">
     /// Thrown when <paramref name="reference"/> is null.
     /// </exception>
     /// <exception cref="KeyNotFoundException">
     /// Thrown when no artifact exists at the specified reference.
     /// </exception>
-    Task<T> RetrieveAsync<T>(Uri reference, CancellationToken cancellationToken)
+    /// <remarks>
+    /// Returns ValueTask to eliminate allocations on synchronous completion paths,
+    /// which is beneficial for in-memory implementations that complete synchronously.
+    /// </remarks>
+    ValueTask<T> RetrieveAsync<T>(Uri reference, CancellationToken cancellationToken)
         where T : class;
 
     /// <summary>
@@ -68,7 +76,13 @@ public interface IArtifactStore
     /// Thrown when <paramref name="reference"/> is null.
     /// </exception>
     /// <remarks>
+    /// <para>
     /// This method is idempotent - deleting a non-existent artifact succeeds silently.
+    /// </para>
+    /// <para>
+    /// Returns ValueTask to eliminate allocations on synchronous completion paths,
+    /// which is beneficial for in-memory implementations that complete synchronously.
+    /// </para>
     /// </remarks>
-    Task DeleteAsync(Uri reference, CancellationToken cancellationToken);
+    ValueTask DeleteAsync(Uri reference, CancellationToken cancellationToken);
 }

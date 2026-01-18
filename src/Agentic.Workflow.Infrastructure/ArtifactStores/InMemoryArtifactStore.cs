@@ -36,7 +36,7 @@ public sealed class InMemoryArtifactStore : IArtifactStore
     /// <exception cref="ArgumentException">
     /// Thrown when <paramref name="category"/> is null or whitespace.
     /// </exception>
-    public Task<Uri> StoreAsync<T>(T artifact, string category, CancellationToken cancellationToken)
+    public ValueTask<Uri> StoreAsync<T>(T artifact, string category, CancellationToken cancellationToken)
         where T : class
     {
         ArgumentNullException.ThrowIfNull(artifact, nameof(artifact));
@@ -49,7 +49,7 @@ public sealed class InMemoryArtifactStore : IArtifactStore
         _artifacts[key] = json;
 
         var uri = new Uri($"memory://artifacts/{key}");
-        return Task.FromResult(uri);
+        return new ValueTask<Uri>(uri);
     }
 
     /// <inheritdoc/>
@@ -59,7 +59,7 @@ public sealed class InMemoryArtifactStore : IArtifactStore
     /// <exception cref="KeyNotFoundException">
     /// Thrown when no artifact exists at the specified reference.
     /// </exception>
-    public Task<T> RetrieveAsync<T>(Uri reference, CancellationToken cancellationToken)
+    public ValueTask<T> RetrieveAsync<T>(Uri reference, CancellationToken cancellationToken)
         where T : class
     {
         ArgumentNullException.ThrowIfNull(reference, nameof(reference));
@@ -74,7 +74,7 @@ public sealed class InMemoryArtifactStore : IArtifactStore
         var artifact = JsonSerializer.Deserialize<T>(json)
             ?? throw new InvalidOperationException($"Failed to deserialize artifact: {reference}");
 
-        return Task.FromResult(artifact);
+        return new ValueTask<T>(artifact);
     }
 
     /// <inheritdoc/>
@@ -84,14 +84,14 @@ public sealed class InMemoryArtifactStore : IArtifactStore
     /// <remarks>
     /// This method is idempotent - deleting a non-existent artifact succeeds silently.
     /// </remarks>
-    public Task DeleteAsync(Uri reference, CancellationToken cancellationToken)
+    public ValueTask DeleteAsync(Uri reference, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(reference, nameof(reference));
 
         var key = ExtractKeyFromUri(reference);
         _artifacts.TryRemove(key, out _);
 
-        return Task.CompletedTask;
+        return ValueTask.CompletedTask;
     }
 
     private static string ExtractKeyFromUri(Uri uri)

@@ -48,7 +48,7 @@ public sealed class InMemoryArtifactStoreTests
         var store = new InMemoryArtifactStore();
 
         // Act & Assert
-        await Assert.That(() => store.StoreAsync<TestArtifact>(null!, "category", CancellationToken.None))
+        await Assert.That(async () => await store.StoreAsync<TestArtifact>(null!, "category", CancellationToken.None))
             .Throws<ArgumentNullException>()
             .WithParameterName("artifact");
     }
@@ -68,7 +68,7 @@ public sealed class InMemoryArtifactStoreTests
         var artifact = new TestArtifact { Data = "test-data" };
 
         // Act & Assert
-        await Assert.That(() => store.StoreAsync(artifact, category!, CancellationToken.None))
+        await Assert.That(async () => await store.StoreAsync(artifact, category!, CancellationToken.None))
             .Throws<ArgumentException>()
             .WithParameterName("category");
     }
@@ -142,7 +142,7 @@ public sealed class InMemoryArtifactStoreTests
         var store = new InMemoryArtifactStore();
 
         // Act & Assert
-        await Assert.That(() => store.RetrieveAsync<TestArtifact>(null!, CancellationToken.None))
+        await Assert.That(async () => await store.RetrieveAsync<TestArtifact>(null!, CancellationToken.None))
             .Throws<ArgumentNullException>()
             .WithParameterName("reference");
     }
@@ -158,7 +158,7 @@ public sealed class InMemoryArtifactStoreTests
         var nonExistentUri = new Uri("memory://artifacts/nonexistent/12345");
 
         // Act & Assert
-        await Assert.That(() => store.RetrieveAsync<TestArtifact>(nonExistentUri, CancellationToken.None))
+        await Assert.That(async () => await store.RetrieveAsync<TestArtifact>(nonExistentUri, CancellationToken.None))
             .Throws<KeyNotFoundException>();
     }
 
@@ -175,7 +175,7 @@ public sealed class InMemoryArtifactStoreTests
         await store.DeleteAsync(uri, CancellationToken.None).ConfigureAwait(false);
 
         // Act & Assert
-        await Assert.That(() => store.RetrieveAsync<TestArtifact>(uri, CancellationToken.None))
+        await Assert.That(async () => await store.RetrieveAsync<TestArtifact>(uri, CancellationToken.None))
             .Throws<KeyNotFoundException>();
     }
 
@@ -198,7 +198,7 @@ public sealed class InMemoryArtifactStoreTests
         await store.DeleteAsync(uri, CancellationToken.None).ConfigureAwait(false);
 
         // Assert - Verify artifact is gone
-        await Assert.That(() => store.RetrieveAsync<TestArtifact>(uri, CancellationToken.None))
+        await Assert.That(async () => await store.RetrieveAsync<TestArtifact>(uri, CancellationToken.None))
             .Throws<KeyNotFoundException>();
     }
 
@@ -212,7 +212,7 @@ public sealed class InMemoryArtifactStoreTests
         var store = new InMemoryArtifactStore();
 
         // Act & Assert
-        await Assert.That(() => store.DeleteAsync(null!, CancellationToken.None))
+        await Assert.That(async () => await store.DeleteAsync(null!, CancellationToken.None))
             .Throws<ArgumentNullException>()
             .WithParameterName("reference");
     }
@@ -267,7 +267,7 @@ public sealed class InMemoryArtifactStoreTests
         for (int i = 0; i < 100; i++)
         {
             var artifact = new TestArtifact { Data = $"data-{i}" };
-            tasks.Add(store.StoreAsync(artifact, "category", CancellationToken.None));
+            tasks.Add(store.StoreAsync(artifact, "category", CancellationToken.None).AsTask());
         }
 
         var uris = await Task.WhenAll(tasks).ConfigureAwait(false);

@@ -39,7 +39,7 @@ public class IArtifactStoreTests
         var expectedUri = new Uri("artifact://store/12345");
 
         store.StoreAsync(artifact, "test-category", Arg.Any<CancellationToken>())
-            .Returns(expectedUri);
+            .Returns(new ValueTask<Uri>(expectedUri));
 
         // Act
         var result = await store.StoreAsync(artifact, "test-category", CancellationToken.None).ConfigureAwait(false);
@@ -65,7 +65,7 @@ public class IArtifactStoreTests
         var expectedUri = new Uri("artifact://store/string-123");
 
         store.StoreAsync(stringArtifact, "string-category", Arg.Any<CancellationToken>())
-            .Returns(expectedUri);
+            .Returns(new ValueTask<Uri>(expectedUri));
 
         // Act
         var result = await store.StoreAsync(stringArtifact, "string-category", CancellationToken.None).ConfigureAwait(false);
@@ -91,7 +91,7 @@ public class IArtifactStoreTests
         using var cts = new CancellationTokenSource();
 
         store.StoreAsync(artifact, "test-category", cts.Token)
-            .Returns(expectedUri);
+            .Returns(new ValueTask<Uri>(expectedUri));
 
         // Act
         var result = await store.StoreAsync(artifact, "test-category", cts.Token).ConfigureAwait(false);
@@ -117,7 +117,7 @@ public class IArtifactStoreTests
         var reference = new Uri("artifact://store/12345");
 
         store.RetrieveAsync<TestArtifact>(reference, Arg.Any<CancellationToken>())
-            .Returns(expectedArtifact);
+            .Returns(new ValueTask<TestArtifact>(expectedArtifact));
 
         // Act
         var result = await store.RetrieveAsync<TestArtifact>(reference, CancellationToken.None).ConfigureAwait(false);
@@ -143,7 +143,7 @@ public class IArtifactStoreTests
         var reference = new Uri("artifact://store/string-123");
 
         store.RetrieveAsync<string>(reference, Arg.Any<CancellationToken>())
-            .Returns(expectedArtifact);
+            .Returns(new ValueTask<string>(expectedArtifact));
 
         // Act
         var result = await store.RetrieveAsync<string>(reference, CancellationToken.None).ConfigureAwait(false);
@@ -170,7 +170,7 @@ public class IArtifactStoreTests
         using var cts = new CancellationTokenSource();
 
         store.RetrieveAsync<TestArtifact>(reference, cts.Token)
-            .Returns(expectedArtifact);
+            .Returns(new ValueTask<TestArtifact>(expectedArtifact));
 
         // Act
         var result = await store.RetrieveAsync<TestArtifact>(reference, cts.Token).ConfigureAwait(false);
@@ -195,7 +195,7 @@ public class IArtifactStoreTests
         var reference = new Uri("artifact://store/12345");
 
         store.DeleteAsync(reference, Arg.Any<CancellationToken>())
-            .Returns(Task.CompletedTask);
+            .Returns(ValueTask.CompletedTask);
 
         // Act & Assert - should complete without exception
         await store.DeleteAsync(reference, CancellationToken.None).ConfigureAwait(false);
@@ -218,7 +218,7 @@ public class IArtifactStoreTests
         var reference = new Uri("artifact://store/non-existent");
 
         store.DeleteAsync(reference, Arg.Any<CancellationToken>())
-            .Returns(Task.CompletedTask);
+            .Returns(ValueTask.CompletedTask);
 
         // Act & Assert - should complete without exception (idempotent)
         await store.DeleteAsync(reference, CancellationToken.None).ConfigureAwait(false);
@@ -241,7 +241,7 @@ public class IArtifactStoreTests
         using var cts = new CancellationTokenSource();
 
         store.DeleteAsync(reference, cts.Token)
-            .Returns(Task.CompletedTask);
+            .Returns(ValueTask.CompletedTask);
 
         // Act
         await store.DeleteAsync(reference, cts.Token).ConfigureAwait(false);

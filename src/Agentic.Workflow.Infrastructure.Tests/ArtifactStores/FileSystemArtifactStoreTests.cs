@@ -91,7 +91,7 @@ public sealed class FileSystemArtifactStoreTests : IAsyncDisposable
         var store = CreateStore();
 
         // Act & Assert
-        await Assert.That(() => store.StoreAsync<TestArtifact>(null!, "category", CancellationToken.None))
+        await Assert.That(async () => await store.StoreAsync<TestArtifact>(null!, "category", CancellationToken.None))
             .Throws<ArgumentNullException>()
             .WithParameterName("artifact");
     }
@@ -111,7 +111,7 @@ public sealed class FileSystemArtifactStoreTests : IAsyncDisposable
         var artifact = new TestArtifact { Data = "test-data" };
 
         // Act & Assert
-        await Assert.That(() => store.StoreAsync(artifact, category!, CancellationToken.None))
+        await Assert.That(async () => await store.StoreAsync(artifact, category!, CancellationToken.None))
             .Throws<ArgumentException>()
             .WithParameterName("category");
     }
@@ -187,7 +187,7 @@ public sealed class FileSystemArtifactStoreTests : IAsyncDisposable
         var store = CreateStore();
 
         // Act & Assert
-        await Assert.That(() => store.RetrieveAsync<TestArtifact>(null!, CancellationToken.None))
+        await Assert.That(async () => await store.RetrieveAsync<TestArtifact>(null!, CancellationToken.None))
             .Throws<ArgumentNullException>()
             .WithParameterName("reference");
     }
@@ -203,7 +203,7 @@ public sealed class FileSystemArtifactStoreTests : IAsyncDisposable
         var nonExistentUri = new Uri($"file:///{_testBasePath}/nonexistent/12345.json");
 
         // Act & Assert
-        await Assert.That(() => store.RetrieveAsync<TestArtifact>(nonExistentUri, CancellationToken.None))
+        await Assert.That(async () => await store.RetrieveAsync<TestArtifact>(nonExistentUri, CancellationToken.None))
             .Throws<KeyNotFoundException>();
     }
 
@@ -220,7 +220,7 @@ public sealed class FileSystemArtifactStoreTests : IAsyncDisposable
         await store.DeleteAsync(uri, CancellationToken.None).ConfigureAwait(false);
 
         // Act & Assert
-        await Assert.That(() => store.RetrieveAsync<TestArtifact>(uri, CancellationToken.None))
+        await Assert.That(async () => await store.RetrieveAsync<TestArtifact>(uri, CancellationToken.None))
             .Throws<KeyNotFoundException>();
     }
 
@@ -257,7 +257,7 @@ public sealed class FileSystemArtifactStoreTests : IAsyncDisposable
         var store = CreateStore();
 
         // Act & Assert
-        await Assert.That(() => store.DeleteAsync(null!, CancellationToken.None))
+        await Assert.That(async () => await store.DeleteAsync(null!, CancellationToken.None))
             .Throws<ArgumentNullException>()
             .WithParameterName("reference");
     }
