@@ -36,8 +36,8 @@ public sealed class BenchmarkConfig : ManualConfig
     /// </summary>
     public BenchmarkConfig()
     {
-        // Job for .NET 10 runtime
-        _ = this.AddJob(Job.Default
+        // Short job for faster CI runs (LaunchCount=1, WarmupCount=3, IterationCount=3)
+        _ = this.AddJob(Job.ShortRun
             .WithRuntime(CoreRuntime.Core10_0)
             .WithId("net10"));
 
