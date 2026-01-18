@@ -470,7 +470,7 @@ public class LoopDetectorTests
         }
 
         public Task<double> CalculateMaxSimilarityAsync(
-            IReadOnlyList<string?> outputs,
+            IEnumerable<string?> outputs,
             CancellationToken cancellationToken = default)
         {
             return Task.FromResult(_similarity);
@@ -484,7 +484,7 @@ public class LoopDetectorTests
     private sealed class ThrowingSemanticSimilarityCalculator : ISemanticSimilarityCalculator
     {
         public Task<double> CalculateMaxSimilarityAsync(
-            IReadOnlyList<string?> outputs,
+            IEnumerable<string?> outputs,
             CancellationToken cancellationToken = default)
         {
             throw new InvalidOperationException(

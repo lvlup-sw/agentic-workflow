@@ -183,7 +183,7 @@ public class SemanticSimilarityBenchmarks
 
         /// <inheritdoc/>
         public Task<double> CalculateMaxSimilarityAsync(
-            IReadOnlyList<string?> outputs,
+            IEnumerable<string?> outputs,
             CancellationToken cancellationToken = default)
         {
             Interlocked.Increment(ref _callCount);

@@ -102,9 +102,10 @@ public sealed class LoopDetector : ILoopDetector
         var oscillationScore = CalculateOscillationScore(recentEntries);
 
         // Only compute semantic similarity if no high-confidence signal detected
-        var outputs = recentEntries.Select(e => e.Output).ToList();
+        // Pass IEnumerable directly to avoid List allocation - the calculator
+        // is responsible for materialization if needed
         var semanticScore = await _similarityCalculator
-            .CalculateMaxSimilarityAsync(outputs, cancellationToken)
+            .CalculateMaxSimilarityAsync(recentEntries.Select(e => e.Output), cancellationToken)
             .ConfigureAwait(false);
 
         // Calculate frustration score
