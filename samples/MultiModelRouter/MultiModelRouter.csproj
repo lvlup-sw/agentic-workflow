@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>MultiModelRouter</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Agentic.Workflow\Agentic.Workflow.csproj" />
+    <ProjectReference Include="..\..\src\Agentic.Workflow.Infrastructure\Agentic.Workflow.Infrastructure.csproj" />
+  </ItemGroup>
+
+</Project>
