@@ -1,0 +1,84 @@
+{
+  "version": "1.0",
+  "featureId": "performance-benchmarks",
+  "createdAt": "2026-01-18T00:41:12Z",
+  "updatedAt": "2026-01-18T00:53:59Z",
+  "phase": "delegate",
+  "artifacts": {
+    "design": "docs/designs/2026-01-17-performance-benchmarks-and-optimizations.md",
+    "plan": "docs/plans/2026-01-18-performance-benchmarks.md",
+    "pr": null
+  },
+  "tasks": [
+    {
+      "id": "A",
+      "title": "Infrastructure Setup (A.1-A.4)",
+      "status": "complete",
+      "branch": "feature/bench-infra"
+    },
+    {
+      "id": "B",
+      "title": "Thompson Sampling Benchmarks (B.1-B.3)",
+      "status": "pending",
+      "branch": "feature/bench-thompson"
+    },
+    {
+      "id": "C",
+      "title": "Loop Detection Benchmarks (C.1-C.3)",
+      "status": "pending",
+      "branch": "feature/bench-loop"
+    },
+    {
+      "id": "D",
+      "title": "Ledger Benchmarks (D.1-D.3)",
+      "status": "pending",
+      "branch": "feature/bench-ledgers"
+    },
+    {
+      "id": "E",
+      "title": "Budget & Execution Benchmarks (E.1-E.3)",
+      "status": "pending",
+      "branch": "feature/bench-budget"
+    },
+    {
+      "id": "F",
+      "title": "Vector Search Benchmarks (F.1-F.3)",
+      "status": "pending",
+      "branch": "feature/bench-vector"
+    },
+    {
+      "id": "G",
+      "title": "Comparative Benchmarks (G.1-G.3)",
+      "status": "pending",
+      "branch": "feature/bench-comparative"
+    },
+    {
+      "id": "H",
+      "title": "Integration Benchmarks (H.1-H.2)",
+      "status": "pending",
+      "branch": "feature/bench-integration"
+    },
+    {
+      "id": "I",
+      "title": "CI & Documentation (I.1-I.4)",
+      "status": "pending",
+      "branch": "feature/bench-ci"
+    }
+  ],
+  "worktrees": {
+    ".worktrees/bench-infra": {
+      "branch": "feature/bench-infra",
+      "taskId": "A",
+      "status": "active"
+    }
+  },
+  "julesSessions": {},
+  "reviews": {},
+  "synthesis": {
+    "integrationBranch": null,
+    "mergeOrder": [],
+    "mergedBranches": [],
+    "prUrl": null,
+    "prFeedback": []
+  }
+}
