@@ -4,6 +4,8 @@
 // </copyright>
 // =============================================================================
 
+using MemoryPack;
+
 namespace Agentic.Workflow.Orchestration.Ledgers;
 
 /// <summary>
@@ -20,7 +22,8 @@ namespace Agentic.Workflow.Orchestration.Ledgers;
 /// that determines execution order.
 /// </para>
 /// </remarks>
-public sealed record TaskEntry
+[MemoryPackable]
+public sealed partial record TaskEntry
 {
     /// <summary>
     /// Gets the unique identifier for this task.
