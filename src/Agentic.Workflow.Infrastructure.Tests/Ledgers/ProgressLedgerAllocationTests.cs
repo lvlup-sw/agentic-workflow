@@ -162,4 +162,133 @@ public sealed class ProgressLedgerAllocationTests
         await Assert.That(recent.Count).IsEqualTo(1);
         await Assert.That(recent[0].Action).IsEqualTo("Action9");
     }
+
+    // =============================================================================
+    // B. Optimized Return Path Tests (Reference Identity)
+    // =============================================================================
+
+    /// <summary>
+    /// Verifies that GetRecentEntries returns the same reference when windowSize
+    /// exactly equals entry count (optimization: no allocation).
+    /// </summary>
+    [Test]
+    public async Task GetRecentEntries_WindowExactlyEqualsCount_ReturnsSameReference()
+    {
+        // Arrange
+        var ledger = ProgressLedger.Create("task-ledger-1");
+        for (var i = 0; i < 5; i++)
+        {
+            ledger = (ProgressLedger)ledger.WithEntry(ProgressEntry.Create(
+                taskId: "task-1",
+                executorId: "exec-1",
+                action: $"Action{i}",
+                progressMade: true));
+        }
+
+        // Act - Window size exactly matches entry count
+        var recent = ledger.GetRecentEntries(5);
+
+        // Assert - Should be the same reference as Entries (no allocation)
+        await Assert.That(ReferenceEquals(recent, ledger.Entries)).IsTrue();
+    }
+
+    /// <summary>
+    /// Verifies that GetRecentEntries returns the same reference for empty ledger
+    /// (optimization: no allocation for empty collections).
+    /// </summary>
+    [Test]
+    public async Task GetRecentEntries_EmptyLedger_ReturnsSameReference()
+    {
+        // Arrange
+        var ledger = ProgressLedger.Create("task-ledger-1");
+
+        // Act
+        var recent = ledger.GetRecentEntries(5);
+
+        // Assert - Should be the same reference as Entries (empty list, no allocation)
+        await Assert.That(ReferenceEquals(recent, ledger.Entries)).IsTrue();
+    }
+
+    /// <summary>
+    /// Verifies that GetRecentEntries returns the same reference for single entry
+    /// when windowSize >= 1 (optimization: no allocation).
+    /// </summary>
+    [Test]
+    public async Task GetRecentEntries_SingleEntry_WindowGreaterOrEqual_ReturnsSameReference()
+    {
+        // Arrange
+        var ledger = ProgressLedger.Create("task-ledger-1");
+        ledger = (ProgressLedger)ledger.WithEntry(ProgressEntry.Create(
+            taskId: "task-1",
+            executorId: "exec-1",
+            action: "SingleAction",
+            progressMade: true));
+
+        // Act - Window size is greater than entry count
+        var recent = ledger.GetRecentEntries(5);
+
+        // Assert - Should be the same reference (no allocation needed)
+        await Assert.That(ReferenceEquals(recent, ledger.Entries)).IsTrue();
+        await Assert.That(recent.Count).IsEqualTo(1);
+        await Assert.That(recent[0].Action).IsEqualTo("SingleAction");
+    }
+
+    /// <summary>
+    /// Verifies that GetRecentEntries returns a new list (not the same reference)
+    /// when windowSize is less than entry count (allocation required for slicing).
+    /// </summary>
+    [Test]
+    public async Task GetRecentEntries_WindowLessThanCount_ReturnsDifferentReference()
+    {
+        // Arrange
+        var ledger = ProgressLedger.Create("task-ledger-1");
+        for (var i = 0; i < 10; i++)
+        {
+            ledger = (ProgressLedger)ledger.WithEntry(ProgressEntry.Create(
+                taskId: "task-1",
+                executorId: "exec-1",
+                action: $"Action{i}",
+                progressMade: true));
+        }
+
+        // Act - Window size is less than entry count
+        var recent = ledger.GetRecentEntries(5);
+
+        // Assert - Should NOT be the same reference (new list allocated for slice)
+        await Assert.That(ReferenceEquals(recent, ledger.Entries)).IsFalse();
+        await Assert.That(recent.Count).IsEqualTo(5);
+        await Assert.That(recent[0].Action).IsEqualTo("Action5");
+        await Assert.That(recent[4].Action).IsEqualTo("Action9");
+    }
+
+    /// <summary>
+    /// Verifies that GetRecentEntries throws ArgumentOutOfRangeException for zero windowSize.
+    /// </summary>
+    [Test]
+    public async Task GetRecentEntries_ZeroWindowSize_ThrowsArgumentOutOfRangeException()
+    {
+        // Arrange
+        var ledger = ProgressLedger.Create("task-ledger-1");
+
+        // Act & Assert
+        await Assert.That(() => ledger.GetRecentEntries(0))
+            .Throws<ArgumentOutOfRangeException>()
+            .WithParameterName("windowSize");
+    }
+
+    /// <summary>
+    /// Verifies that GetRecentEntries throws ArgumentOutOfRangeException for negative windowSize.
+    /// </summary>
+    [Test]
+    public async Task GetRecentEntries_NegativeWindowSize_ThrowsArgumentOutOfRangeException()
+    {
+        // Arrange
+        var ledger = ProgressLedger.Create("task-ledger-1");
+
+        // Act & Assert
+        await Assert.That(() => ledger.GetRecentEntries(-1))
+            .Throws<ArgumentOutOfRangeException>()
+            .WithParameterName("windowSize");
+    }
 }
+
