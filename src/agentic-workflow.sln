@@ -23,6 +23,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Agentic.Workflow.Agents.Tes
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Agentic.Workflow.Benchmarks", "Agentic.Workflow.Benchmarks\Agentic.Workflow.Benchmarks.csproj", "{DB8D5467-C86E-45A1-975F-C97DA02F1B01}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Agentic.Workflow.Benchmarks.Tests", "Agentic.Workflow.Benchmarks.Tests\Agentic.Workflow.Benchmarks.Tests.csproj", "{09385E30-EE12-4000-B53F-A36A37AC008F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -153,6 +155,18 @@ Global
 		{DB8D5467-C86E-45A1-975F-C97DA02F1B01}.Release|x64.Build.0 = Release|Any CPU
 		{DB8D5467-C86E-45A1-975F-C97DA02F1B01}.Release|x86.ActiveCfg = Release|Any CPU
 		{DB8D5467-C86E-45A1-975F-C97DA02F1B01}.Release|x86.Build.0 = Release|Any CPU
+		{09385E30-EE12-4000-B53F-A36A37AC008F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{09385E30-EE12-4000-B53F-A36A37AC008F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{09385E30-EE12-4000-B53F-A36A37AC008F}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{09385E30-EE12-4000-B53F-A36A37AC008F}.Debug|x64.Build.0 = Debug|Any CPU
+		{09385E30-EE12-4000-B53F-A36A37AC008F}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{09385E30-EE12-4000-B53F-A36A37AC008F}.Debug|x86.Build.0 = Debug|Any CPU
+		{09385E30-EE12-4000-B53F-A36A37AC008F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{09385E30-EE12-4000-B53F-A36A37AC008F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{09385E30-EE12-4000-B53F-A36A37AC008F}.Release|x64.ActiveCfg = Release|Any CPU
+		{09385E30-EE12-4000-B53F-A36A37AC008F}.Release|x64.Build.0 = Release|Any CPU
+		{09385E30-EE12-4000-B53F-A36A37AC008F}.Release|x86.ActiveCfg = Release|Any CPU
+		{09385E30-EE12-4000-B53F-A36A37AC008F}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
