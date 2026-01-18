@@ -70,7 +70,10 @@ public sealed record TaskLedger : ITaskLedger
     {
         ArgumentNullException.ThrowIfNull(task, nameof(task));
 
-        var newTasks = Tasks.Append(task).ToList();
+        var newTasks = new List<TaskEntry>(Tasks.Count + 1);
+        newTasks.AddRange(Tasks);
+        newTasks.Add(task);
+
         var newHash = ComputeContentHash(OriginalRequest, newTasks);
 
         return this with
@@ -86,9 +89,23 @@ public sealed record TaskLedger : ITaskLedger
         ArgumentNullException.ThrowIfNull(taskId, nameof(taskId));
         ArgumentNullException.ThrowIfNull(updatedTask, nameof(updatedTask));
 
-        var newTasks = Tasks.Select(t => t.TaskId == taskId ? updatedTask : t).ToList();
+        var newTasks = new List<TaskEntry>(Tasks.Count);
+        var found = false;
 
-        if (!newTasks.Any(t => t.TaskId == taskId))
+        foreach (var t in Tasks)
+        {
+            if (t.TaskId == taskId)
+            {
+                newTasks.Add(updatedTask);
+                found = true;
+            }
+            else
+            {
+                newTasks.Add(t);
+            }
+        }
+
+        if (!found)
         {
             throw new KeyNotFoundException($"Task with ID '{taskId}' not found in ledger.");
         }
