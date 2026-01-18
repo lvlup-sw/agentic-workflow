@@ -5,6 +5,7 @@
 // =============================================================================
 
 using Agentic.Workflow.Abstractions;
+using Agentic.Workflow.Attributes;
 
 namespace MultiModelRouter.State;
 
@@ -22,6 +23,7 @@ namespace MultiModelRouter.State;
 /// </list>
 /// </para>
 /// </remarks>
+[WorkflowState]
 public sealed record RouterState : IWorkflowState
 {
     /// <inheritdoc/>
