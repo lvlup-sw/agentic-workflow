@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2026-01-18
+
+### Added
+
+- **Benchmark Infrastructure** — New `Agentic.Workflow.Benchmarks` project with BenchmarkDotNet, 53 benchmark classes covering all subsystems, and CI workflow for regression detection (#10)
+- **BitFaster Cache Option** — Optional ConcurrentLru backend for StepExecutionLedger via configuration (#11)
+- **Large-Scale Benchmarks** — 10K document and 500 candidate benchmark scenarios (#11)
+
+### Changed
+
+- **MemoryPack Serialization** — Replace System.Text.Json with MemoryPack for ledger hashing and cache operations (3-6x speedup) (#11)
+- **ValueTask Migration** — IBeliefStore and IArtifactStore interfaces now return `ValueTask<T>` for zero-allocation sync paths (#11)
+- **SpanOwner Pooling** — Use CommunityToolkit.HighPerformance SpanOwner in LoopDetector for temporary array pooling (#11)
+
+### Performance
+
+- **Thompson Sampling** — Parallel belief fetching with `Task.WhenAll()`, secondary indices for O(1) lookups (#9)
+- **Loop Detection** — Early exit skipping expensive semantic similarity, ordinal string comparison (#9)
+- **Budget & Ledgers** — Lazy scarcity caching, pre-allocated list capacities, stackalloc in BudgetGuard (#9, #11)
+- **Source Generators** — WellKnownTypes metadata caching, HashSet for O(1) contains checks (#9)
+- **Allocation Fixes** — Pre-sized lists in TaskLedger, HashSet indices in BeliefStore (#11)
+
 ## [1.0.0] - 2025-01-05
 
 ### Initial Public Release
@@ -79,4 +101,5 @@ First stable release of the Agentic.Workflow library for building production-gra
 - Transactional outbox pattern
 - Time-travel debugging via event replay
 
+[1.1.0]: https://github.com/lvlup-sw/agentic-workflow/releases/tag/v1.1.0
 [1.0.0]: https://github.com/lvlup-sw/agentic-workflow/releases/tag/v1.0.0
