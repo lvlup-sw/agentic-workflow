@@ -15,8 +15,8 @@ using NSubstitute;
 namespace Agentic.Workflow.Infrastructure.Tests.LoopDetection;
 
 /// <summary>
-/// Allocation tests for <see cref="LoopDetector"/> verifying SpanOwner-based optimizations
-/// reduce heap allocations in hot paths.
+/// Allocation-focused tests for <see cref="LoopDetector"/> that exercise SpanOwner-based
+/// paths while validating loop-detection behavior.
 /// </summary>
 [Property("Category", "Unit")]
 public sealed class LoopDetectorAllocationTests
@@ -26,11 +26,13 @@ public sealed class LoopDetectorAllocationTests
     /// </summary>
     private sealed class ZeroSimilarityCalculator : ISemanticSimilarityCalculator
     {
+        private static readonly Task<double> ZeroSimilarityTask = Task.FromResult(0.0);
+
         public Task<double> CalculateMaxSimilarityAsync(
             IEnumerable<string?> outputs,
             CancellationToken cancellationToken = default)
         {
-            return Task.FromResult(0.0);
+            return ZeroSimilarityTask;
         }
     }
 

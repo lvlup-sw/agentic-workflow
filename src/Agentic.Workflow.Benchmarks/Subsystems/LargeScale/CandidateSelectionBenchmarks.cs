@@ -30,8 +30,10 @@ namespace Agentic.Workflow.Benchmarks.Subsystems.LargeScale;
 /// </para>
 /// </remarks>
 [MemoryDiagnoser]
-public sealed class CandidateSelectionBenchmarks
+public class CandidateSelectionBenchmarks
 {
+    private static readonly string[] Categories = ["code", "review", "test", "deploy", "monitor"];
+
     private ThompsonSamplingAgentSelector selector = null!;
     private AgentSelectionContext context = null!;
     private IReadOnlyList<string> agentIds = null!;
@@ -128,10 +130,9 @@ public sealed class CandidateSelectionBenchmarks
     [Benchmark]
     public async Task<int> SelectWithVaryingCategories()
     {
-        var categories = new[] { "code", "review", "test", "deploy", "monitor" };
         int successCount = 0;
 
-        foreach (var category in categories)
+        foreach (var category in Categories)
         {
             var categoryContext = new AgentSelectionContext
             {
