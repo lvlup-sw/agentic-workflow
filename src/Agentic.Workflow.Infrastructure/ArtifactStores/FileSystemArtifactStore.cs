@@ -50,7 +50,7 @@ public sealed class FileSystemArtifactStore : IArtifactStore
     /// <exception cref="ArgumentException">
     /// Thrown when <paramref name="category"/> is null or whitespace.
     /// </exception>
-    public async Task<Uri> StoreAsync<T>(T artifact, string category, CancellationToken cancellationToken)
+    public async ValueTask<Uri> StoreAsync<T>(T artifact, string category, CancellationToken cancellationToken)
         where T : class
     {
         ArgumentNullException.ThrowIfNull(artifact, nameof(artifact));
@@ -76,7 +76,7 @@ public sealed class FileSystemArtifactStore : IArtifactStore
     /// <exception cref="KeyNotFoundException">
     /// Thrown when no artifact exists at the specified reference.
     /// </exception>
-    public async Task<T> RetrieveAsync<T>(Uri reference, CancellationToken cancellationToken)
+    public async ValueTask<T> RetrieveAsync<T>(Uri reference, CancellationToken cancellationToken)
         where T : class
     {
         ArgumentNullException.ThrowIfNull(reference, nameof(reference));
@@ -102,7 +102,7 @@ public sealed class FileSystemArtifactStore : IArtifactStore
     /// <remarks>
     /// This method is idempotent - deleting a non-existent artifact succeeds silently.
     /// </remarks>
-    public Task DeleteAsync(Uri reference, CancellationToken cancellationToken)
+    public ValueTask DeleteAsync(Uri reference, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(reference, nameof(reference));
 
@@ -113,6 +113,6 @@ public sealed class FileSystemArtifactStore : IArtifactStore
             File.Delete(filePath);
         }
 
-        return Task.CompletedTask;
+        return ValueTask.CompletedTask;
     }
 }

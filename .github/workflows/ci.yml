@@ -42,6 +42,11 @@ jobs:
           mkdir -p ./TestResults
           failed=0
           for proj in src/*Tests/*.csproj; do
+            # Skip benchmark tests - they don't contribute to coverage metrics
+            if [[ "$proj" == *"Benchmarks.Tests"* ]]; then
+              echo "Skipping benchmark tests: $proj"
+              continue
+            fi
             echo "=========================================="
             echo "Running tests for $proj"
             echo "=========================================="

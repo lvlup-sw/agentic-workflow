@@ -1,6 +1,6 @@
 # Performance Baseline - January 2026
 
-This document captures baseline performance measurements for the Agentic.Workflow library. These measurements serve as the reference point for Phase 2 optimizations.
+This document captures performance measurements for the Agentic.Workflow library, including Phase 1 baseline and Phase 2 optimization results.
 
 ## Test Environment
 
@@ -8,7 +8,8 @@ This document captures baseline performance measurements for the Agentic.Workflo
 - **CPU:** 13th Gen Intel Core i9-13900K @ 0.80GHz (24 physical cores, 32 logical)
 - **Runtime:** .NET 10.0.1 (10.0.125.57005), X64 RyuJIT x86-64-v3
 - **BenchmarkDotNet:** v0.15.8
-- **Date:** 2026-01-17
+- **Phase 1 Date:** 2026-01-17
+- **Phase 2 Date:** 2026-01-18
 
 ## Summary
 
@@ -16,7 +17,7 @@ This document captures baseline performance measurements for the Agentic.Workflo
 |-----------|-----------|-------------|--------|--------|
 | Thompson Sampling | Agent selection (5 candidates) | 819 ns | < 5ms | ✓ |
 | Thompson Sampling | Agent selection (25 candidates) | 3.2 μs | < 5ms | ✓ |
-| Thompson Sampling | Agent selection (100 candidates) | 12.1 μs | < 5ms | ✓ |
+| Thompson Sampling | Agent selection (100 candidates) | 12.6 μs | < 5ms | ✓ |
 | Loop Detection | Detection (no loop) | 416 ns | < 1ms | ✓ |
 | Loop Detection | Detection (repetition) | 640 ns | < 1ms | ✓ |
 | Loop Detection | Detection (oscillation) | 824 ns | < 1ms | ✓ |
@@ -37,6 +38,39 @@ This document captures baseline performance measurements for the Agentic.Workflo
 
 ---
 
+## Phase 2 Optimization Results
+
+Phase 2 implemented high-performance packages and eliminated allocation hot spots.
+
+### Key Improvements
+
+| Optimization | Before | After | Improvement |
+|--------------|--------|-------|-------------|
+| SpanOwner vs new Array | 99 ns | 6 ns | **16x faster** |
+| MemoryPack vs STJ (10 entries) | 2.4 μs | 442 ns | **5.4x faster** |
+| MemoryPack vs STJ (1000 entries) | 284 μs | 87 μs | **3.3x faster** |
+| Loop oscillation (window=20) | 3.8 μs | 698 ns | **5.4x faster** |
+| Memory allocations (SpanOwner) | 4,120 B | 0 B | **100% reduction** |
+
+### Large-Scale Benchmarks (New in Phase 2)
+
+| Scenario | P95 Latency | Allocations | Target | Status |
+|----------|-------------|-------------|--------|--------|
+| Agent selection (100 candidates) | 12.6 μs | 34 KB | < 5ms | ✓ |
+| Agent selection (1,000 candidates) | 123 μs | 329 KB | < 5ms | ✓ |
+| Agent selection (10,000 candidates) | 2.6 ms | 3.3 MB | < 5ms | ✓ |
+| Document search (10,000 docs, k=5) | 2.3 ms | - | < 10ms | ✓ |
+
+### Packages Integrated
+
+| Package | Version | Usage |
+|---------|---------|-------|
+| MemoryPack | 1.21.3 | Ledger hashing, cache serialization |
+| CommunityToolkit.HighPerformance | 8.4.0 | SpanOwner for temp arrays |
+| BitFaster.Caching | 2.5.2 | Optional LRU cache backend |
+
+---
+
 ## Detailed Results
 
 ### Thompson Sampling
@@ -47,7 +81,7 @@ Agent selection latency scales with candidate count.
 |------------|-------------|--------|
 | 5 | 819 ns | - |
 | 25 | 3.2 μs | - |
-| 100 | 12.1 μs | - |
+| 100 | 12.6 μs | - |
 
 **Belief Store Operations:**
 
@@ -58,7 +92,7 @@ Agent selection latency scales with candidate count.
 | GetBeliefsForAgentAsync | 357 ns |
 | GetBeliefsForCategoryAsync | 774 ns |
 
-**Note:** Agent selection at 100 candidates meets the 5ms target. Consider BitFaster.Caching for belief store if higher-scale scenarios regress.
+**Note:** Agent selection at 100 candidates meets the 5ms target. BitFaster.Caching is now available as an optional cache backend (see Phase 2 integration).
 
 ---
 
@@ -239,34 +273,24 @@ Search latency scales with corpus size.
 
 ---
 
-## Optimization Recommendations
+## Optimization Status
 
-Based on baseline measurements, prioritize the following for Phase 2:
+### Completed in Phase 2
 
-### High Priority
+| Recommendation | Status | Result |
+|----------------|--------|--------|
+| MemoryPack for serialization hot paths | ✓ Complete | 3-6x speedup |
+| SpanOwner for loop detection temp arrays | ✓ Complete | 5.4x speedup |
+| ValueTask for sync async paths | ✓ Complete | Reduced allocations |
+| BitFaster cache option | ✓ Complete | Optional LRU backend |
+| Pre-sized lists in TaskLedger | ✓ Complete | Reduced allocations |
+| HashSet indices in BeliefStore | ✓ Complete | Cleaner API |
 
-1. **Thompson Sampling at scale (100 candidates)** - 12.1 μs meets 5ms target
-   - Consider BitFaster.Caching for belief store secondary indices if higher-scale scenarios regress
-   - Evaluate parallel sampling with CommunityToolkit.HighPerformance for future scaling
+### Future Considerations
 
-2. **Serialization hot paths** - MemoryPack shows 3-6x improvement
-   - Apply to ledger persistence
-   - Apply to cache serialization
-
-### Medium Priority
-
-3. **Loop Detection at large windows** - scales to 3.8 μs at window=20
-   - Consider SpanOwner for temporary arrays
-   - Evaluate incremental detection
-
-4. **Vector Search at scale** - 2.3 ms for 10K documents
-   - Result caching for repeated queries
-   - Filter index implementation
-
-### Low Priority
-
-5. **Memory pooling** - Already using efficient patterns
-   - Validate zero-allocation in cache hit path ✓
+1. **Filter index for vector search** - Not yet implemented
+2. **Parallel sampling** - Not needed at current scale
+3. **Result caching for vector search** - Optional, gated by configuration
 
 ---
 
@@ -283,9 +307,9 @@ dotnet run -c Release --project src/Agentic.Workflow.Benchmarks -- --filter '*'
 
 ---
 
-## Next Steps
+## Version History
 
-1. Review optimization recommendations with team
-2. Create Phase 2 implementation plan targeting high-priority items
-3. Implement optimizations with before/after measurements
-4. Update this baseline after optimizations
+| Version | Date | Changes |
+|---------|------|---------|
+| Phase 1 | 2026-01-17 | Initial baseline measurements |
+| Phase 2 | 2026-01-18 | MemoryPack, SpanOwner, ValueTask, BitFaster integration |

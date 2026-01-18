@@ -37,7 +37,11 @@ public interface ISemanticSimilarityCalculator
     /// <exception cref="OperationCanceledException">
     /// Thrown when <paramref name="cancellationToken"/> is cancelled.
     /// </exception>
+    /// <remarks>
+    /// Accepting <see cref="IEnumerable{T}"/> allows callers to pass LINQ expressions
+    /// directly without materializing intermediate collections, reducing allocations.
+    /// </remarks>
     Task<double> CalculateMaxSimilarityAsync(
-        IReadOnlyList<string?> outputs,
+        IEnumerable<string?> outputs,
         CancellationToken cancellationToken = default);
 }

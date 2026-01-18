@@ -11,6 +11,7 @@ using BenchmarkDotNet.Environments;
 using BenchmarkDotNet.Exporters;
 using BenchmarkDotNet.Exporters.Json;
 using BenchmarkDotNet.Jobs;
+using BenchmarkDotNet.Loggers;
 using BenchmarkDotNet.Validators;
 
 namespace Agentic.Workflow.Benchmarks;
@@ -35,10 +36,13 @@ public sealed class BenchmarkConfig : ManualConfig
     /// </summary>
     public BenchmarkConfig()
     {
-        // Job for .NET 10 runtime
-        _ = this.AddJob(Job.Default
+        // Short job for faster CI runs (LaunchCount=1, WarmupCount=3, IterationCount=3)
+        _ = this.AddJob(Job.ShortRun
             .WithRuntime(CoreRuntime.Core10_0)
             .WithId("net10"));
+
+        // Logger for CI progress output
+        _ = this.AddLogger(ConsoleLogger.Default);
 
         // Diagnosers
         _ = this.AddDiagnoser(MemoryDiagnoser.Default);

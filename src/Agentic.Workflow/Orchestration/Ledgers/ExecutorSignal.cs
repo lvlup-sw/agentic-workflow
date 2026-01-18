@@ -4,6 +4,8 @@
 // </copyright>
 // =============================================================================
 
+using MemoryPack;
+
 namespace Agentic.Workflow.Orchestration.Ledgers;
 
 /// <summary>
@@ -16,7 +18,8 @@ namespace Agentic.Workflow.Orchestration.Ledgers;
 /// signal type, and optional context-specific data.
 /// </para>
 /// </remarks>
-public record ExecutorSignal
+[MemoryPackable]
+public partial record ExecutorSignal
 {
     /// <summary>
     /// Gets the identifier of the executor that emitted this signal.
@@ -52,7 +55,8 @@ public record ExecutorSignal
 /// <summary>
 /// Data accompanying a successful executor completion.
 /// </summary>
-public record ExecutorSuccessData
+[MemoryPackable]
+public partial record ExecutorSuccessData
 {
     /// <summary>
     /// Gets the result of the executor's work.
@@ -73,7 +77,8 @@ public record ExecutorSuccessData
 /// <summary>
 /// Data accompanying an executor failure.
 /// </summary>
-public record ExecutorFailureData
+[MemoryPackable]
+public partial record ExecutorFailureData
 {
     /// <summary>
     /// Gets the reason for the failure.

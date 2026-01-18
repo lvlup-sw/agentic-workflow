@@ -76,8 +76,9 @@ public sealed class ThompsonSamplingAgentSelector : IAgentSelector
         }
 
         // 3. Fetch beliefs in parallel for all candidates
+        // Convert ValueTask to Task for Task.WhenAll compatibility
         var beliefTasks = candidates.Select(agentId =>
-            _beliefStore.GetBeliefAsync(agentId, categoryName, cancellationToken));
+            _beliefStore.GetBeliefAsync(agentId, categoryName, cancellationToken).AsTask());
         var beliefResults = await Task.WhenAll(beliefTasks).ConfigureAwait(false);
 
         // 4. Sample from Beta posteriors for each candidate

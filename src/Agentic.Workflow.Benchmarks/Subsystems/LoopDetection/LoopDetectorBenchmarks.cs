@@ -174,7 +174,7 @@ public class LoopDetectorBenchmarks
     {
         /// <inheritdoc/>
         public Task<double> CalculateMaxSimilarityAsync(
-            IReadOnlyList<string?> outputs,
+            IEnumerable<string?> outputs,
             CancellationToken cancellationToken = default)
         {
             return Task.FromResult(0.0);
