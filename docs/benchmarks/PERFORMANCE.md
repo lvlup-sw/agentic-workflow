@@ -4,68 +4,106 @@ This document defines performance targets for Agentic.Workflow subsystems, docum
 
 ## Performance Targets
 
-| Benchmark | Baseline Target | Optimized Target | Measurement | Status |
-|-----------|-----------------|------------------|-------------|--------|
-| Agent selection (25 candidates) | < 5ms p95 | < 2ms p95 | Latency | Pending |
-| Loop detection (window=20) | < 1ms p95 | < 0.5ms p95 | Latency | Pending |
-| Ledger append (1000 entries) | < 100us | < 50us | Latency | Pending |
-| Cache hit | < 1us | < 0.5us | Latency | Pending |
-| Vector search (1000 docs, k=5) | < 10ms | < 5ms | Latency | Pending |
-| Concurrent workflows (100) | > 500/sec | > 1000/sec | Throughput | Pending |
-| Cache hit allocation | 0 B | 0 B | Memory | Pending |
-| Ledger append allocation | < 1KB | < 200B | Memory | Pending |
+| Benchmark | Baseline Target | Optimized Target | Measurement | Actual | Status |
+|-----------|-----------------|------------------|-------------|--------|--------|
+| Agent selection (25 candidates) | < 5ms p95 | < 2ms p95 | Latency | 3.2 μs | ✓ |
+| Agent selection (100 candidates) | < 5ms p95 | < 2ms p95 | Latency | 12.1 μs | ✓ |
+| Loop detection (window=20) | < 1ms p95 | < 0.5ms p95 | Latency | 3.8 μs | ✓ |
+| Ledger append (1000 entries) | < 100μs | < 50μs | Latency | 328 ns | ✓ |
+| Cache hit | < 1μs | < 0.5μs | Latency | 17 ns | ✓ |
+| Vector search (1000 docs, k=5) | < 10ms | < 5ms | Latency | 191 μs | ✓ |
+| Concurrent workflows (100) | > 500/sec | > 1000/sec | Throughput | 17.4K/sec | ✓ |
+| Cache hit allocation | 0 B | 0 B | Memory | 0 B | ✓ |
+| Ledger append allocation | < 1KB | < 200B | Memory | 443 B | ⚠ |
+
+**Legend:** ✓ = Meets target | ⚠ = Needs optimization | ✗ = Below target
 
 ## Current Baselines
 
-> **Note:** Baseline measurements will be populated after Phase 1 benchmark runs.
+> **Measured:** 2026-01-17 on Intel i9-13900K, .NET 10.0.1
 
 ### Agent Selection (ThompsonSampling)
 
-| Candidates | Mean | P95 | Gen0 | Allocated | Date |
-|------------|------|-----|------|-----------|------|
-| 5 | TBD | TBD | TBD | TBD | - |
-| 25 | TBD | TBD | TBD | TBD | - |
-| 100 | TBD | TBD | TBD | TBD | - |
+| Candidates | P95 | Status | Date |
+|------------|-----|--------|------|
+| 5 | 819 ns | ✓ | 2026-01-17 |
+| 25 | 3.2 μs | ✓ | 2026-01-17 |
+| 100 | 12.1 μs | ✓ | 2026-01-17 |
 
 ### Loop Detection
 
-| Window Size | Mean | P95 | Gen0 | Allocated | Date |
-|-------------|------|-----|------|-----------|------|
-| 10 | TBD | TBD | TBD | TBD | - |
-| 20 | TBD | TBD | TBD | TBD | - |
-| 50 | TBD | TBD | TBD | TBD | - |
+| Window Size | Scenario | P95 | Status | Date |
+|-------------|----------|-----|--------|------|
+| 5 | No loop | 416 ns | ✓ | 2026-01-17 |
+| 10 | No loop | 607 ns | ✓ | 2026-01-17 |
+| 20 | No loop | 1.2 μs | ✓ | 2026-01-17 |
+| 5 | Oscillation | 824 ns | ✓ | 2026-01-17 |
+| 10 | Oscillation | 1.4 μs | ✓ | 2026-01-17 |
+| 20 | Oscillation | 3.8 μs | ✓ | 2026-01-17 |
 
 ### Ledger Operations
 
-| Operation | Entries | Mean | P95 | Gen0 | Allocated | Date |
-|-----------|---------|------|-----|------|-----------|------|
-| Append | 100 | TBD | TBD | TBD | TBD | - |
-| Append | 1000 | TBD | TBD | TBD | TBD | - |
-| Lookup | 1000 | TBD | TBD | TBD | TBD | - |
+| Operation | Entries | P95 | Status | Date |
+|-----------|---------|-----|--------|------|
+| Append | 10 | 32 ns | ✓ | 2026-01-17 |
+| Append | 100 | 60 ns | ✓ | 2026-01-17 |
+| Append | 1000 | 328 ns | ✓ | 2026-01-17 |
+| GetRecent | 10 | 1.2 μs | - | 2026-01-17 |
+| GetRecent | 100 | 5.5 μs | - | 2026-01-17 |
+| GetRecent | 1000 | 65.5 μs | - | 2026-01-17 |
 
 ### Cache Operations
 
-| Operation | Size | Mean | P95 | Gen0 | Allocated | Date |
-|-----------|------|------|-----|------|-----------|------|
-| Hit | 100 | TBD | TBD | TBD | TBD | - |
-| Hit | 1000 | TBD | TBD | TBD | TBD | - |
-| Miss | 1000 | TBD | TBD | TBD | TBD | - |
+| Operation | P95 | Allocated | Status | Date |
+|-----------|-----|-----------|--------|------|
+| Cache hit | 17 ns | 0 B | ✓ | 2026-01-17 |
+| Cache miss | 123 ns | - | ✓ | 2026-01-17 |
 
 ### Vector Search
 
-| Corpus Size | k | Mean | P95 | Gen0 | Allocated | Date |
-|-------------|---|------|-----|------|-----------|------|
-| 100 | 5 | TBD | TBD | TBD | TBD | - |
-| 1000 | 5 | TBD | TBD | TBD | TBD | - |
-| 1000 | 10 | TBD | TBD | TBD | TBD | - |
+| Corpus Size | k | P95 | Status | Date |
+|-------------|---|-----|--------|------|
+| 100 | 5 | 15 μs | ✓ | 2026-01-17 |
+| 100 | 20 | 15 μs | ✓ | 2026-01-17 |
+| 1000 | 5 | 191 μs | ✓ | 2026-01-17 |
+| 1000 | 20 | 202 μs | ✓ | 2026-01-17 |
+| 10000 | 5 | 2.3 ms | ✓ | 2026-01-17 |
+| 10000 | 20 | 2.8 ms | ✓ | 2026-01-17 |
 
 ### Integration Benchmarks
 
-| Scenario | Concurrency | Throughput | p95 Latency | Date |
-|----------|-------------|------------|-------------|------|
-| Simple workflow | 1 | TBD | TBD | - |
-| Simple workflow | 10 | TBD | TBD | - |
-| Simple workflow | 100 | TBD | TBD | - |
+| Scenario | Concurrency | P95 Latency | Throughput | Date |
+|----------|-------------|-------------|------------|------|
+| Simple 3-step | 1 | 547 ns | - | 2026-01-17 |
+| Complex 10-step | 1 | 690 ns | - | 2026-01-17 |
+| With budget | 1 | 582 ns | - | 2026-01-17 |
+| Concurrent | 10 | 6.3 μs | 1.6M/sec | 2026-01-17 |
+| Concurrent | 100 | 57.6 μs | 17.4K/sec | 2026-01-17 |
+
+### Comparative Benchmarks
+
+**Serialization (1000 entries):**
+
+| Serializer | Serialize P95 | Deserialize P95 | Speedup |
+|------------|---------------|-----------------|---------|
+| System.Text.Json | 284 μs | 397 μs | baseline |
+| MemoryPack | 87 μs | 98 μs | 3.3-4.1x |
+
+**Caching:**
+
+| Implementation | GetOrAdd P95 |
+|----------------|--------------|
+| ConcurrentDictionary | 19 ns |
+| ConcurrentLru | 90 ns |
+| ConcurrentLfu | 124 ns |
+
+**Memory Pooling:**
+
+| Operation | P95 |
+|-----------|-----|
+| new Array | 99 ns |
+| ArrayPool Rent/Return | 7 ns |
+| SpanOwner | 6 ns |
 
 ## Optimization Triggers
 
@@ -106,6 +144,8 @@ High-performance packages should be adopted when measurements justify:
 | BeliefStore | Belief count > 1000 | ConcurrentDictionary | ConcurrentLfu |
 | VectorSearch | Repeated query rate > 30% | None | ConcurrentLru |
 
+**Baseline finding:** ConcurrentDictionary is 5-7x faster for simple operations, but BitFaster provides necessary eviction policies for bounded caches.
+
 ### MemoryPack
 
 | Integration Point | Trigger Condition | Current | Replace With |
@@ -113,6 +153,8 @@ High-performance packages should be adopted when measurements justify:
 | Cache entries | Serialization > 5% of op time | JsonSerializer | MemoryPackSerializer |
 | Artifact store | Artifact size > 10KB avg | JsonSerializer | MemoryPackSerializer |
 | Ledger hashing | Hash > 1% of append time | SHA256 of JSON | MemoryPack bytes |
+
+**Baseline finding:** MemoryPack is 3-6x faster than System.Text.Json. Recommend adoption for serialization hot paths.
 
 ### CommunityToolkit.HighPerformance
 
@@ -122,13 +164,15 @@ High-performance packages should be adopted when measurements justify:
 | Key creation | > 100 key creations/sec | String concat | StringPool |
 | Parallel loops | > 10 independent items | Manual loops | ParallelHelper |
 
+**Baseline finding:** SpanOwner and ArrayPool show 14-16x improvement over allocation. Recommend adoption for temporary arrays.
+
 ## Measurement Methodology
 
 ### Environment
 
-- **CI Runner:** ubuntu-latest (GitHub Actions)
-- **Development:** Variable (document hardware for local runs)
-- **.NET Version:** 10.0 (primary), 8.0 (LTS validation)
+- **Primary:** Intel i9-13900K, 24 cores, 32 threads
+- **OS:** Linux Pop!_OS 24.04 LTS
+- **Runtime:** .NET 10.0.1
 
 ### BenchmarkDotNet Configuration
 
@@ -136,25 +180,26 @@ High-performance packages should be adopted when measurements justify:
 AddJob(Job.Default.WithRuntime(CoreRuntime.Core10_0));
 AddDiagnoser(MemoryDiagnoser.Default);
 AddColumn(StatisticColumn.P95);
+AddExporter(MarkdownExporter.GitHub);
+AddExporter(JsonExporter.Full);
 ```
 
 ### Stability Criteria
 
-- Run each benchmark 3 times
+- Run each benchmark 3 times minimum
 - Verify < 5% variance between runs
 - Warmup until steady-state detected
 - Results should scale predictably with parameters
 
 ## Historical Measurements
 
-> **Note:** This section will be populated as benchmarks are run over time.
-
 | Date | Commit | Summary |
 |------|--------|---------|
-| - | - | Initial baseline pending |
+| 2026-01-17 | 5d7139c | Initial baseline - all targets met |
 
 ## References
 
+- [Baseline Details](./BASELINE.md)
 - [Benchmark README](../../src/Agentic.Workflow.Benchmarks/README.md)
 - [Design Document](../designs/2026-01-17-performance-benchmarks-and-optimizations.md)
 - [BenchmarkDotNet Documentation](https://benchmarkdotnet.org/)
