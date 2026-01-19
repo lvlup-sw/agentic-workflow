@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.1] - 2026-01-19
+
+### Added
+
+- **Sample Applications** — Three complete sample applications demonstrating core patterns:
+  - AgenticCoder: TDD coding workflow with Plan → Code → Test → Iterate loop
+  - ContentPipeline: Draft → Review → Approve → Publish with human-in-the-loop
+  - MultiModelRouter: Thompson Sampling agent selection with learning feedback
+- **Learning Paths** — Structured documentation paths for different experience levels
+- **Educational Content** — Pattern documentation transformed into tutorials with exercises
+
+### Fixed
+
+- **RouterState Attribute** — Add missing `[WorkflowState]` attribute to MultiModelRouter sample
+- **Documentation Build** — Escape generic type syntax (`SpanOwner<string>`) in markdown tables to fix VitePress build
+
 ## [1.1.0] - 2026-01-18
 
 ### Added
@@ -101,5 +117,6 @@ First stable release of the Agentic.Workflow library for building production-gra
 - Transactional outbox pattern
 - Time-travel debugging via event replay
 
+[1.1.1]: https://github.com/lvlup-sw/agentic-workflow/releases/tag/v1.1.1
 [1.1.0]: https://github.com/lvlup-sw/agentic-workflow/releases/tag/v1.1.0
 [1.0.0]: https://github.com/lvlup-sw/agentic-workflow/releases/tag/v1.0.0
