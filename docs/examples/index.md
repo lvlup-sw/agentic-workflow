@@ -1,40 +1,123 @@
-# Examples
+# Examples & Learning Paths
 
-Complete, end-to-end workflow implementations demonstrating real-world patterns you can adapt for your own use cases.
+Learn to build agentic workflows through structured tutorials that teach you to **think** about workflow design, not just copy code.
 
-## What These Examples Demonstrate
+---
 
-Each example showcases:
+## How to Use This Documentation
 
-- **Complete state definitions** with realistic domain models
-- **Full workflow definitions** using the fluent DSL
-- **Step implementations** with dependency injection
-- **Error handling** and compensation patterns
-- **Registration** and API endpoints
-- **Generated artifacts** explanation
+Each example in this section teaches concepts before showing code:
 
-## End-to-End Workflows
+| Section | What You'll Find |
+|---------|------------------|
+| **Problem Narrative** | Real-world scenario motivating the pattern |
+| **Learning Objectives** | What you'll understand after reading |
+| **Conceptual Foundation** | Design decisions, trade-offs, anti-patterns |
+| **Progressive Code Reveal** | Shape first, then implementation details |
+| **"Aha Moment"** | Core insight crystallized |
+| **Extension Exercises** | Guided practice to deepen understanding |
 
-| Example | Patterns | Description |
-|---------|----------|-------------|
-| [Order Processing](./order-processing.md) | Linear, Error Handling, Compensation | E-commerce order workflow from validation through fulfillment |
-| [Content Pipeline](./content-pipeline.md) | Iterative Refinement, Thompson Sampling, Approval | AI-powered content generation with quality loops |
-| [Code Review](./code-review.md) | Fork/Join, Branching, Event Sourcing | Automated PR analysis with parallel checks |
+---
 
-## Pattern Examples
+## Learning Paths
 
-| Example | Pattern | Description |
-|---------|---------|-------------|
-| [Basic Workflow](./basic-workflow.md) | Linear | Simple sequential step execution |
-| [Branching](./branching.md) | Conditional | Route execution based on state |
-| [Fork/Join](./fork-join.md) | Parallel | Execute steps concurrently |
-| [Iterative Refinement](./iterative-refinement.md) | Loops | Repeat until quality threshold |
-| [Approval Flow](./approval-flow.md) | Human-in-the-loop | Pause for human decisions |
-| [Thompson Sampling](./thompson-sampling.md) | Agent Selection | Intelligent agent routing |
+Choose a path based on your goals and available time.
+
+### Path 1: First Workflow (30 minutes)
+
+**Goal**: Understand the foundational patterns that all workflows build on.
+
+| Step | Read | Learn |
+|------|------|-------|
+| 1 | [Basic Workflow](./basic-workflow.md) | Sequential steps, immutable state, saga pattern |
+| 2 | Run the [ContentPipeline sample](../../samples/ContentPipeline/) | See a workflow in action |
+| 3 | **Exercise**: Add a `ReserveInventory` step to the order workflow |
+
+**After this path**: You can build simple sequential workflows with proper state management.
+
+---
+
+### Path 2: AI Agent Patterns (2 hours)
+
+**Goal**: Learn patterns for building intelligent, adaptive AI systems.
+
+| Step | Read | Learn |
+|------|------|-------|
+| 1 | [Thompson Sampling](./thompson-sampling.md) | Multi-armed bandit, exploration vs exploitation |
+| 2 | Run the [MultiModelRouter sample](../../samples/MultiModelRouter/) | See adaptive model selection |
+| 3 | [Iterative Refinement](./iterative-refinement.md) | Quality loops, `[Append]` attribute, maxIterations |
+| 4 | Run the [AgenticCoder sample](../../samples/AgenticCoder/) | See test-driven refinement |
+| 5 | **Exercise**: Add a custom task category to MultiModelRouter |
+
+**After this path**: You can build AI systems that learn and improve over time.
+
+---
+
+### Path 3: Production Patterns (3 hours)
+
+**Goal**: Master patterns for production-ready workflows with human oversight.
+
+| Step | Read | Learn |
+|------|------|-------|
+| 1 | [Approval Flow](./approval-flow.md) | Human checkpoints, timeout handling, escalation |
+| 2 | [Branching](./branching.md) | Conditional routing, transition tables |
+| 3 | [Fork/Join](./fork-join.md) | Parallel execution, state merging |
+| 4 | Run the [ContentPipeline sample](../../samples/ContentPipeline/) | See approval gates and compensation |
+| 5 | **Exercise**: Add multi-approver workflow to ContentPipeline |
+
+**After this path**: You can build workflows with human-AI collaboration, parallel processing, and complex routing.
+
+---
+
+### Path 4: Complete Mastery (Full Day)
+
+**Goal**: Understand all patterns and how they compose together.
+
+1. Complete Path 1 (Foundation)
+2. Complete Path 2 (AI Patterns)
+3. Complete Path 3 (Production Patterns)
+4. **Capstone Project**: Design a workflow that combines:
+   - Thompson Sampling for agent selection
+   - Iterative refinement for quality
+   - Human approval before final action
+   - Fork/Join for parallel analysis
+
+---
+
+## Pattern Quick Reference
+
+| Pattern | When to Use | Key Concept |
+|---------|-------------|-------------|
+| [Basic Workflow](./basic-workflow.md) | Sequential operations with dependencies | Saga pattern, immutable state |
+| [Branching](./branching.md) | Different logic for different inputs | Declarative routing, transition tables |
+| [Fork/Join](./fork-join.md) | Independent operations that can parallelize | State merging, fail-fast vs continue |
+| [Iterative Refinement](./iterative-refinement.md) | Quality improvement through feedback | `[Append]`, maxIterations circuit breaker |
+| [Approval Flow](./approval-flow.md) | Human decisions in automated workflows | Timeout handling, escalation, audit |
+| [Thompson Sampling](./thompson-sampling.md) | Adaptive selection from multiple options | Beta distributions, exploration/exploitation |
+
+---
+
+## Sample Applications
+
+Runnable projects demonstrating complete implementations.
+
+| Sample | Run Command | What It Demonstrates |
+|--------|-------------|---------------------|
+| [ContentPipeline](../../samples/ContentPipeline/) | `dotnet run --project samples/ContentPipeline` | Human approval gates, compensation, audit trails |
+| [MultiModelRouter](../../samples/MultiModelRouter/) | `dotnet run --project samples/MultiModelRouter` | Thompson Sampling, intelligent model selection |
+| [AgenticCoder](../../samples/AgenticCoder/) | `dotnet run --project samples/AgenticCoder` | Iterative refinement loops, human checkpoints |
+
+Each sample README includes:
+- Problem narrative and solution approach
+- Conceptual explanation of the patterns used
+- Step-by-step walkthrough of the implementation
+- Extension exercises for practice
+
+---
 
 ## Prerequisites
 
-Before running these examples, ensure you have:
+Before running examples, ensure you have:
 
 1. **.NET 9.0 or later** installed
 2. **PostgreSQL** running (for Marten event store)
@@ -45,9 +128,9 @@ dotnet add package Agentic.Workflow
 dotnet add package Agentic.Workflow.Generators
 ```
 
-## Running the Examples
+---
 
-Each example includes complete code that can be copied into a project. The typical setup pattern is:
+## Quick Start Template
 
 ```csharp
 // Program.cs
@@ -78,42 +161,25 @@ app.MapControllers();
 app.Run();
 ```
 
-## Code Organization
+---
 
-Each example follows this structure:
+## Key Principles Across All Patterns
 
-```text
-Examples/
-  YourWorkflow/
-    State/
-      YourState.cs           # State record
-      DomainModels.cs        # Supporting types
-    Steps/
-      Step1.cs               # Step implementations
-      Step2.cs
-    Services/
-      IYourService.cs        # Service interfaces
-      YourServiceImpl.cs     # Implementations
-    YourWorkflow.cs          # Workflow definition
-    YourController.cs        # API endpoints
-```
+| Principle | Why It Matters |
+|-----------|----------------|
+| **State is immutable** | Enables replay, debugging, concurrency safety |
+| **Steps are resolved via DI** | Testability, loose coupling |
+| **Failures are explicit** | `StepResult.Fail()` not exceptions |
+| **Workflows survive restarts** | Durability via Wolverine saga persistence |
+| **Everything is audited** | Events capture all state transitions |
 
-## Sample Applications
+---
 
-Complete, runnable sample projects demonstrating Agentic.Workflow patterns. Each sample can be executed with `dotnet run`.
+## What's Next?
 
-| Sample | Run Command | What It Demonstrates |
-|--------|-------------|---------------------|
-| [ContentPipeline](https://github.com/lvlup-sw/agentic-workflow/tree/main/samples/ContentPipeline) | `dotnet run --project samples/ContentPipeline` | Human approval gates, compensation, audit trails |
-| [MultiModelRouter](https://github.com/lvlup-sw/agentic-workflow/tree/main/samples/MultiModelRouter) | `dotnet run --project samples/MultiModelRouter` | Thompson Sampling, intelligent model selection |
-| [AgenticCoder](https://github.com/lvlup-sw/agentic-workflow/tree/main/samples/AgenticCoder) | `dotnet run --project samples/AgenticCoder` | Iterative refinement loops, human checkpoints |
+After completing these examples:
 
-See the [samples directory](https://github.com/lvlup-sw/agentic-workflow/tree/main/samples) for full source code.
-
-## Key Points Across All Examples
-
-- **State is immutable** - Use `With()` to create updated copies
-- **Steps are resolved via DI** - Inject services through constructors
-- **Failures are explicit** - Return `StepResult.Fail()` with error details
-- **Workflows survive restarts** - Durability is automatic via Wolverine
-- **Everything is audited** - Events capture all state transitions
+1. **Read the [Learn section](../learn/)** for deeper conceptual understanding
+2. **Explore the [API Reference](../api/)** for complete interface documentation
+3. **Check the [samples directory](../../samples/)** for production-quality implementations
+4. **Join the community** to share your workflows and learn from others
