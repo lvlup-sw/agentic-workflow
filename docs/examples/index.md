@@ -98,6 +98,18 @@ Examples/
     YourController.cs        # API endpoints
 ```
 
+## Sample Applications
+
+Complete, runnable sample projects demonstrating Agentic.Workflow patterns. Each sample can be executed with `dotnet run`.
+
+| Sample | Run Command | What It Demonstrates |
+|--------|-------------|---------------------|
+| [ContentPipeline](https://github.com/lvlup-sw/agentic-workflow/tree/main/samples/ContentPipeline) | `dotnet run --project samples/ContentPipeline` | Human approval gates, compensation, audit trails |
+| [MultiModelRouter](https://github.com/lvlup-sw/agentic-workflow/tree/main/samples/MultiModelRouter) | `dotnet run --project samples/MultiModelRouter` | Thompson Sampling, intelligent model selection |
+| [AgenticCoder](https://github.com/lvlup-sw/agentic-workflow/tree/main/samples/AgenticCoder) | `dotnet run --project samples/AgenticCoder` | Iterative refinement loops, human checkpoints |
+
+See the [samples directory](https://github.com/lvlup-sw/agentic-workflow/tree/main/samples) for full source code.
+
 ## Key Points Across All Examples
 
 - **State is immutable** - Use `With()` to create updated copies

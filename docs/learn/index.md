@@ -73,6 +73,25 @@ Rather than reinventing durability primitives, Agentic.Workflow builds on proven
 - **Human-in-the-Loop** - Built-in approval workflows with timeout escalation
 - **Compensation Handlers** - Explicit rollback strategies for AI decisions when workflows fail
 
+## Try the Samples
+
+::: tip Ready to see it in action?
+Run any of our complete sample applications:
+
+```bash
+# Content publishing with approval workflow
+dotnet run --project samples/ContentPipeline
+
+# Intelligent model selection with Thompson Sampling
+dotnet run --project samples/MultiModelRouter
+
+# Iterative code generation with human checkpoints
+dotnet run --project samples/AgenticCoder
+```
+
+See the [Sample Applications](/examples/#sample-applications) for details.
+:::
+
 ## What's Next
 
 Now that you understand why Agentic.Workflow exists, learn about the [Core Concepts](/learn/core-concepts) that power it, or see how it [compares to alternatives](/learn/comparison).
