@@ -45,6 +45,9 @@ public sealed class MockAgentSelector : IAgentSelector
     /// <param name="seed">Optional random seed for reproducibility.</param>
     public MockAgentSelector(int priorAlpha = 2, int priorBeta = 2, int? seed = null)
     {
+        ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(priorAlpha, 0);
+        ArgumentOutOfRangeException.ThrowIfLessThanOrEqual(priorBeta, 0);
+
         _priorAlpha = priorAlpha;
         _priorBeta = priorBeta;
         _random = seed.HasValue ? new Random(seed.Value) : new Random();
@@ -89,6 +92,13 @@ public sealed class MockAgentSelector : IAgentSelector
                 bestAgentId = agentId;
                 bestObservations = observations;
             }
+        }
+
+        // Check if all agents were excluded
+        if (bestTheta == double.MinValue)
+        {
+            return Task.FromResult(Result<AgentSelection>.Failure(
+                new Error("NO_ELIGIBLE_AGENTS", "All available agents are excluded")));
         }
 
         // Compute confidence based on observation count
@@ -146,6 +156,9 @@ public sealed class MockAgentSelector : IAgentSelector
     /// <returns>The estimated success rate (0.0 to 1.0).</returns>
     public double GetSuccessRate(string agentId, string taskCategory)
     {
+        ArgumentNullException.ThrowIfNull(agentId);
+        ArgumentNullException.ThrowIfNull(taskCategory);
+
         var key = GetBeliefKey(agentId, taskCategory);
         if (_beliefs.TryGetValue(key, out var belief))
         {

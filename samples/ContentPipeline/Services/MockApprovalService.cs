@@ -44,6 +44,8 @@ public sealed class MockApprovalService : IApprovalService
     /// <inheritdoc/>
     public Task<ApprovalDecision> GetApprovalAsync(Guid workflowId, CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
+
         var decision = new ApprovalDecision(
             Approved: _shouldApprove,
             Feedback: _shouldApprove ? _feedback : _feedback ?? "Content needs revision",

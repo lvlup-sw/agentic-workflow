@@ -65,6 +65,11 @@ public sealed class SelectModel : IWorkflowStep<RouterState>
         ArgumentNullException.ThrowIfNull(state);
         ArgumentNullException.ThrowIfNull(context);
 
+        if (string.IsNullOrWhiteSpace(state.UserQuery))
+        {
+            throw new ArgumentException("UserQuery must not be null or whitespace for SelectModel.ExecuteAsync", nameof(state));
+        }
+
         var selectionContext = new AgentSelectionContext
         {
             WorkflowId = state.WorkflowId,

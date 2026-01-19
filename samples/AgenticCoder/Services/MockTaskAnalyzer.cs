@@ -13,9 +13,11 @@ public sealed class MockTaskAnalyzer : ITaskAnalyzer
 {
     /// <inheritdoc/>
     public Task<TaskAnalysisResult> AnalyzeTaskAsync(
-        string taskDescription,
+        string? taskDescription,
         CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
+
         // Normalize input to avoid NRE on null taskDescription
         var normalizedDescription = taskDescription ?? string.Empty;
 

@@ -18,6 +18,6 @@ public interface ITaskAnalyzer
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>Analysis result with validation and complexity assessment.</returns>
     Task<TaskAnalysisResult> AnalyzeTaskAsync(
-        string taskDescription,
+        string? taskDescription,
         CancellationToken cancellationToken = default);
 }
