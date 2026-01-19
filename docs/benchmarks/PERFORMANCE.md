@@ -160,7 +160,7 @@ High-performance packages should be adopted when measurements justify:
 
 | Integration Point | Trigger Condition | Current | Replace With |
 |-------------------|-------------------|---------|--------------|
-| LoopDetector arrays | Allocation > 1KB per detection | new string[n] | SpanOwner<string> |
+| LoopDetector arrays | Allocation > 1KB per detection | `new string[n]` | `SpanOwner<string>` |
 | Key creation | > 100 key creations/sec | String concat | StringPool |
 | Parallel loops | > 10 independent items | Manual loops | ParallelHelper |
 
