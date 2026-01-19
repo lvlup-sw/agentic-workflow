@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **RouterState Attribute** — Add missing `[WorkflowState]` attribute to MultiModelRouter sample
 - **Documentation Build** — Escape generic type syntax (`SpanOwner<string>`) in markdown tables to fix VitePress build
+- **CI Workflows** — Upgrade git-cliff-action from v3 to v4 (Debian Buster EOL)
 
 ## [1.1.0] - 2026-01-18
 
