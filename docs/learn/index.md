@@ -22,11 +22,11 @@ When something goes wrong in production, you need to understand the full context
 
 ### Workflow Engines
 
-Tools like [Temporal](https://temporal.io/) provide battle-tested durability patterns that have proven themselves in production at massive scale. But they have no awareness of agent-specific patterns:
+Tools like [Temporal](https://temporal.io/) provide battle-tested durability patterns with excellent compensation support (saga pattern with `addCompensation()`). However, they have no awareness of agent-specific patterns:
 
-- **Confidence handling** - What happens when an agent is uncertain?
-- **Context assembly** - How do you build prompts from workflow state?
-- **AI-aware compensation** - How do you roll back an AI decision?
+- **Confidence handling** — What happens when an agent is uncertain?
+- **Context assembly** — How do you build prompts from workflow state?
+- **Intelligent agent selection** — How do you route tasks to the best-performing agent?
 
 You end up writing significant glue code to adapt generic workflow primitives to AI-specific needs.
 

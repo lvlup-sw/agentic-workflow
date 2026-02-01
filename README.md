@@ -97,28 +97,38 @@ See [Package Documentation](docs/packages.md) for detailed guidance.
 
 ## How It Compares
 
-| Capability | Agentic.Workflow | [LangGraph](https://www.langchain.com/langgraph) | [MS Agent Framework](https://learn.microsoft.com/en-us/agent-framework/) | [Temporal](https://temporal.io/) |
-|------------|:----------------:|:---------:|:------------------:|:--------:|
+| Capability | Agentic.Workflow | [LangGraph](https://www.langchain.com/langgraph) | [MAF Workflows](https://learn.microsoft.com/en-us/agent-framework/user-guide/workflows/overview) | [Temporal](https://temporal.io/) |
+|------------|:----------------:|:---------:|:-------------:|:--------:|
 | .NET native | ✓ | | ✓ | ✓ |
-| Durable execution | event-sourced | checkpoints | checkpoints | event history |
-| Full audit trail | ✓ | | | |
-| Confidence-based routing | ✓ | | | |
-| Thompson Sampling | ✓ | | | |
-| Compile-time validation | ✓ | | | |
+| Durable execution | event-sourced | checkpoints | checkpoints (BSP) | event history |
+| Compensation/rollback | ✓ DSL | | | ✓ Saga |
 | Human-in-the-loop | ✓ | ✓ | ✓ | ✓ |
-| Compensation handlers | ✓ | | | ✓ |
-| Production status | 1.0 | stable | preview | stable |
+| Decision explainability | ✓ | | | |
+| Confidence routing | ✓ | | | |
+| Budget governance | ✓ | | | |
+| Loop detection | ✓ | | | |
+| Intelligent agent selection | ✓ | | | |
+| Visual dashboard | | | ✓ DTS | ✓ |
+| Cloud-agnostic | ✓ | ✓ | | ✓ |
+
+**Why these matter for AI workflows:**
+- **Decision explainability** — Answer "what did the agent see?" for debugging and compliance
+- **Budget governance** — Prevent runaway costs; enforce per-workflow resource limits
+- **Confidence routing** — Low-confidence decisions automatically escalate to humans
+- **Loop detection** — Stuck agents get caught before burning through your budget
+- **Intelligent agent selection** — System learns which agents perform best over time
 
 ## Key Features
 
-- **Fluent DSL** — Intuitive workflow definitions that read like natural language
-- **Roslyn Source Generators** — Compile-time validation; invalid workflows fail at build time
-- **Thompson Sampling** — Contextual multi-armed bandit for intelligent agent selection
-- **Confidence Routing** — Automatic escalation to human review for low-confidence decisions
-- **Event-Sourced Audit Trail** — Complete decision history: what the agent saw, what it decided, which model version produced the output
+- **Fluent DSL** — Workflow definitions that read like natural language
+- **Decision Explainability** — Full audit trail: what the agent saw, what it decided, which model produced the output
+- **Budget Governance** — Enforce per-workflow resource limits; prevent runaway costs
+- **Confidence Routing** — Low-confidence decisions automatically escalate to human review
+- **Intelligent Agent Selection** — Learning-based routing that improves over time (Thompson Sampling)
+- **Loop Detection** — Catch stuck agents before they burn through your budget
+- **Compensation Handlers** — DSL-based rollback when workflows fail
+- **Compile-Time Validation** — Invalid workflows fail at build time, not runtime
 - **Durable by Default** — Automatic persistence via Wolverine sagas and Marten event sourcing
-- **Human-in-the-Loop** — Built-in approval workflows with timeout escalation
-- **Compensation Handlers** — Explicit rollback for AI decisions when workflows fail
 
 ## Quick Start
 

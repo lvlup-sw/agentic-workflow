@@ -10,11 +10,15 @@ export default defineConfig({
   srcExclude: [
     '**/archive/**',
     '**/theory/**',
+    '**/designs/**',
+    '**/plans/**',
     'design.md',
     'deferred-features.md',
     'diagnostics.md',
     'integrations.md',
     'packages.md',
+    'microsoft-agent-framework-workflows.md',
+    'workflow-library-roadmap-v2.md',
   ],
 
   // Ignore dead links during initial setup - will be resolved as content is added
@@ -42,6 +46,7 @@ export default defineConfig({
             { text: 'Why Agentic.Workflow', link: '/learn/' },
             { text: 'Core Concepts', link: '/learn/core-concepts' },
             { text: 'Comparison', link: '/learn/comparison' },
+            { text: 'MAF Deep Dive', link: '/learn/maf-deep-dive' },
           ],
         },
       ],
