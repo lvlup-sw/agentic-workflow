@@ -4,7 +4,7 @@
 [![Build Status](https://img.shields.io/github/actions/workflow/status/lvlup-sw/agentic-workflow/ci.yml?branch=main)](https://github.com/lvlup-sw/agentic-workflow/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-> Deterministic orchestration for probabilistic AI agents
+> Deterministic orchestration for AI-powered workflows
 
 ## Documentation
 
