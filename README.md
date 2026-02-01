@@ -111,13 +111,6 @@ See [Package Documentation](docs/packages.md) for detailed guidance.
 | Visual dashboard | | | ✓ DTS | ✓ |
 | Cloud-agnostic | ✓ | ✓ | | ✓ |
 
-**Why these matter for AI workflows:**
-- **Decision explainability** — Answer "what did the agent see?" for debugging and compliance
-- **Budget governance** — Prevent runaway costs; enforce per-workflow resource limits
-- **Confidence routing** — Low-confidence decisions automatically escalate to humans
-- **Loop detection** — Stuck agents get caught before burning through your budget
-- **Intelligent agent selection** — System learns which agents perform best over time
-
 ## Key Features
 
 - **Fluent DSL** — Workflow definitions that read like natural language
