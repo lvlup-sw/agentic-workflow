@@ -40,7 +40,7 @@ public sealed record ApprovalConfiguration
     /// </summary>
     /// <remarks>
     /// This stores the lambda expression as a string for source generator consumption.
-    /// Example: "state => $\"Claim {state.ClaimId} for ${state.Amount}\""
+    /// Example: "state => $\"Claim {state.ClaimId} for ${state.Amount}\"".
     /// </remarks>
     public string? ContextFactoryExpression { get; init; }
 
@@ -65,7 +65,7 @@ public sealed record ApprovalConfiguration
     /// </summary>
     /// <remarks>
     /// Stores lambda expressions as strings for source generator consumption.
-    /// Example: { "claimAmount": "state => state.Amount" }
+    /// Example: { "claimAmount": "state => state.Amount" }.
     /// </remarks>
     public IReadOnlyDictionary<string, string> DynamicMetadataExpressions { get; init; } =
         new Dictionary<string, string>();

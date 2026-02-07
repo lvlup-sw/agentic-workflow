@@ -5,7 +5,9 @@
 // =============================================================================
 
 using System.Text.Json;
+
 using BenchmarkDotNet.Attributes;
+
 using MemoryPack;
 
 namespace Agentic.Workflow.Benchmarks.Comparative.Serialization;

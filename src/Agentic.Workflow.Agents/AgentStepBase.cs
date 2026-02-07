@@ -4,13 +4,14 @@
 // </copyright>
 // =============================================================================
 
-namespace Agentic.Workflow.Agents;
-
 using Agentic.Workflow.Abstractions;
 using Agentic.Workflow.Agents.Abstractions;
 using Agentic.Workflow.Agents.Models;
 using Agentic.Workflow.Steps;
+
 using Microsoft.Extensions.AI;
+
+namespace Agentic.Workflow.Agents;
 
 /// <summary>
 /// Base class for LLM-powered workflow steps with context assembly support.

@@ -43,8 +43,8 @@ jobs:
           FILTER=""
           HAS_CHANGES="false"
 
-          # Get changed files compared to base branch
-          CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD)
+          # Get files with substantive (non-whitespace) changes compared to base branch
+          CHANGED_FILES=$(git diff --name-only --ignore-all-space origin/${{ github.base_ref }}...HEAD)
 
           # Map changed paths to benchmark filters
           if echo "$CHANGED_FILES" | grep -q "Selection/"; then
@@ -83,6 +83,9 @@ jobs:
     needs: detect-changes
     if: needs.detect-changes.outputs.has_changes == 'true'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4

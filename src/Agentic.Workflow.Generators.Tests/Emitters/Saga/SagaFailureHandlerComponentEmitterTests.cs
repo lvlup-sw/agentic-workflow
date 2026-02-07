@@ -4,12 +4,14 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
-namespace Agentic.Workflow.Generators.Tests.Emitters.Saga;
-
 using System.Text;
+
 using Agentic.Workflow.Generators.Emitters.Saga;
 using Agentic.Workflow.Generators.Models;
+
 using TUnit.Core;
+
+namespace Agentic.Workflow.Generators.Tests.Emitters.Saga;
 
 /// <summary>
 /// Unit tests for <see cref="SagaFailureHandlerComponentEmitter"/>.

@@ -4,11 +4,11 @@
 // </copyright>
 // =============================================================================
 
-namespace Agentic.Workflow.Generators.Tests.Helpers;
-
 using Agentic.Workflow.Generators.Helpers;
 using Agentic.Workflow.Generators.Models;
 using Agentic.Workflow.Generators.Tests.Fixtures;
+
+namespace Agentic.Workflow.Generators.Tests.Helpers;
 
 /// <summary>
 /// Unit tests for <see cref="ApprovalExtractor"/> class.

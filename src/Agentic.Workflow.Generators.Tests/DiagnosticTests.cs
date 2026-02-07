@@ -4,10 +4,10 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
-namespace Agentic.Workflow.Generators.Tests;
-
 using Agentic.Workflow.Generators.Diagnostics;
 using Agentic.Workflow.Generators.Tests.Fixtures;
+
+namespace Agentic.Workflow.Generators.Tests;
 
 /// <summary>
 /// Tests for diagnostic reporting in the workflow generator.

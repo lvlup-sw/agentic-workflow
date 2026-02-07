@@ -5,8 +5,9 @@
 // =============================================================================
 
 using System.Collections.Concurrent;
-using Agentic.Workflow.Primitives;
+
 using Agentic.Workflow.Abstractions;
+using Agentic.Workflow.Primitives;
 using Agentic.Workflow.Selection;
 
 namespace Agentic.Workflow.Infrastructure.Selection;

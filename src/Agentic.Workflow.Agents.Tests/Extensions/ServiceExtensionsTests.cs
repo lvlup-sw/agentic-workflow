@@ -5,6 +5,7 @@
 // =============================================================================
 
 using Agentic.Workflow.Agents.Extensions;
+
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Agentic.Workflow.Agents.Tests.Extensions;

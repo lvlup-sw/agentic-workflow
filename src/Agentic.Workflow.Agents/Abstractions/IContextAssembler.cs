@@ -4,11 +4,11 @@
 // </copyright>
 // =============================================================================
 
-namespace Agentic.Workflow.Agents.Abstractions;
-
 using Agentic.Workflow.Abstractions;
 using Agentic.Workflow.Agents.Models;
 using Agentic.Workflow.Steps;
+
+namespace Agentic.Workflow.Agents.Abstractions;
 
 /// <summary>
 /// Assembles runtime context for agent step execution.

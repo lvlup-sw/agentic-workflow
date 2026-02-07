@@ -4,10 +4,10 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
-namespace Agentic.Workflow.Generators.Tests.Emitters;
-
 using Agentic.Workflow.Generators.Emitters;
 using Agentic.Workflow.Generators.Models;
+
+namespace Agentic.Workflow.Generators.Tests.Emitters;
 
 /// <summary>
 /// Tests for <see cref="SagaEmitter"/> validation step handling.

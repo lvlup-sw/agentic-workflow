@@ -17,7 +17,7 @@ namespace Agentic.Workflow.Infrastructure.Budget;
 /// Budget lifecycle follows the pattern: allocate → reserve → commit/release.
 /// </para>
 /// <para>
-/// Formula: Remaining = Allocated - Consumed
+/// Formula: Remaining = Allocated - Consumed.
 /// </para>
 /// </remarks>
 public sealed record ResourceBudget : IResourceBudget

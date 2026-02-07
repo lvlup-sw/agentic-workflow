@@ -4,11 +4,11 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
-namespace Agentic.Workflow.Agents.Models;
-
 using Agentic.Workflow.Agents.Abstractions;
+
 using Microsoft.Extensions.AI;
 
+namespace Agentic.Workflow.Agents.Models;
 /// <summary>
 /// Provides context for agent step execution.
 /// </summary>

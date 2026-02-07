@@ -17,7 +17,7 @@ namespace Agentic.Workflow.Configuration;
 /// repetitive behavior patterns in the progress ledger.
 /// </para>
 /// <para>
-/// Bind to configuration section: <c>"Workflow:LoopDetection"</c>
+/// Bind to configuration section: <c>"Workflow:LoopDetection"</c>.
 /// </para>
 /// </remarks>
 public sealed class LoopDetectionOptions : IValidatableObject

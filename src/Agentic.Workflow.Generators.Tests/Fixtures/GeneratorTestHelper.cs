@@ -4,11 +4,12 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
-namespace Agentic.Workflow.Generators.Tests.Fixtures;
-
 using System.Reflection;
 using System.Runtime.CompilerServices;
+
 using Microsoft.CodeAnalysis.Text;
+
+namespace Agentic.Workflow.Generators.Tests.Fixtures;
 
 /// <summary>
 /// Provides test infrastructure for running source generators in tests.

@@ -5,6 +5,7 @@
 // -----------------------------------------------------------------------
 
 using System.Text;
+
 using Agentic.Workflow.Generators.Models;
 
 namespace Agentic.Workflow.Generators.Emitters.Saga;

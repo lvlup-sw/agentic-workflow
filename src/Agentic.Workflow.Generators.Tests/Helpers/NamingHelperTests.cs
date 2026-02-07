@@ -4,9 +4,9 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
-namespace Agentic.Workflow.Generators.Tests.Helpers;
-
 using Agentic.Workflow.Generators.Helpers;
+
+namespace Agentic.Workflow.Generators.Tests.Helpers;
 
 /// <summary>
 /// Unit tests for the <see cref="NamingHelper"/> class.
