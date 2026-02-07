@@ -909,6 +909,7 @@ public sealed class IArtifactStoreContractTests
             {
                 return path["/artifacts/".Length..];
             }
+
             return path.TrimStart('/');
         }
     }

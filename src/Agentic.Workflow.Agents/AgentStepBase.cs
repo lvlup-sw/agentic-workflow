@@ -86,7 +86,7 @@ public abstract class AgentStepBase<TState> : IAgentStep<TState>
     {
         // Assemble context if assembler is available
         var assembledContext = _contextAssembler != null
-            ? await _contextAssembler.AssembleAsync(state, context, cancellationToken)
+            ? await _contextAssembler.AssembleAsync(state, context, cancellationToken).ConfigureAwait(false)
             : AssembledContext.Empty;
 
         // Build messages for the LLM
@@ -96,12 +96,12 @@ public abstract class AgentStepBase<TState> : IAgentStep<TState>
         var response = await _chatClient.GetResponseAsync(
             messages,
             options: null,
-            cancellationToken);
+            cancellationToken).ConfigureAwait(false);
 
         var responseText = response.Text ?? string.Empty;
 
         // Apply result and return updated state
-        return await ApplyResultAsync(state, responseText, cancellationToken);
+        return await ApplyResultAsync(state, responseText, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>

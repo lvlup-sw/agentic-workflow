@@ -93,7 +93,7 @@ public sealed class WorkflowIncrementalGenerator : IIncrementalGenerator
 
         // Get workflow name and version from attribute
         var attribute = context.Attributes.FirstOrDefault();
-        if (attribute?.ConstructorArguments.Length < 1)
+        if (attribute is null || attribute.ConstructorArguments.Length < 1)
         {
             return new WorkflowGeneratorResult(null, diagnostics);
         }

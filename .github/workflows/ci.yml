@@ -15,8 +15,15 @@ env:
   DOTNET_CLI_TESTINGPLATFORM_ENABLE: '1'
 
 jobs:
+  format-check:
+    uses: lvlup-sw/.github/.github/workflows/format-check.yml@main
+    with:
+      solution-path: 'src/agentic-workflow.sln'
+      dotnet-version: '10.0.x'
+
   build-test:
     name: Build & Test
+    needs: format-check
     runs-on: blacksmith-4vcpu-ubuntu-2204
     steps:
       - name: Checkout

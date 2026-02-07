@@ -44,12 +44,10 @@
     <TestingPlatformDotnetTestSupport>true</TestingPlatformDotnetTestSupport>
   </PropertyGroup>
   <ItemGroup>
+    <!-- Build tooling - Lvlup.Build provides analyzers -->
+    <PackageReference Include="Lvlup.Build" PrivateAssets="all" />
     <PackageReference Include="MinVer" PrivateAssets="all" />
     <PackageReference Include="Microsoft.SourceLink.GitHub" PrivateAssets="all" />
-    <PackageReference Include="Microsoft.CodeAnalysis.NetAnalyzers" PrivateAssets="all" />
-    <PackageReference Include="StyleCop.Analyzers" PrivateAssets="all" />
   </ItemGroup>
-  <ItemGroup>
-    <AdditionalFiles Include="$(MSBuildThisFileDirectory)stylecop.json" />
-  </ItemGroup>
+  <!-- stylecop.json provided by Lvlup.Build package -->
 </Project>

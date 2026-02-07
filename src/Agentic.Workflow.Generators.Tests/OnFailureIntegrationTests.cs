@@ -417,5 +417,4 @@ public class OnFailureIntegrationTests
         // To verify: the failure handler completed handler should just update state
         await Assert.That(sagaSource).Contains("RecoveryStep");
     }
-
 }
