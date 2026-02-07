@@ -6,14 +6,6 @@ on:
   push:
     branches: [main]
 
-env:
-  DOTNET_VERSION: '10.0.x'
-  DOTNET_QUALITY: 'preview'
-  SOLUTION_PATH: 'src/agentic-workflow.sln'
-  COVERAGE_THRESHOLD: 80
-  # Enable new Microsoft Testing Platform integration for .NET 10+
-  DOTNET_CLI_TESTINGPLATFORM_ENABLE: '1'
-
 jobs:
   format-check:
     uses: lvlup-sw/.github/.github/workflows/format-check.yml@main
@@ -25,156 +17,47 @@ jobs:
       dotnet-quality: 'preview'
 
   build-test:
-    name: Build & Test
     needs: format-check
+    uses: lvlup-sw/.github/.github/workflows/build-and-test.yml@main
+    with:
+      solution-path: 'src/agentic-workflow.sln'
+      test-project-patterns: |
+        src/*Tests/*.csproj
+      skip-patterns: |
+        *Benchmarks.Tests*
+      runner: 'blacksmith-4vcpu-ubuntu-2204'
+      dotnet-version: '10.0.x'
+      dotnet-quality: 'preview'
+
+  pack-verify:
+    name: Pack (verify)
+    needs: build-test
     runs-on: blacksmith-4vcpu-ubuntu-2204
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: ${{ env.DOTNET_VERSION }}
-          dotnet-quality: ${{ env.DOTNET_QUALITY }}
+          dotnet-version: '10.0.x'
+          dotnet-quality: 'preview'
 
-      - name: Restore
-        run: dotnet restore ${{ env.SOLUTION_PATH }}
-
-      - name: Build
-        run: dotnet build ${{ env.SOLUTION_PATH }} --no-restore --configuration Release
-
-      - name: Run tests with coverage
-        run: |
-          # .NET 10 + TUnit (Microsoft.Testing.Platform): run each test project individually
-          mkdir -p ./TestResults
-          failed=0
-          for proj in src/*Tests/*.csproj; do
-            # Skip benchmark tests - they don't contribute to coverage metrics
-            if [[ "$proj" == *"Benchmarks.Tests"* ]]; then
-              echo "Skipping benchmark tests: $proj"
-              continue
-            fi
-            echo "=========================================="
-            echo "Running tests for $proj"
-            echo "=========================================="
-            projname=$(basename "$proj" .csproj)
-            # Use absolute path for coverage output
-            coverage_path="${GITHUB_WORKSPACE}/TestResults/${projname}.cobertura.xml"
-            if ! dotnet run --project "$proj" --configuration Release -- \
-              --coverage \
-              --coverage-output-format cobertura \
-              --coverage-output "$coverage_path"; then
-              echo "Tests failed for $proj"
-              failed=1
-            fi
-          done
-          exit $failed
-
-      - name: Merge coverage reports
-        if: always()
-        run: |
-          dotnet tool install -g dotnet-reportgenerator-globaltool || true
-          if ls ./TestResults/*.cobertura.xml 1> /dev/null 2>&1; then
-            reportgenerator \
-              -reports:"./TestResults/*.cobertura.xml" \
-              -targetdir:"./TestResults" \
-              -reporttypes:"Cobertura" \
-              -verbosity:Warning
-            # Create the expected output file
-            if [ -f "./TestResults/Cobertura.xml" ]; then
-              cp ./TestResults/Cobertura.xml ./TestResults/coverage.cobertura.xml
-            fi
-          else
-            echo "WARNING: No coverage files found."
-            # Create empty coverage file to not break downstream
-            echo '<?xml version="1.0"?><coverage version="1"></coverage>' > ./TestResults/coverage.cobertura.xml
-          fi
-
-      - name: Pack (verify)
-        run: dotnet pack ${{ env.SOLUTION_PATH }} --no-build --configuration Release --output ./packages
-
-      - name: Upload coverage
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-reports
-          path: ./TestResults/coverage.cobertura.xml
-          retention-days: 7
+      - name: Pack
+        run: dotnet pack src/agentic-workflow.sln --configuration Release --output ./packages
 
   coverage-gate:
-    name: Coverage Gate
     needs: build-test
-    runs-on: blacksmith-4vcpu-ubuntu-2204
     if: github.event_name == 'pull_request'
+    uses: lvlup-sw/.github/.github/workflows/coverage-gate.yml@main
     permissions:
-      contents: read
       pull-requests: write
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Download coverage
-        uses: actions/download-artifact@v4
-        with:
-          name: coverage-reports
-          path: ./coverage-reports
-
-      - name: Install ReportGenerator
-        run: dotnet tool install -g dotnet-reportgenerator-globaltool
-
-      - name: Merge coverage reports
-        run: |
-          reportgenerator \
-            -reports:"./coverage-reports/**/coverage.cobertura.xml" \
-            -targetdir:"./coverage-merged" \
-            -reporttypes:"Cobertura;TextSummary"
-
-      - name: Run coverage gate
-        id: coverage
-        run: |
-          chmod +x ./scripts/ci/coverage-gate.sh
-          ./scripts/ci/coverage-gate.sh \
-            --coverage-file ./coverage-merged/Cobertura.xml \
-            --threshold ${{ env.COVERAGE_THRESHOLD }} \
-            --output-dir ./coverage-merged
-
-      - name: Post PR comment
-        if: always()
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          gh pr comment ${{ github.event.pull_request.number }} \
-            --body-file ./coverage-merged/pr-comment.md \
-            --edit-last || \
-          gh pr comment ${{ github.event.pull_request.number }} \
-            --body-file ./coverage-merged/pr-comment.md
+    with:
+      coverage-threshold: 80
 
   update-baseline:
-    name: Update Coverage Baseline
-    runs-on: blacksmith-4vcpu-ubuntu-2204
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     needs: build-test
-    steps:
-      - name: Download coverage artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: coverage-reports
-          path: ./coverage-reports
-
-      - name: Install ReportGenerator
-        run: dotnet tool install -g dotnet-reportgenerator-globaltool
-
-      - name: Generate merged report
-        run: |
-          reportgenerator \
-            -reports:"./coverage-reports/**/coverage.cobertura.xml" \
-            -targetdir:"./coverage-merged" \
-            -reporttypes:"JsonSummary"
-
-      - name: Cache baseline coverage
-        uses: actions/cache/save@v4
-        with:
-          path: ./coverage-merged/Summary.json
-          key: coverage-baseline-${{ github.sha }}
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    uses: lvlup-sw/.github/.github/workflows/update-baseline.yml@main
+    with:
+      runner: 'blacksmith-4vcpu-ubuntu-2204'
