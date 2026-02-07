@@ -16,7 +16,7 @@ namespace Agentic.Workflow.Generators.Tests;
 /// Integration tests verifying the complete approval workflow generation.
 /// </summary>
 [Property("Category", "Integration")]
-public class SagaApprovalIntegrationTests
+public sealed class SagaApprovalIntegrationTests
 {
     // =============================================================================
     // A. Full Workflow with Basic Approval Tests
