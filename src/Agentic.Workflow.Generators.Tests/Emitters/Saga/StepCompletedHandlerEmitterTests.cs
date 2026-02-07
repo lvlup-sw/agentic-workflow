@@ -4,11 +4,12 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
-namespace Agentic.Workflow.Generators.Tests.Emitters.Saga;
-
 using System.Text;
+
 using Agentic.Workflow.Generators.Emitters.Saga;
 using Agentic.Workflow.Generators.Models;
+
+namespace Agentic.Workflow.Generators.Tests.Emitters.Saga;
 
 /// <summary>
 /// Unit tests for the <see cref="StepCompletedHandlerEmitter"/> class.
@@ -590,7 +591,7 @@ public class StepCompletedHandlerEmitterTests
     /// <remarks>
     /// The generated code should have an if-else structure:
     /// if (Phase == Failed) return StartFailedStepCommand
-    /// else return StartNextStepCommand
+    /// else return StartNextStepCommand.
     /// </remarks>
     [Test]
     public async Task EmitHandler_WithFailureHandlers_GeneratesConditionalStructure()

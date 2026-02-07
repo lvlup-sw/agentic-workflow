@@ -4,12 +4,13 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
-namespace Agentic.Workflow.Generators.Tests;
-
 using System.Text;
+
 using Agentic.Workflow.Generators.Emitters;
 using Agentic.Workflow.Generators.Emitters.Saga;
 using Agentic.Workflow.Generators.Models;
+
+namespace Agentic.Workflow.Generators.Tests;
 
 /// <summary>
 /// Integration tests verifying the complete approval workflow generation.

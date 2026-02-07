@@ -26,6 +26,7 @@ public sealed record WorkflowBudget : IWorkflowBudget
     private readonly Lazy<ScarcityLevel> _cachedScarcity;
 
     /// <summary>
+    /// Initializes a new instance of the <see cref="WorkflowBudget"/> class.
     /// Initializes a new instance of the <see cref="WorkflowBudget"/> record.
     /// </summary>
     public WorkflowBudget()
@@ -34,6 +35,7 @@ public sealed record WorkflowBudget : IWorkflowBudget
     }
 
     /// <summary>
+    /// Initializes a new instance of the <see cref="WorkflowBudget"/> class.
     /// Copy constructor that reinitializes the lazy cache.
     /// </summary>
     /// <remarks>

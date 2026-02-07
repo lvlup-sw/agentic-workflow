@@ -4,9 +4,9 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
-namespace Agentic.Workflow.Generators.Tests.Utilities;
-
 using Agentic.Workflow.Generators.Utilities;
+
+namespace Agentic.Workflow.Generators.Tests.Utilities;
 
 /// <summary>
 /// Unit tests for the <see cref="IdentifierValidator"/> class.

@@ -4,10 +4,10 @@
 // </copyright>
 // =============================================================================
 
-namespace Agentic.Workflow.Agents.Tests.Abstractions;
-
 using Agentic.Workflow.Abstractions;
 using Agentic.Workflow.Steps;
+
+namespace Agentic.Workflow.Agents.Tests.Abstractions;
 
 /// <summary>
 /// Unit tests for the <see cref="IContextAssembler{TState}"/> interface.

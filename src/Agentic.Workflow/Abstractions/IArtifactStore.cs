@@ -84,5 +84,6 @@ public interface IArtifactStore
     /// which is beneficial for in-memory implementations that complete synchronously.
     /// </para>
     /// </remarks>
+    /// <returns>A <see cref="ValueTask"/> representing the asynchronous operation.</returns>
     ValueTask DeleteAsync(Uri reference, CancellationToken cancellationToken);
 }

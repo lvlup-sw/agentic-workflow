@@ -5,7 +5,9 @@
 // =============================================================================
 
 using System.Buffers;
+
 using BenchmarkDotNet.Attributes;
+
 using CommunityToolkit.HighPerformance.Buffers;
 
 namespace Agentic.Workflow.Benchmarks.Comparative.Pooling;

@@ -17,7 +17,7 @@ namespace Agentic.Workflow.Configuration;
 /// decision making. These options configure default allocations and scaling factors.
 /// </para>
 /// <para>
-/// Bind to configuration section: <c>"Workflow:Budget"</c>
+/// Bind to configuration section: <c>"Workflow:Budget"</c>.
 /// </para>
 /// </remarks>
 public sealed class BudgetOptions : IValidatableObject

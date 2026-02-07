@@ -4,9 +4,9 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
-namespace Agentic.Workflow.Agents.Abstractions;
-
 using System.Collections.Immutable;
+
+namespace Agentic.Workflow.Agents.Abstractions;
 
 /// <summary>
 /// Marker interface for workflow states that support per-agent conversation continuity.

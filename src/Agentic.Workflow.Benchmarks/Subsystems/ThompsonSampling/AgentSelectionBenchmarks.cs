@@ -7,6 +7,7 @@
 using Agentic.Workflow.Benchmarks.Fixtures;
 using Agentic.Workflow.Infrastructure.Selection;
 using Agentic.Workflow.Selection;
+
 using BenchmarkDotNet.Attributes;
 
 namespace Agentic.Workflow.Benchmarks.Subsystems.ThompsonSampling;

@@ -18,7 +18,7 @@ namespace Agentic.Workflow.Generators.Models;
 /// The source generator uses this model to emit:
 /// - Loop iteration tracking properties on saga state
 /// - Loop condition evaluation handlers
-/// - Loop exit/continue transition logic
+/// - Loop exit/continue transition logic.
 /// </para>
 /// <para>
 /// Nested loops are supported via ParentLoopName, which enables hierarchical naming

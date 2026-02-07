@@ -7,6 +7,7 @@
 using Agentic.Workflow.Abstractions;
 using Agentic.Workflow.Infrastructure.Budget;
 using Agentic.Workflow.Orchestration.Budget;
+
 using BenchmarkDotNet.Attributes;
 
 namespace Agentic.Workflow.Benchmarks.Subsystems.Budget;

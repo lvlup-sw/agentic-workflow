@@ -7,6 +7,7 @@
 using Agentic.Workflow.Generators.Helpers;
 using Agentic.Workflow.Generators.Models;
 using Agentic.Workflow.Generators.Polyfills;
+
 using Microsoft.CodeAnalysis;
 
 namespace Agentic.Workflow.Generators;
@@ -309,7 +310,7 @@ internal static class FluentDslParser
     /// <returns>
     /// A tuple of (HasFinally, HasSteps) where:
     /// - HasFinally is true if the workflow contains a Finally call
-    /// - HasSteps is true if there are any step methods in the workflow
+    /// - HasSteps is true if there are any step methods in the workflow.
     /// </returns>
     public static (bool HasFinally, bool HasSteps) ValidateEndsWith(
         SyntaxNode typeDeclaration,
@@ -342,7 +343,7 @@ internal static class FluentDslParser
     /// <returns>
     /// A tuple of (HasStartWith, FirstMethodName) where:
     /// - HasStartWith is true if the first step method is StartWith
-    /// - FirstMethodName is the name of the first step method found, or null if none
+    /// - FirstMethodName is the name of the first step method found, or null if none.
     /// </returns>
     public static (bool HasStartWith, string? FirstMethodName) ValidateStartsWith(
         SyntaxNode typeDeclaration,

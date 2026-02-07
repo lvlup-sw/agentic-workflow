@@ -5,6 +5,7 @@
 // =============================================================================
 
 using System.Reflection;
+
 using Agentic.Workflow.Infrastructure.Selection;
 
 namespace Agentic.Workflow.Infrastructure.Tests.Selection;
@@ -24,7 +25,7 @@ public sealed class InMemoryBeliefStoreIndexTests
     /// <para>
     /// Using ConcurrentDictionary&lt;string, byte&gt; as a set wastes memory because:
     /// - Each entry has a byte value (1 byte + padding = 8 bytes on 64-bit)
-    /// - The byte is always 0 (sentinel) and never used
+    /// - The byte is always 0 (sentinel) and never used.
     /// </para>
     /// <para>
     /// HashSet&lt;string&gt; eliminates this overhead by storing only the keys.

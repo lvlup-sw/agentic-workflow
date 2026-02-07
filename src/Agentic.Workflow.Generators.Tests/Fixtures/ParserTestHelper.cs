@@ -4,11 +4,12 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
-namespace Agentic.Workflow.Generators.Tests.Fixtures;
-
 using Agentic.Workflow.Generators.Helpers;
 using Agentic.Workflow.Generators.Models;
+
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+
+namespace Agentic.Workflow.Generators.Tests.Fixtures;
 
 /// <summary>
 /// Provides test infrastructure for testing the FluentDslParser directly.

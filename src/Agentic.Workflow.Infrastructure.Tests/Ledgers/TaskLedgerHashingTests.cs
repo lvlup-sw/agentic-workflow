@@ -5,6 +5,7 @@
 // =============================================================================
 
 using System.Security.Cryptography;
+
 using MemoryPack;
 
 namespace Agentic.Workflow.Infrastructure.Tests.Ledgers;
