@@ -5,6 +5,7 @@
 // =============================================================================
 
 using Agentic.Workflow.Infrastructure.Configuration;
+
 using Microsoft.Extensions.Options;
 
 namespace Agentic.Workflow.Infrastructure.Tests.ArtifactStores;
@@ -598,4 +599,3 @@ public sealed class FileSystemArtifactStoreTests : IAsyncDisposable
         public string Description { get; init; } = string.Empty;
     }
 }
-

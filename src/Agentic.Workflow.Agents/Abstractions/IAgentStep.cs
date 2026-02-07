@@ -4,11 +4,11 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
-namespace Agentic.Workflow.Agents.Abstractions;
 
 using Agentic.Workflow.Abstractions;
 using Agentic.Workflow.Steps;
 
+namespace Agentic.Workflow.Agents.Abstractions;
 /// <summary>
 /// Represents a workflow step that is powered by an LLM agent.
 /// </summary>

@@ -4,12 +4,13 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
-namespace Agentic.Workflow.Generators.Tests.Emitters;
 
 using System.Text;
+
 using Agentic.Workflow.Generators.Emitters;
 using Agentic.Workflow.Generators.Models;
 
+namespace Agentic.Workflow.Generators.Tests.Emitters;
 /// <summary>
 /// Unit tests for the <see cref="ApprovalIntegrationHandlerEmitter"/> class.
 /// </summary>

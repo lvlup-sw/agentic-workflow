@@ -4,10 +4,11 @@
 // </copyright>
 // =============================================================================
 
-using Agentic.Workflow.Primitives;
 using Agentic.Workflow.Abstractions;
 using Agentic.Workflow.Infrastructure.Selection;
+using Agentic.Workflow.Primitives;
 using Agentic.Workflow.Selection;
+
 using NSubstitute;
 
 namespace Agentic.Workflow.Infrastructure.Tests.Selection;

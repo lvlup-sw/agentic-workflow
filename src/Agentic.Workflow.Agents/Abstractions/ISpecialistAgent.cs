@@ -4,8 +4,8 @@
 // </copyright>
 // =============================================================================
 
-using Agentic.Workflow.Primitives;
 using Agentic.Workflow.Agents.Models;
+using Agentic.Workflow.Primitives;
 
 namespace Agentic.Workflow.Agents.Abstractions;
 

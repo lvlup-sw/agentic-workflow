@@ -5,7 +5,9 @@
 // =============================================================================
 
 using System.Reflection;
+
 using Agentic.Workflow.Benchmarks.Subsystems.LargeScale;
+
 using BenchmarkDotNet.Attributes;
 
 namespace Agentic.Workflow.Benchmarks.Tests;

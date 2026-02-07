@@ -5,6 +5,7 @@
 // -----------------------------------------------------------------------
 
 using Agentic.Workflow.Generators.Polyfills;
+
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 

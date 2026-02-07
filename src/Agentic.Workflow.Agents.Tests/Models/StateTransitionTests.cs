@@ -82,4 +82,3 @@ public class StateTransitionTests
         await Assert.That(transition1).IsNotEqualTo(transition2);
     }
 }
-

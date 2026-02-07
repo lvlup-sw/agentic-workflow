@@ -5,6 +5,7 @@
 // =============================================================================
 
 using System.Security.Cryptography;
+
 using MemoryPack;
 
 namespace Agentic.Workflow.Infrastructure.Tests.Ledgers;
@@ -329,4 +330,3 @@ public sealed class TaskLedgerHashingTests
         await Assert.That(ledger.VerifyIntegrity()).IsTrue();
     }
 }
-

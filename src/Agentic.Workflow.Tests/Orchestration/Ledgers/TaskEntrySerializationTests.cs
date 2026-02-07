@@ -6,6 +6,7 @@
 
 using Agentic.Workflow.Orchestration;
 using Agentic.Workflow.Orchestration.Ledgers;
+
 using MemoryPack;
 
 namespace Agentic.Workflow.Tests.Orchestration.Ledgers;
@@ -107,4 +108,3 @@ public sealed class TaskEntrySerializationTests
         await Assert.That(deserialized.Dependencies).Contains("dep-a");
     }
 }
-

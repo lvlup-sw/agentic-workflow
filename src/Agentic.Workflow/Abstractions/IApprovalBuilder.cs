@@ -4,8 +4,8 @@
 // </copyright>
 // =============================================================================
 
-using Agentic.Workflow.Models;
 using Agentic.Workflow.Definitions;
+using Agentic.Workflow.Models;
 
 namespace Agentic.Workflow.Builders;
 

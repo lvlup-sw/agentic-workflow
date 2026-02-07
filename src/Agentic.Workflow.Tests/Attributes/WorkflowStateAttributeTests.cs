@@ -4,10 +4,10 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
-namespace Agentic.Workflow.Tests.Attributes;
 
 using Agentic.Workflow.Attributes;
 
+namespace Agentic.Workflow.Tests.Attributes;
 /// <summary>
 /// Unit tests for <see cref="WorkflowStateAttribute"/>.
 /// </summary>

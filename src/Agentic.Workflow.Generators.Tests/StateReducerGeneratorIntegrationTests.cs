@@ -4,10 +4,10 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
-namespace Agentic.Workflow.Generators.Tests;
 
 using Agentic.Workflow.Generators.Tests.Fixtures;
 
+namespace Agentic.Workflow.Generators.Tests;
 /// <summary>
 /// Integration tests for the <see cref="StateReducerIncrementalGenerator"/>.
 /// </summary>

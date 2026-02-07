@@ -5,6 +5,7 @@
 // =============================================================================
 
 using System.Reflection;
+
 using Agentic.Workflow.Infrastructure.Selection;
 
 namespace Agentic.Workflow.Infrastructure.Tests.Selection;
@@ -484,4 +485,3 @@ public sealed class InMemoryBeliefStoreIndexTests
         await Assert.That(byCategory.Value.Count).IsEqualTo(1);
     }
 }
-

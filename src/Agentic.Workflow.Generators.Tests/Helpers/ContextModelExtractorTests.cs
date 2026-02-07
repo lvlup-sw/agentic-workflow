@@ -4,11 +4,11 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
-namespace Agentic.Workflow.Generators.Tests.Helpers;
 
 using Agentic.Workflow.Generators.Helpers;
 using Agentic.Workflow.Generators.Models;
 
+namespace Agentic.Workflow.Generators.Tests.Helpers;
 /// <summary>
 /// Unit tests for the <see cref="ContextModelExtractor"/> class.
 /// </summary>

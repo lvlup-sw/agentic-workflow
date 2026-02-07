@@ -5,7 +5,9 @@
 // =============================================================================
 
 using System.Collections.Concurrent;
+
 using BenchmarkDotNet.Attributes;
+
 using BitFaster.Caching.Lfu;
 using BitFaster.Caching.Lru;
 

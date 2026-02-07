@@ -6,6 +6,7 @@
 
 using Agentic.Workflow.Benchmarks.Fixtures;
 using Agentic.Workflow.Rag.Adapters;
+
 using BenchmarkDotNet.Attributes;
 
 namespace Agentic.Workflow.Benchmarks.Subsystems.VectorSearch;

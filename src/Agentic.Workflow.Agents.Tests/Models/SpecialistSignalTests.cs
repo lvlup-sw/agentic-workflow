@@ -305,4 +305,3 @@ public class SpecialistSignalTests
         await Assert.That(signal.HelpNeededData).IsNotNull();
     }
 }
-

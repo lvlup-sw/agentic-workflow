@@ -329,4 +329,3 @@ public sealed class InMemoryBeliefStoreValueTaskTests
         }
     }
 }
-

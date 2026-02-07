@@ -5,6 +5,7 @@
 // =============================================================================
 
 using Agentic.Workflow.Agents.Models;
+
 using Microsoft.Extensions.AI;
 
 namespace Agentic.Workflow.Agents.Abstractions;
