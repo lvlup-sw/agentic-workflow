@@ -4,11 +4,11 @@
 // </copyright>
 // =============================================================================
 
-namespace Agentic.Workflow.Tests.Builders;
-
 using Agentic.Workflow.Abstractions;
 using Agentic.Workflow.Steps;
 using Agentic.Workflow.Tests.Fixtures;
+
+namespace Agentic.Workflow.Tests.Builders;
 
 /// <summary>
 /// Unit tests for lambda step support in <see cref="WorkflowBuilder{TState}"/>.

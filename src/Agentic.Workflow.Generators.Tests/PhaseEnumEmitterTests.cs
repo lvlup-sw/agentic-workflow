@@ -4,9 +4,9 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
-namespace Agentic.Workflow.Generators.Tests;
-
 using Agentic.Workflow.Generators.Tests.Fixtures;
+
+namespace Agentic.Workflow.Generators.Tests;
 
 /// <summary>
 /// Unit tests for the Phase enum emitter functionality.

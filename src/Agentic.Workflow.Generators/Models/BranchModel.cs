@@ -86,7 +86,7 @@ internal sealed record BranchCaseModel(
 /// The source generator uses this model to emit:
 /// - Switch expression handlers for routing based on discriminator
 /// - Per-branch step phase names with prefixes
-/// - Convergence point transitions for rejoining branches
+/// - Convergence point transitions for rejoining branches.
 /// </para>
 /// <para>
 /// Supports discriminator types: enum, string, int, bool.

@@ -4,9 +4,9 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
-namespace Agentic.Workflow.Generators.Tests.Models;
-
 using Agentic.Workflow.Generators.Models;
+
+namespace Agentic.Workflow.Generators.Tests.Models;
 
 /// <summary>
 /// Unit tests for the <see cref="StepModel"/> Context property extension.

@@ -4,9 +4,9 @@
 // </copyright>
 // =============================================================================
 
-namespace Agentic.Workflow.Steps;
-
 using Agentic.Workflow.Abstractions;
+
+namespace Agentic.Workflow.Steps;
 
 /// <summary>
 /// Delegate for inline lambda step implementations.

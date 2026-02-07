@@ -4,12 +4,13 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
-namespace Agentic.Workflow.Generators.Tests.Emitters.Saga;
-
 using Agentic.Workflow.Generators.Emitters;
 using Agentic.Workflow.Generators.Emitters.Saga;
 using Agentic.Workflow.Generators.Models;
+
 using TUnit.Core;
+
+namespace Agentic.Workflow.Generators.Tests.Emitters.Saga;
 
 /// <summary>
 /// Tests verifying the orchestration of saga component emitters.

@@ -5,6 +5,7 @@
 // =============================================================================
 
 using Agentic.Workflow.Infrastructure.Configuration;
+
 using Microsoft.Extensions.Options;
 
 namespace Agentic.Workflow.Infrastructure.Tests.ArtifactStores;

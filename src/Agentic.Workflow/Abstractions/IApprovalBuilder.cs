@@ -4,8 +4,8 @@
 // </copyright>
 // =============================================================================
 
-using Agentic.Workflow.Models;
 using Agentic.Workflow.Definitions;
+using Agentic.Workflow.Models;
 
 namespace Agentic.Workflow.Builders;
 
@@ -66,7 +66,7 @@ public interface IApprovalBuilder<TState, TApprover>
     /// </exception>
     /// <remarks>
     /// The expression is captured for source generator consumption.
-    /// Example: <c>state => $"Claim {state.ClaimId} for ${state.Amount}"</c>
+    /// Example: <c>state => $"Claim {state.ClaimId} for ${state.Amount}"</c>.
     /// </remarks>
     IApprovalBuilder<TState, TApprover> WithContextFrom(Func<TState, string> contextFactory);
 
@@ -111,7 +111,7 @@ public interface IApprovalBuilder<TState, TApprover>
     /// <returns>The builder for fluent chaining.</returns>
     /// <remarks>
     /// The expression is captured for source generator consumption.
-    /// Example: <c>"amount", state => state.TotalAmount</c>
+    /// Example: <c>"amount", state => state.TotalAmount</c>.
     /// </remarks>
     IApprovalBuilder<TState, TApprover> WithMetadataFrom(string key, Func<TState, object> valueFactory);
 

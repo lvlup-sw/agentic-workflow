@@ -4,9 +4,9 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
-namespace Agentic.Workflow.Generators.Tests.Models;
-
 using Agentic.Workflow.Generators.Models;
+
+namespace Agentic.Workflow.Generators.Tests.Models;
 
 /// <summary>
 /// Unit tests for <see cref="BranchModel.Create"/> and <see cref="BranchCaseModel.Create"/> factory methods.

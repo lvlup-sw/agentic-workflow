@@ -13,7 +13,7 @@ namespace Agentic.Workflow.Selection;
 /// <remarks>
 /// <para>
 /// The belief models the probability of success when an agent handles a task category:
-/// <c>θ ~ Beta(α, β)</c>
+/// <c>θ ~ Beta(α, β)</c>.
 /// </para>
 /// <para>
 /// Where:

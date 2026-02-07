@@ -10,7 +10,9 @@ global using Agentic.Workflow.Definitions;
 global using Agentic.Workflow.Services;
 global using Agentic.Workflow.Steps;
 global using Agentic.Workflow.Tests.Fixtures;
+
 global using NSubstitute;
+
 global using TUnit.Assertions;
 global using TUnit.Assertions.Extensions;
 global using TUnit.Core;

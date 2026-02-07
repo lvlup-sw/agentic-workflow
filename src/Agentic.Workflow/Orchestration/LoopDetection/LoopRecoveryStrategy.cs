@@ -30,7 +30,7 @@ public enum LoopRecoveryStrategy
     /// </summary>
     /// <remarks>
     /// Used for <see cref="LoopType.ExactRepetition"/>.
-    /// Adds constraint: "Do NOT use the previous approach. Try a different method."
+    /// Adds constraint: "Do NOT use the previous approach. Try a different method.".
     /// </remarks>
     [JsonStringEnumMemberName("inject_variation")]
     InjectVariation,

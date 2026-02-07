@@ -4,10 +4,11 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
-namespace Agentic.Workflow.Generators.Tests.Helpers;
-
 using System.Text;
+
 using Agentic.Workflow.Generators.Helpers;
+
+namespace Agentic.Workflow.Generators.Tests.Helpers;
 
 /// <summary>
 /// Unit tests for the <see cref="XmlDocHelper"/> class.

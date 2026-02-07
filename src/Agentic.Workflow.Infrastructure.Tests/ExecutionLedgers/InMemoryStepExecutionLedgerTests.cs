@@ -5,7 +5,9 @@
 // =============================================================================
 
 using Agentic.Workflow.Infrastructure.ExecutionLedgers;
+
 using MemoryPack;
+
 using Microsoft.Extensions.Time.Testing;
 
 namespace Agentic.Workflow.Infrastructure.Tests.ExecutionLedgers;

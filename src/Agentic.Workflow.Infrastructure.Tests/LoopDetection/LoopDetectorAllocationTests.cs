@@ -8,8 +8,10 @@ using Agentic.Workflow.Configuration;
 using Agentic.Workflow.Infrastructure.LoopDetection;
 using Agentic.Workflow.Orchestration.Ledgers;
 using Agentic.Workflow.Orchestration.LoopDetection;
+
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+
 using NSubstitute;
 
 namespace Agentic.Workflow.Infrastructure.Tests.LoopDetection;

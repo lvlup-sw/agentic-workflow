@@ -62,6 +62,7 @@ public interface IStepExecutionLedger
     /// <exception cref="ArgumentNullException">
     /// Thrown when <paramref name="result"/> is null.
     /// </exception>
+    /// <returns>A <see cref="Task"/> representing the asynchronous operation.</returns>
     Task CacheResultAsync<TResult>(
         string stepName,
         string inputHash,

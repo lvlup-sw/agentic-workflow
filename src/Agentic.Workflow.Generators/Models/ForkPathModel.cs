@@ -17,7 +17,7 @@ namespace Agentic.Workflow.Generators.Models;
 /// The source generator uses this model to emit:
 /// - Path-specific phase enum values with path index prefix
 /// - Path status tracking properties in saga state
-/// - Path step handlers with join readiness checks
+/// - Path step handlers with join readiness checks.
 /// </para>
 /// </remarks>
 /// <param name="PathIndex">The zero-based index of this path within the fork.</param>

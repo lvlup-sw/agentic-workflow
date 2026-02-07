@@ -8,6 +8,7 @@ using Agentic.Workflow.Abstractions;
 using Agentic.Workflow.Builders;
 using Agentic.Workflow.Definitions;
 using Agentic.Workflow.Steps;
+
 using BenchmarkDotNet.Attributes;
 
 namespace Agentic.Workflow.Benchmarks.Integration;

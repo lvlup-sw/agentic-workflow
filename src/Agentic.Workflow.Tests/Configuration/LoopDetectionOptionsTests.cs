@@ -5,6 +5,7 @@
 // =============================================================================
 
 using System.ComponentModel.DataAnnotations;
+
 using Agentic.Workflow.Configuration;
 
 namespace Agentic.Workflow.Tests.Configuration;

@@ -4,10 +4,10 @@
 // </copyright>
 // =============================================================================
 
-namespace Agentic.Workflow.Agents.Tests;
-
 using Agentic.Workflow.Abstractions;
 using Agentic.Workflow.Steps;
+
+namespace Agentic.Workflow.Agents.Tests;
 
 /// <summary>
 /// Unit tests for the <see cref="AgentStepBase{TState}"/> abstract class.

@@ -18,7 +18,7 @@ namespace Agentic.Workflow.Generators.Models;
 /// - Parallel dispatch commands for all fork paths
 /// - Path status tracking properties in saga state
 /// - Join readiness checks that wait for all paths to complete
-/// - Join step handler that merges path states
+/// - Join step handler that merges path states.
 /// </para>
 /// <para>
 /// All fork paths execute concurrently. The join step executes only after
