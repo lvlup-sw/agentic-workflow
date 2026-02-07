@@ -4,12 +4,13 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
-namespace Agentic.Workflow.Generators.Tests.Helpers;
 
 using Agentic.Workflow.Generators.Helpers;
+
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 
+namespace Agentic.Workflow.Generators.Tests.Helpers;
 /// <summary>
 /// Unit tests for <see cref="BranchExtractor"/>.
 /// </summary>

@@ -86,4 +86,3 @@ public class WorkflowAgentContextTests
         await Assert.That(context1).IsEqualTo(context2);
     }
 }
-

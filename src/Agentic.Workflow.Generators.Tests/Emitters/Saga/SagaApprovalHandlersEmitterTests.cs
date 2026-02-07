@@ -4,12 +4,13 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
-namespace Agentic.Workflow.Generators.Tests.Emitters.Saga;
 
 using System.Text;
+
 using Agentic.Workflow.Generators.Emitters.Saga;
 using Agentic.Workflow.Generators.Models;
 
+namespace Agentic.Workflow.Generators.Tests.Emitters.Saga;
 /// <summary>
 /// Unit tests for the <see cref="SagaApprovalHandlersEmitter"/> class.
 /// </summary>

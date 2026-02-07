@@ -4,10 +4,10 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
-namespace Agentic.Workflow.Agents.Abstractions;
 
 using Microsoft.Extensions.AI;
 
+namespace Agentic.Workflow.Agents.Abstractions;
 /// <summary>
 /// Manages conversation threads for agent workflow execution.
 /// </summary>

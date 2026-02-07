@@ -5,6 +5,7 @@
 // =============================================================================
 
 using System.Linq.Expressions;
+
 using Agentic.Workflow.Tests.Fixtures;
 
 namespace Agentic.Workflow.Tests.Abstractions;

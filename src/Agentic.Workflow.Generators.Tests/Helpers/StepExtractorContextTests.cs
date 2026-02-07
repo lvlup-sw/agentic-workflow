@@ -4,13 +4,14 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
-namespace Agentic.Workflow.Generators.Tests.Helpers;
 
 using Agentic.Workflow.Generators.Helpers;
 using Agentic.Workflow.Generators.Tests.Fixtures;
+
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 
+namespace Agentic.Workflow.Generators.Tests.Helpers;
 /// <summary>
 /// TDD Cycle 1: Tests for StepContext tracking in StepExtractor.
 /// These tests verify that steps are properly marked with their context

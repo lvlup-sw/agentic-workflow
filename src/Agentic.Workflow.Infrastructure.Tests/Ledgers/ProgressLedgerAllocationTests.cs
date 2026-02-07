@@ -291,4 +291,3 @@ public sealed class ProgressLedgerAllocationTests
             .WithParameterName("windowSize");
     }
 }
-

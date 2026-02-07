@@ -6,6 +6,7 @@
 
 using System.Collections.Generic;
 using System.Text;
+
 using Agentic.Workflow.Generators.Helpers;
 using Agentic.Workflow.Generators.Models;
 using Agentic.Workflow.Generators.Polyfills;
@@ -262,4 +263,3 @@ internal static class ContextAssemblerEmitter
             .Replace("\t", "\\t");
     }
 }
-

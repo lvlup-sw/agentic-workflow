@@ -215,4 +215,3 @@ public class WorkflowTelemetryTests
         await Assert.That(true).IsTrue(); // If we got here, no exception was thrown
     }
 }
-

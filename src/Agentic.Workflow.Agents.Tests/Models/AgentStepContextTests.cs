@@ -121,4 +121,3 @@ public class AgentStepContextTests
         await Assert.That(context1).IsEqualTo(context2);
     }
 }
-

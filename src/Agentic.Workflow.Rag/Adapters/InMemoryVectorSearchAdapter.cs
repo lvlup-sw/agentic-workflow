@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+
 using Agentic.Workflow.Agents.Abstractions;
 
 namespace Agentic.Workflow.Rag.Adapters;

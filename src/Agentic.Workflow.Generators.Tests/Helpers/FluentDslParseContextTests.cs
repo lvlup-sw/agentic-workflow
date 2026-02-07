@@ -4,14 +4,15 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
-namespace Agentic.Workflow.Generators.Tests.Helpers;
 
 using Agentic.Workflow.Generators.Helpers;
 using Agentic.Workflow.Generators.Tests.Fixtures;
+
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
+namespace Agentic.Workflow.Generators.Tests.Helpers;
 /// <summary>
 /// Unit tests for <see cref="FluentDslParseContext"/>.
 /// </summary>

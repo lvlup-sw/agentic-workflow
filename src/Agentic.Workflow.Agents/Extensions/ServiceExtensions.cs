@@ -4,11 +4,12 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
-namespace Agentic.Workflow.Agents.Extensions;
 
 using Agentic.Workflow.Agents.Abstractions;
+
 using Microsoft.Extensions.DependencyInjection;
 
+namespace Agentic.Workflow.Agents.Extensions;
 /// <summary>
 /// Extension methods for registering Agentic.Workflow.Agents services.
 /// </summary>

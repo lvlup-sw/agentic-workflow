@@ -4,11 +4,12 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
-namespace Agentic.Workflow.Generators.Tests;
 
 using Agentic.Workflow.Generators.Tests.Fixtures;
+
 using Microsoft.CodeAnalysis;
 
+namespace Agentic.Workflow.Generators.Tests;
 /// <summary>
 /// Integration tests for OnFailure handler generation.
 /// </summary>

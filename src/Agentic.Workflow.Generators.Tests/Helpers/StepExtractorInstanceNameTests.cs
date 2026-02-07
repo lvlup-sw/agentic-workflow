@@ -4,12 +4,13 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
-namespace Agentic.Workflow.Generators.Tests.Helpers;
 
 using Agentic.Workflow.Generators.Helpers;
+
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 
+namespace Agentic.Workflow.Generators.Tests.Helpers;
 /// <summary>
 /// TDD Cycle 6: Tests for instance name extraction from DSL syntax.
 /// These tests verify that StepExtractor correctly extracts instance names
