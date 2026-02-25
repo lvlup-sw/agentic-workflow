@@ -62,5 +62,8 @@ node_modules/
 docs/.vitepress/cache/
 docs/.vitepress/dist/
 
+# Workflow state
+docs/workflow-state/
+
 # Git worktrees
 .worktrees/
