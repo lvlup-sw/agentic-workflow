@@ -32,8 +32,8 @@ All groups are independent and can execute in parallel.
 
 ### Task A.1: Parallelize Belief Fetching
 
-**File:** `src/Agentic.Workflow.Infrastructure/Selection/ThompsonSamplingAgentSelector.cs`
-**Test File:** `src/Agentic.Workflow.Infrastructure.Tests/Selection/ThompsonSamplingSelectorTests.cs`
+**File:** `src/Strategos.Infrastructure/Selection/ThompsonSamplingAgentSelector.cs`
+**Test File:** `src/Strategos.Infrastructure.Tests/Selection/ThompsonSamplingSelectorTests.cs`
 
 **TDD Steps:**
 
@@ -63,8 +63,8 @@ All groups are independent and can execute in parallel.
 
 ### Task A.2: Add Secondary Indices to Belief Store
 
-**File:** `src/Agentic.Workflow.Infrastructure/Selection/InMemoryBeliefStore.cs`
-**Test File:** `src/Agentic.Workflow.Infrastructure.Tests/Selection/InMemoryBeliefStoreTests.cs`
+**File:** `src/Strategos.Infrastructure/Selection/InMemoryBeliefStore.cs`
+**Test File:** `src/Strategos.Infrastructure.Tests/Selection/InMemoryBeliefStoreTests.cs`
 
 **TDD Steps:**
 
@@ -100,8 +100,8 @@ All groups are independent and can execute in parallel.
 
 ### Task A.3: Early Exit When No Exclusions
 
-**File:** `src/Agentic.Workflow.Infrastructure/Selection/ThompsonSamplingAgentSelector.cs`
-**Test File:** `src/Agentic.Workflow.Infrastructure.Tests/Selection/ThompsonSamplingSelectorTests.cs`
+**File:** `src/Strategos.Infrastructure/Selection/ThompsonSamplingAgentSelector.cs`
+**Test File:** `src/Strategos.Infrastructure.Tests/Selection/ThompsonSamplingSelectorTests.cs`
 
 **TDD Steps:**
 
@@ -129,8 +129,8 @@ All groups are independent and can execute in parallel.
 
 ### Task A.4: Skip Semantic Similarity on High-Confidence Signals
 
-**File:** `src/Agentic.Workflow.Infrastructure/LoopDetection/LoopDetector.cs`
-**Test File:** `src/Agentic.Workflow.Infrastructure.Tests/LoopDetection/LoopDetectorTests.cs`
+**File:** `src/Strategos.Infrastructure/LoopDetection/LoopDetector.cs`
+**Test File:** `src/Strategos.Infrastructure.Tests/LoopDetection/LoopDetectorTests.cs`
 
 **TDD Steps:**
 
@@ -165,8 +165,8 @@ All groups are independent and can execute in parallel.
 
 ### Task A.5: Fix String Comparison in Oscillation Detection
 
-**File:** `src/Agentic.Workflow.Infrastructure/LoopDetection/LoopDetector.cs`
-**Test File:** `src/Agentic.Workflow.Infrastructure.Tests/LoopDetection/LoopDetectorTests.cs`
+**File:** `src/Strategos.Infrastructure/LoopDetection/LoopDetector.cs`
+**Test File:** `src/Strategos.Infrastructure.Tests/LoopDetection/LoopDetectorTests.cs`
 
 **TDD Steps:**
 
@@ -192,8 +192,8 @@ All groups are independent and can execute in parallel.
 
 ### Task A.6: Avoid Intermediate List in Repetition Scoring
 
-**File:** `src/Agentic.Workflow.Infrastructure/LoopDetection/LoopDetector.cs`
-**Test File:** `src/Agentic.Workflow.Infrastructure.Tests/LoopDetection/LoopDetectorTests.cs`
+**File:** `src/Strategos.Infrastructure/LoopDetection/LoopDetector.cs`
+**Test File:** `src/Strategos.Infrastructure.Tests/LoopDetection/LoopDetectorTests.cs`
 
 **TDD Steps:**
 
@@ -222,8 +222,8 @@ All groups are independent and can execute in parallel.
 
 ### Task A.7: Cache OverallScarcity in WorkflowBudget
 
-**File:** `src/Agentic.Workflow.Infrastructure/Budget/WorkflowBudget.cs`
-**Test File:** `src/Agentic.Workflow.Infrastructure.Tests/Budget/WorkflowBudgetTests.cs`
+**File:** `src/Strategos.Infrastructure/Budget/WorkflowBudget.cs`
+**Test File:** `src/Strategos.Infrastructure.Tests/Budget/WorkflowBudgetTests.cs`
 
 **TDD Steps:**
 
@@ -252,8 +252,8 @@ All groups are independent and can execute in parallel.
 
 ### Task A.8: Replace Append().ToList() in ProgressLedger
 
-**File:** `src/Agentic.Workflow.Infrastructure/Ledgers/ProgressLedger.cs`
-**Test File:** `src/Agentic.Workflow.Infrastructure.Tests/Ledgers/ProgressLedgerTests.cs`
+**File:** `src/Strategos.Infrastructure/Ledgers/ProgressLedger.cs`
+**Test File:** `src/Strategos.Infrastructure.Tests/Ledgers/ProgressLedgerTests.cs`
 
 **TDD Steps:**
 
@@ -281,8 +281,8 @@ All groups are independent and can execute in parallel.
 
 ### Task A.9: Use ValueTask for Sync Paths in StepExecutionLedger
 
-**File:** `src/Agentic.Workflow.Infrastructure/ExecutionLedgers/InMemoryStepExecutionLedger.cs`
-**Test File:** `src/Agentic.Workflow.Infrastructure.Tests/ExecutionLedgers/InMemoryStepExecutionLedgerTests.cs`
+**File:** `src/Strategos.Infrastructure/ExecutionLedgers/InMemoryStepExecutionLedger.cs`
+**Test File:** `src/Strategos.Infrastructure.Tests/ExecutionLedgers/InMemoryStepExecutionLedgerTests.cs`
 
 **TDD Steps:**
 
@@ -316,8 +316,8 @@ All groups are independent and can execute in parallel.
 
 ### Task A.10: Cache Compilation Metadata Lookups
 
-**File:** `src/Agentic.Workflow.Generators/StateReducerIncrementalGenerator.cs`
-**Test File:** `src/Agentic.Workflow.Generators.Tests/StateReducerGeneratorIntegrationTests.cs`
+**File:** `src/Strategos.Generators/StateReducerIncrementalGenerator.cs`
+**Test File:** `src/Strategos.Generators.Tests/StateReducerGeneratorIntegrationTests.cs`
 
 **TDD Steps:**
 
@@ -346,8 +346,8 @@ All groups are independent and can execute in parallel.
 
 ### Task A.11: Use HashSet for Contains Checks
 
-**File:** `src/Agentic.Workflow.Generators/WorkflowIncrementalGenerator.cs`
-**Test File:** `src/Agentic.Workflow.Generators.Tests/WorkflowModelFactoryTests.cs`
+**File:** `src/Strategos.Generators/WorkflowIncrementalGenerator.cs`
+**Test File:** `src/Strategos.Generators.Tests/WorkflowModelFactoryTests.cs`
 
 **TDD Steps:**
 
@@ -376,8 +376,8 @@ All groups are independent and can execute in parallel.
 
 ### Task A.12: Pre-allocate List Capacities
 
-**File:** `src/Agentic.Workflow.Generators/WorkflowIncrementalGenerator.cs`
-**Test File:** `src/Agentic.Workflow.Generators.Tests/WorkflowModelFactoryTests.cs`
+**File:** `src/Strategos.Generators/WorkflowIncrementalGenerator.cs`
+**Test File:** `src/Strategos.Generators.Tests/WorkflowModelFactoryTests.cs`
 
 **TDD Steps:**
 

@@ -1,6 +1,6 @@
 # Infrastructure Types
 
-The `Agentic.Workflow.Infrastructure` package provides production-ready implementations of core abstractions.
+The `Strategos.Infrastructure` package provides production-ready implementations of core abstractions.
 
 ## Thompson Sampling
 
@@ -276,7 +276,7 @@ Current budget state returned from checks.
 Complete infrastructure setup:
 
 ```csharp
-services.AddAgenticWorkflow()
+services.AddStrategos()
     .AddThompsonSampling(options => options
         .WithPrior(alpha: 2, beta: 2)
         .WithBeliefStore<InMemoryBeliefStore>())

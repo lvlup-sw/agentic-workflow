@@ -1,11 +1,11 @@
 import { defineConfig } from 'vitepress'
 
 export default defineConfig({
-  title: 'Agentic.Workflow',
+  title: 'Strategos',
   description: 'Deterministic, auditable AI agent workflows for .NET',
 
-  // Required for GitHub Pages project sites (https://lvlup-sw.github.io/agentic-workflow/)
-  base: '/agentic-workflow/',
+  // Required for GitHub Pages project sites (https://lvlup-sw.github.io/strategos/)
+  base: '/strategos/',
 
   srcExclude: [
     '**/archive/**',
@@ -25,7 +25,7 @@ export default defineConfig({
   ignoreDeadLinks: true,
 
   head: [
-    ['link', { rel: 'icon', type: 'image/svg+xml', href: '/agentic-workflow/logo.svg' }],
+    ['link', { rel: 'icon', type: 'image/svg+xml', href: '/strategos/logo.svg' }],
   ],
 
   themeConfig: {
@@ -43,7 +43,7 @@ export default defineConfig({
         {
           text: 'Learn',
           items: [
-            { text: 'Why Agentic.Workflow', link: '/learn/' },
+            { text: 'Why Strategos', link: '/learn/' },
             { text: 'Core Concepts', link: '/learn/core-concepts' },
             { text: 'Comparison', link: '/learn/comparison' },
             { text: 'MAF Deep Dive', link: '/learn/maf-deep-dive' },
@@ -110,11 +110,11 @@ export default defineConfig({
     },
 
     socialLinks: [
-      { icon: 'github', link: 'https://github.com/lvlup-sw/agentic-workflow' },
+      { icon: 'github', link: 'https://github.com/lvlup-sw/strategos' },
     ],
 
     editLink: {
-      pattern: 'https://github.com/lvlup-sw/agentic-workflow/edit/main/docs/:path',
+      pattern: 'https://github.com/lvlup-sw/strategos/edit/main/docs/:path',
       text: 'Edit this page on GitHub',
     },
 

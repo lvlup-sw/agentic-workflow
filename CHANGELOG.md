@@ -26,7 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **Benchmark Infrastructure** — New `Agentic.Workflow.Benchmarks` project with BenchmarkDotNet, 53 benchmark classes covering all subsystems, and CI workflow for regression detection (#10)
+- **Benchmark Infrastructure** — New `Strategos.Benchmarks` project with BenchmarkDotNet, 53 benchmark classes covering all subsystems, and CI workflow for regression detection (#10)
 - **BitFaster Cache Option** — Optional ConcurrentLru backend for StepExecutionLedger via configuration (#11)
 - **Large-Scale Benchmarks** — 10K document and 500 candidate benchmark scenarios (#11)
 
@@ -48,15 +48,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Initial Public Release
 
-First stable release of the Agentic.Workflow library for building production-grade agentic workflows.
+First stable release of the Strategos library for building production-grade agentic workflows.
 
 ### Packages
 
-- **Agentic.Workflow** - Core DSL, abstractions, and Thompson Sampling types
-- **Agentic.Workflow.Generators** - Roslyn source generators for saga/event generation
-- **Agentic.Workflow.Infrastructure** - Infrastructure implementations (belief stores, selectors)
-- **Agentic.Workflow.Agents** - Agent-specific integrations (MAF, Semantic Kernel)
-- **Agentic.Workflow.Rag** - RAG integration with vector search adapters
+- **Strategos** - Core DSL, abstractions, and Thompson Sampling types
+- **Strategos.Generators** - Roslyn source generators for saga/event generation
+- **Strategos.Infrastructure** - Infrastructure implementations (belief stores, selectors)
+- **Strategos.Agents** - Agent-specific integrations (MAF, Semantic Kernel)
+- **Strategos.Rag** - RAG integration with vector search adapters
 
 ### Features
 
@@ -118,6 +118,6 @@ First stable release of the Agentic.Workflow library for building production-gra
 - Transactional outbox pattern
 - Time-travel debugging via event replay
 
-[1.1.1]: https://github.com/lvlup-sw/agentic-workflow/releases/tag/v1.1.1
-[1.1.0]: https://github.com/lvlup-sw/agentic-workflow/releases/tag/v1.1.0
-[1.0.0]: https://github.com/lvlup-sw/agentic-workflow/releases/tag/v1.0.0
+[1.1.1]: https://github.com/lvlup-sw/strategos/releases/tag/v1.1.1
+[1.1.0]: https://github.com/lvlup-sw/strategos/releases/tag/v1.1.0
+[1.0.0]: https://github.com/lvlup-sw/strategos/releases/tag/v1.0.0

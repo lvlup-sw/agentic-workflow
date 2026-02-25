@@ -12,7 +12,7 @@ jobs:
     permissions:
       contents: write
     with:
-      solution-path: 'src/agentic-workflow.sln'
+      solution-path: 'src/strategos.sln'
       dotnet-version: '10.0.x'
       dotnet-quality: 'preview'
 
@@ -20,7 +20,7 @@ jobs:
     needs: format-check
     uses: lvlup-sw/.github/.github/workflows/build-and-test.yml@main
     with:
-      solution-path: 'src/agentic-workflow.sln'
+      solution-path: 'src/strategos.sln'
       test-project-patterns: |
         src/*Tests/*.csproj
       skip-patterns: |
@@ -44,7 +44,7 @@ jobs:
           dotnet-quality: 'preview'
 
       - name: Pack
-        run: dotnet pack src/agentic-workflow.sln --configuration Release --output ./packages
+        run: dotnet pack src/strategos.sln --configuration Release --output ./packages
 
   coverage-gate:
     needs: build-test

@@ -121,11 +121,11 @@ Before running examples, ensure you have:
 
 1. **.NET 9.0 or later** installed
 2. **PostgreSQL** running (for Marten event store)
-3. **Agentic.Workflow packages** installed:
+3. **Strategos packages** installed:
 
 ```bash
-dotnet add package Agentic.Workflow
-dotnet add package Agentic.Workflow.Generators
+dotnet add package Strategos
+dotnet add package Strategos.Generators
 ```
 
 ---
@@ -150,7 +150,7 @@ builder.Services.AddMarten(opts =>
 .IntegrateWithWolverine();
 
 // Add workflow services
-builder.Services.AddAgenticWorkflow()
+builder.Services.AddStrategos()
     .AddWorkflow<YourWorkflow>();
 
 // Register step dependencies

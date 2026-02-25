@@ -3,13 +3,13 @@
 **Feature ID:** agent-context-integration
 **Date:** 2025-01-07
 **Status:** Draft
-**Packages Affected:** `Agentic.Workflow`, `Agentic.Workflow.Generators`, `Agentic.Workflow.Agents`, `Agentic.Workflow.Rag`
+**Packages Affected:** `Strategos`, `Strategos.Generators`, `Strategos.Agents`, `Strategos.Rag`
 
 ---
 
 ## Problem Statement
 
-The Agentic.Workflow library has fluent DSL infrastructure for context assembly and RAG integration, but the generator doesn't carry this metadata through to code generation, and there's no runtime bridge connecting assembled context to agent step execution.
+The Strategos library has fluent DSL infrastructure for context assembly and RAG integration, but the generator doesn't carry this metadata through to code generation, and there's no runtime bridge connecting assembled context to agent step execution.
 
 **Current State:**
 - `.WithContext()` and `.FromRetrieval()` builders exist but produce definitions that go unused
@@ -46,7 +46,7 @@ The generator validates context configuration at compile time and emits strongly
 Extend `StepModel` to carry context metadata:
 
 ```csharp
-// In Agentic.Workflow.Generators/Models/StepModel.cs
+// In Strategos.Generators/Models/StepModel.cs
 public record StepModel
 {
     // Existing properties...
@@ -136,8 +136,8 @@ internal sealed class AnalyzeDocumentContextAssembler
 #### IContextAssembler Interface
 
 ```csharp
-// In Agentic.Workflow.Agents/Abstractions/IContextAssembler.cs
-namespace Agentic.Workflow.Agents;
+// In Strategos.Agents/Abstractions/IContextAssembler.cs
+namespace Strategos.Agents;
 
 public interface IContextAssembler<TState>
     where TState : class, IWorkflowState
@@ -152,8 +152,8 @@ public interface IContextAssembler<TState>
 #### AssembledContext Model
 
 ```csharp
-// In Agentic.Workflow.Agents/Models/AssembledContext.cs
-namespace Agentic.Workflow.Agents;
+// In Strategos.Agents/Models/AssembledContext.cs
+namespace Strategos.Agents;
 
 public sealed class AssembledContext
 {
@@ -201,8 +201,8 @@ public record RetrievalResult(
 ### 4. AgentStepBase Implementation
 
 ```csharp
-// In Agentic.Workflow.Agents/AgentStepBase.cs
-namespace Agentic.Workflow.Agents;
+// In Strategos.Agents/AgentStepBase.cs
+namespace Strategos.Agents;
 
 public abstract class AgentStepBase<TState> : IAgentStep<TState>
     where TState : class, IWorkflowState
@@ -275,8 +275,8 @@ public abstract class AgentStepBase<TState> : IAgentStep<TState>
 ### 5. Typed Vector Search Adapter
 
 ```csharp
-// In Agentic.Workflow.Rag/Abstractions/IVectorSearchAdapter.cs
-namespace Agentic.Workflow.Rag;
+// In Strategos.Rag/Abstractions/IVectorSearchAdapter.cs
+namespace Strategos.Rag;
 
 // Marker interface for collection registration
 public interface IRagCollection { }

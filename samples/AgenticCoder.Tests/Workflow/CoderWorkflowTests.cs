@@ -4,7 +4,7 @@
 // </copyright>
 // =============================================================================
 
-using Agentic.Workflow.Definitions;
+using Strategos.Definitions;
 using AgenticCoder.State;
 
 namespace AgenticCoder.Tests.Workflow;

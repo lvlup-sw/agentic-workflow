@@ -1,20 +1,20 @@
-# MAF Workflows vs Agentic.Workflow: Framework Comparison
+# MAF Workflows vs Strategos: Framework Comparison
 
-> A detailed comparison of Microsoft Agent Framework Workflows and Agentic.Workflow for production AI agent orchestration.
+> A detailed comparison of Microsoft Agent Framework Workflows and Strategos for production AI agent orchestration.
 
 ---
 
 ## Executive Summary
 
-Microsoft Agent Framework (MAF) Workflows and Agentic.Workflow both solve the fundamental challenge of building reliable AI agent systems, but they take fundamentally different approaches. MAF Workflows provides a **managed, Azure-native solution** with built-in multi-agent patterns and serverless hosting, while Agentic.Workflow offers a **cloud-agnostic, event-sourced architecture** with intelligent agent selection and complete audit trails.
+Microsoft Agent Framework (MAF) Workflows and Strategos both solve the fundamental challenge of building reliable AI agent systems, but they take fundamentally different approaches. MAF Workflows provides a **managed, Azure-native solution** with built-in multi-agent patterns and serverless hosting, while Strategos offers a **cloud-agnostic, event-sourced architecture** with intelligent agent selection and complete audit trails.
 
 MAF Workflows excels in Azure-native environments where serverless scale-to-zero economics matter, and where pre-built multi-agent patterns (Group Chat, Handoff, Magentic) accelerate development. Its Bulk Synchronous Parallel (BSP) execution model provides deterministic, reproducible execution with automatic checkpointing at superstep boundaries.
 
-Agentic.Workflow differentiates through its event-sourcing foundation, providing full audit trails that answer "what did the agent see?" at any point in history. Its Thompson Sampling agent selection learns optimal agent-to-task routing over time. The fluent DSL with compile-time source generation catches workflow errors before runtime, and the Wolverine/Marten infrastructure provides battle-tested durability without Azure lock-in.
+Strategos differentiates through its event-sourcing foundation, providing full audit trails that answer "what did the agent see?" at any point in history. Its Thompson Sampling agent selection learns optimal agent-to-task routing over time. The fluent DSL with compile-time source generation catches workflow errors before runtime, and the Wolverine/Marten infrastructure provides battle-tested durability without Azure lock-in.
 
 ### Key Differentiators
 
-| Aspect | MAF Workflows | Agentic.Workflow |
+| Aspect | MAF Workflows | Strategos |
 |--------|---------------|------------------|
 | **Execution Model** | BSP supersteps (synchronized rounds) | Message-driven saga orchestration |
 | **State Persistence** | Checkpoint snapshots at superstep boundaries | Full event sourcing (every decision recorded) |
@@ -33,7 +33,7 @@ Agentic.Workflow differentiates through its event-sourcing foundation, providing
 - Want pre-built multi-agent orchestration patterns
 - Human approvals may take hours/days (serverless economics)
 
-**Choose Agentic.Workflow if:**
+**Choose Strategos if:**
 - You need cloud portability or on-premises deployment
 - Complete audit trails are regulatory requirements
 - You want the system to learn optimal agent routing
@@ -46,7 +46,7 @@ Agentic.Workflow differentiates through its event-sourcing foundation, providing
 
 ### 1. Execution Model
 
-| Dimension | MAF Workflows | Agentic.Workflow |
+| Dimension | MAF Workflows | Strategos |
 |-----------|---------------|------------------|
 | **Model** | Bulk Synchronous Parallel (BSP) | Message-driven Saga |
 | **Parallelism** | Synchronized supersteps (barrier at each round) | True async (steps run independently) |
@@ -60,7 +60,7 @@ Superstep N: All executors run → BARRIER → Checkpoint → Superstep N+1
 ```
 Every parallel path must complete before any can proceed to the next step.
 
-**Agentic.Workflow Saga Model:**
+**Strategos Saga Model:**
 ```
 Step A completes → Cascade message → Step B starts immediately
 Fork paths run independently, Join aggregates when all complete
@@ -69,7 +69,7 @@ No artificial synchronization barriers; natural async flow.
 
 ### 2. State Management
 
-| Dimension | MAF Workflows | Agentic.Workflow |
+| Dimension | MAF Workflows | Strategos |
 |-----------|---------------|------------------|
 | **Persistence Model** | Checkpoint snapshots | Event sourcing |
 | **What's Captured** | Current state at superstep boundary | Every state transition as event |
@@ -80,7 +80,7 @@ No artificial synchronization barriers; natural async flow.
 
 **Event Sourcing Advantage:**
 
-Agentic.Workflow captures:
+Strategos captures:
 - `WorkflowStarted` with initial state
 - `PhaseChanged` for every transition
 - `StepCompleted` with inputs/outputs
@@ -93,7 +93,7 @@ MAF captures checkpoint snapshots—sufficient for recovery but not for understa
 
 ### 3. Durability & Fault Tolerance
 
-| Dimension | MAF Workflows | Agentic.Workflow |
+| Dimension | MAF Workflows | Strategos |
 |-----------|---------------|------------------|
 | **Backend** | Durable Task Scheduler (Azure managed) | Wolverine + PostgreSQL |
 | **Exactly-Once** | Via DTS work item semantics | Via transactional outbox |
@@ -102,11 +102,11 @@ MAF captures checkpoint snapshots—sufficient for recovery but not for understa
 | **Operational Burden** | Managed (Azure handles it) | Self-managed (PostgreSQL required) |
 | **Lock-In** | Azure-specific | Cloud-agnostic |
 
-Both provide strong durability guarantees. The difference is operational: MAF is managed, Agentic.Workflow is portable.
+Both provide strong durability guarantees. The difference is operational: MAF is managed, Strategos is portable.
 
 ### 4. Workflow Definition
 
-| Dimension | MAF Workflows | Agentic.Workflow |
+| Dimension | MAF Workflows | Strategos |
 |-----------|---------------|------------------|
 | **Definition Style** | Declarative graph (nodes/edges) | Fluent DSL (prose-like) |
 | **Vocabulary** | Executors, Edges, Conditions | Steps, Branch, Fork/Join, Loop |
@@ -114,7 +114,7 @@ Both provide strong durability guarantees. The difference is operational: MAF is
 | **Generated Artifacts** | None | Phase enum, commands, events, saga, transitions |
 | **Reusability** | Executor classes | Step classes with DI |
 
-**Agentic.Workflow Compile-Time Diagnostics:**
+**Strategos Compile-Time Diagnostics:**
 
 | Code | Description |
 |------|-------------|
@@ -134,7 +134,7 @@ builder.AddNode<TriageExecutor>("triage");
 builder.AddConditionalEdge("triage", "billing", msg => msg.Type == "billing");
 builder.AddConditionalEdge("triage", "support", msg => msg.Type == "support");
 
-// Agentic.Workflow (fluent DSL)
+// Strategos (fluent DSL)
 Workflow<ClaimState>.Create("process-claim")
     .StartWith<Triage>()
     .Branch(state => state.ClaimType,
@@ -145,7 +145,7 @@ Workflow<ClaimState>.Create("process-claim")
 
 ### 5. Multi-Agent Orchestration
 
-| Pattern | MAF Workflows | Agentic.Workflow |
+| Pattern | MAF Workflows | Strategos |
 |---------|---------------|------------------|
 | **Sequential** | Direct edges (A → B → C) | `.Then<A>().Then<B>().Then<C>()` |
 | **Parallel** | Fan-out/Fan-in executors | `.Fork(...).Join<Aggregator>()` |
@@ -160,19 +160,19 @@ Workflow<ClaimState>.Create("process-claim")
 - Handoff: Agents self-organize via dynamic routing
 - Magentic: Planner decomposes and delegates to specialists
 
-**Agentic.Workflow's Composable Approach:**
+**Strategos's Composable Approach:**
 The DSL primitives (Branch, Fork/Join, RepeatUntil) compose to build any pattern. No special constructs needed—patterns emerge from composition.
 
 ### 6. Intelligent Agent Selection
 
-| Dimension | MAF Workflows | Agentic.Workflow |
+| Dimension | MAF Workflows | Strategos |
 |-----------|---------------|------------------|
 | **Selection Method** | Manual (Group Chat manager) or declarative edges | Thompson Sampling (multi-armed bandit) |
 | **Learning** | None | Online learning from outcomes |
 | **Personalization** | None | Per-category beliefs |
 | **Exploration/Exploitation** | N/A | Automatic (Beta distribution sampling) |
 
-**Thompson Sampling in Agentic.Workflow:**
+**Thompson Sampling in Strategos:**
 
 ```csharp
 // Configure agent selection
@@ -198,7 +198,7 @@ The system learns which agents perform best for which task categories over time�
 
 ### 7. Human-in-the-Loop
 
-| Dimension | MAF Workflows | Agentic.Workflow |
+| Dimension | MAF Workflows | Strategos |
 |-----------|---------------|------------------|
 | **Pattern** | Request/Response (first-class) | AwaitApproval DSL |
 | **Wait Cost** | $0 (serverless scale-to-zero) | Minimal (saga persisted, no compute) |
@@ -215,7 +215,7 @@ response = await ctx.request_info(
 )
 ```
 
-**Agentic.Workflow AwaitApproval:**
+**Strategos AwaitApproval:**
 ```csharp
 .AwaitApproval<LegalTeam>(options => options
     .WithTimeout(TimeSpan.FromDays(2))
@@ -227,7 +227,7 @@ Both handle long-running human workflows well. MAF's serverless model provides t
 
 ### 8. Observability
 
-| Dimension | MAF Workflows | Agentic.Workflow |
+| Dimension | MAF Workflows | Strategos |
 |-----------|---------------|------------------|
 | **Tracing** | Native OpenTelemetry spans | OpenTelemetry via Wolverine |
 | **Dashboard** | DTS Dashboard (visual flow, history) | Custom (Marten projections) |
@@ -246,14 +246,14 @@ This is a significant MAF advantage—purpose-built debugging UI versus DIY proj
 
 ### 9. Resource Management
 
-| Dimension | MAF Workflows | Agentic.Workflow |
+| Dimension | MAF Workflows | Strategos |
 |-----------|---------------|------------------|
 | **Budget Enforcement** | Not built-in | IBudgetGuard abstraction |
 | **Token Tracking** | Manual via agent implementation | AgentDecisionEvent captures tokens |
 | **Loop Detection** | Not built-in | ILoopDetector with configurable thresholds |
 | **Cost Attribution** | Manual | Per-workflow event trail |
 
-**Agentic.Workflow Budget Enforcement:**
+**Strategos Budget Enforcement:**
 ```csharp
 public interface IBudgetGuard
 {
@@ -266,14 +266,14 @@ Prevents runaway agent costs—critical for production deployments.
 
 ### 10. Error Handling & Recovery
 
-| Dimension | MAF Workflows | Agentic.Workflow |
+| Dimension | MAF Workflows | Strategos |
 |-----------|---------------|------------------|
 | **Retry Policy** | Configurable in DTS | Wolverine retry policies |
 | **Compensation** | Manual (reverse event application) | `.Compensate<T>()` DSL with automatic ordering |
 | **Step-Level Handlers** | Not built-in | `.OnFailure(f => f.When<Exception>().Then<Handler>())` |
 | **Workflow-Level Fallback** | Via error edges | `.OnFailure(flow => flow.Then<Fallback>())` |
 
-**Agentic.Workflow Compensation:**
+**Strategos Compensation:**
 ```csharp
 .Then<ChargePayment>()
     .Compensate<RefundPayment>()
@@ -284,7 +284,7 @@ On failure, compensations run in reverse order automatically.
 
 ### 11. Deployment & Hosting
 
-| Dimension | MAF Workflows | Agentic.Workflow |
+| Dimension | MAF Workflows | Strategos |
 |-----------|---------------|------------------|
 | **Hosting Options** | Azure Functions only | Any .NET host |
 | **Scaling** | Serverless (0 to thousands) | Application-dependent |
@@ -296,7 +296,7 @@ On failure, compensations run in reverse order automatically.
 
 ## Gap Analysis
 
-### MAF Features to Consider for Agentic.Workflow
+### MAF Features to Consider for Strategos
 
 | Feature | MAF Capability | Gap Severity | Recommendation |
 |---------|---------------|--------------|----------------|
@@ -307,7 +307,7 @@ On failure, compensations run in reverse order automatically.
 | **Request/Response Primitive** | First-class external wait | Low | AwaitApproval covers most cases |
 | **Serverless Economics** | $0 wait cost | Medium | Document cost comparison; saga pause is low-cost |
 
-### Agentic.Workflow Advantages to Preserve
+### Strategos Advantages to Preserve
 
 | Feature | Why It Matters |
 |---------|---------------|
@@ -352,7 +352,7 @@ On failure, compensations run in reverse order automatically.
    - DTS dashboard provides immediate value
    - Conversation history browsing required
 
-### Choose Agentic.Workflow When:
+### Choose Strategos When:
 
 1. **Cloud Portability Required**
    - Multi-cloud strategy
@@ -389,33 +389,33 @@ On failure, compensations run in reverse order automatically.
 
 1. **Hybrid Scenarios**
    - Azure for some workflows (human-heavy, visual debugging)
-   - Agentic.Workflow for others (audit-critical, learning-based)
+   - Strategos for others (audit-critical, learning-based)
 
 2. **Migration Path**
-   - Start with Agentic.Workflow for control
+   - Start with Strategos for control
    - Migrate specific workflows to MAF when Azure advantages apply
 
 3. **Pattern Inspiration**
-   - MAF patterns can inform Agentic.Workflow orchestration templates
+   - MAF patterns can inform Strategos orchestration templates
    - Both ecosystems evolving—cross-pollination valuable
 
 ---
 
 ## Summary Matrix
 
-| Capability | MAF Workflows | Agentic.Workflow | Notes |
+| Capability | MAF Workflows | Strategos | Notes |
 |------------|:-------------:|:----------------:|-------|
 | Durability | ✅ | ✅ | Both provide strong guarantees |
 | Event Sourcing | ❌ Snapshots | ✅ Full | Key differentiator |
-| Intelligent Selection | ❌ | ✅ Thompson | Unique to Agentic.Workflow |
+| Intelligent Selection | ❌ | ✅ Thompson | Unique to Strategos |
 | Visual Dashboard | ✅ DTS | ⚠️ DIY | MAF advantage |
-| Compile-Time Validation | ❌ | ✅ 8 diagnostics | Agentic.Workflow advantage |
+| Compile-Time Validation | ❌ | ✅ 8 diagnostics | Strategos advantage |
 | Built-in Multi-Agent Patterns | ✅ 5 patterns | ⚠️ Composable | MAF faster start |
-| Cloud Portability | ❌ Azure only | ✅ Any | Agentic.Workflow advantage |
+| Cloud Portability | ❌ Azure only | ✅ Any | Strategos advantage |
 | Serverless Economics | ✅ $0 wait | ⚠️ Low cost | MAF advantage |
-| Compensation Handlers | ⚠️ Manual | ✅ DSL | Agentic.Workflow advantage |
-| Budget Governance | ❌ | ✅ | Unique to Agentic.Workflow |
-| Loop Detection | ❌ | ✅ | Unique to Agentic.Workflow |
+| Compensation Handlers | ⚠️ Manual | ✅ DSL | Strategos advantage |
+| Budget Governance | ❌ | ✅ | Unique to Strategos |
+| Loop Detection | ❌ | ✅ | Unique to Strategos |
 | Human-in-Loop | ✅ First-class | ✅ DSL | Both strong |
 | OpenTelemetry | ✅ Native | ✅ Via Wolverine | Both strong |
 
@@ -429,11 +429,11 @@ On failure, compensations run in reverse order automatically.
 - [Multi-Agent Patterns](https://learn.microsoft.com/en-us/agent-framework/user-guide/workflows/multi-agent-patterns)
 - [Durable Task Scheduler](https://learn.microsoft.com/en-us/azure/azure-functions/durable/durable-task-scheduler/durable-task-scheduler)
 
-### Agentic.Workflow
+### Strategos
 - [Design Document](./design.md)
 - [Library Roadmap](./workflow-library-roadmap-v2.md)
 - [Exploration-Exploitation Theory](./theory/exploration-exploitation.md)
 
 ---
 
-*Comparison based on MAF Workflows documentation (January 2026) and Agentic.Workflow v2.0 design.*
+*Comparison based on MAF Workflows documentation (January 2026) and Strategos v2.0 design.*

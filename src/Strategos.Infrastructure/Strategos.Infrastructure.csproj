@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- NuGet Package Configuration -->
+    <PackageId>Strategos.Infrastructure</PackageId>
+    <Description>Infrastructure implementations for Strategos including Thompson Sampling agent selection, loop detection (repetition, semantic, oscillation, no-progress), and budget enforcement with scarcity levels.</Description>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="$(AssemblyName).Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="BitFaster.Caching" />
+    <PackageReference Include="CommunityToolkit.HighPerformance" />
+    <PackageReference Include="MemoryPack" />
+    <PackageReference Include="Microsoft.Extensions.Caching.Memory" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Strategos\Strategos.csproj" />
+  </ItemGroup>
+
+</Project>

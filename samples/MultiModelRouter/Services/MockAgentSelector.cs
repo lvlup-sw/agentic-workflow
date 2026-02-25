@@ -5,9 +5,9 @@
 // =============================================================================
 
 using System.Collections.Concurrent;
-using Agentic.Workflow.Abstractions;
-using Agentic.Workflow.Primitives;
-using Agentic.Workflow.Selection;
+using Strategos.Abstractions;
+using Strategos.Primitives;
+using Strategos.Selection;
 
 namespace MultiModelRouter.Services;
 

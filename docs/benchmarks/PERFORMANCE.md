@@ -1,6 +1,6 @@
 # Performance Targets and Baselines
 
-This document defines performance targets for Agentic.Workflow subsystems, documents current baseline measurements, and specifies optimization trigger conditions.
+This document defines performance targets for Strategos subsystems, documents current baseline measurements, and specifies optimization trigger conditions.
 
 ## Performance Targets
 
@@ -200,6 +200,6 @@ AddExporter(JsonExporter.Full);
 ## References
 
 - [Baseline Details](./BASELINE.md)
-- [Benchmark README](../../src/Agentic.Workflow.Benchmarks/README.md)
+- [Benchmark README](../../src/Strategos.Benchmarks/README.md)
 - [Design Document](../designs/2026-01-17-performance-benchmarks-and-optimizations.md)
 - [BenchmarkDotNet Documentation](https://benchmarkdotnet.org/)

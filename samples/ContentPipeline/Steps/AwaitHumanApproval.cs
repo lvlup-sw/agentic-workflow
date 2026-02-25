@@ -4,8 +4,8 @@
 // </copyright>
 // =============================================================================
 
-using Agentic.Workflow.Abstractions;
-using Agentic.Workflow.Steps;
+using Strategos.Abstractions;
+using Strategos.Steps;
 using ContentPipeline.Services;
 using ContentPipeline.State;
 

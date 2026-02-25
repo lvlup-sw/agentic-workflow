@@ -6,8 +6,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Agentic.Workflow\Agentic.Workflow.csproj" />
-    <ProjectReference Include="..\..\src\Agentic.Workflow.Infrastructure\Agentic.Workflow.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\Strategos\Strategos.csproj" />
+    <ProjectReference Include="..\..\src\Strategos.Infrastructure\Strategos.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

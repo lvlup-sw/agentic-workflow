@@ -1,17 +1,17 @@
 # Installation
 
-This guide covers installing Agentic.Workflow packages and configuring your .NET application for workflow development.
+This guide covers installing Strategos packages and configuring your .NET application for workflow development.
 
 ## Package Options
 
-Agentic.Workflow is distributed as several NuGet packages. Choose the combination that fits your needs:
+Strategos is distributed as several NuGet packages. Choose the combination that fits your needs:
 
 ### Minimal Setup
 
 For basic workflow functionality without persistence:
 
 ```bash
-dotnet add package Agentic.Workflow
+dotnet add package Strategos
 ```
 
 This includes the core workflow DSL, step interfaces, and in-memory execution. Suitable for prototyping and testing.
@@ -21,8 +21,8 @@ This includes the core workflow DSL, step interfaces, and in-memory execution. S
 For production workflows with durable persistence:
 
 ```bash
-dotnet add package Agentic.Workflow
-dotnet add package Agentic.Workflow.Marten
+dotnet add package Strategos
+dotnet add package Strategos.Marten
 ```
 
 This adds PostgreSQL persistence via [Marten](https://martendb.io/) and [Wolverine](https://wolverinefx.net/), enabling workflows that survive process restarts.
@@ -32,10 +32,10 @@ This adds PostgreSQL persistence via [Marten](https://martendb.io/) and [Wolveri
 For AI agent workflows with retrieval-augmented generation:
 
 ```bash
-dotnet add package Agentic.Workflow
-dotnet add package Agentic.Workflow.Marten
-dotnet add package Agentic.Workflow.Agents
-dotnet add package Agentic.Workflow.RAG
+dotnet add package Strategos
+dotnet add package Strategos.Marten
+dotnet add package Strategos.Agents
+dotnet add package Strategos.RAG
 ```
 
 This adds Thompson Sampling agent selection and vector-based document retrieval.
@@ -44,7 +44,7 @@ This adds Thompson Sampling agent selection and vector-based document retrieval.
 
 ### Required
 
-- **.NET 10 SDK** - Agentic.Workflow targets .NET 10
+- **.NET 10 SDK** - Strategos targets .NET 10
 - **PostgreSQL 14+** - Required for Marten persistence
 
 ### Included Automatically
@@ -57,7 +57,7 @@ The following packages are pulled in as transitive dependencies:
 
 ## Service Registration
 
-Configure Agentic.Workflow in your `Program.cs` or startup class.
+Configure Strategos in your `Program.cs` or startup class.
 
 ### Minimal Configuration
 
@@ -65,7 +65,7 @@ Configure Agentic.Workflow in your `Program.cs` or startup class.
 var builder = WebApplication.CreateBuilder(args);
 
 // Add workflow services with in-memory execution
-builder.Services.AddAgenticWorkflow();
+builder.Services.AddStrategos();
 
 var app = builder.Build();
 app.Run();
@@ -79,7 +79,7 @@ var builder = WebApplication.CreateBuilder(args);
 var connectionString = builder.Configuration.GetConnectionString("PostgreSQL");
 
 // Add workflow services with Marten persistence
-builder.Services.AddAgenticWorkflow()
+builder.Services.AddStrategos()
     .AddMartenPersistence(connectionString);
 
 // Optional: Configure Wolverine for advanced scenarios
@@ -99,7 +99,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 var connectionString = builder.Configuration.GetConnectionString("PostgreSQL");
 
-builder.Services.AddAgenticWorkflow()
+builder.Services.AddStrategos()
     .AddMartenPersistence(connectionString)
     .AddAgentSelection(options => options
         .WithPrior(alpha: 2, beta: 2)
@@ -187,7 +187,7 @@ public class SayHello : IWorkflowStep<HelloState>
         CancellationToken ct)
     {
         var result = state
-            .With(s => s.Message, "Hello, Agentic.Workflow!")
+            .With(s => s.Message, "Hello, Strategos!")
             .AsResult();
 
         return Task.FromResult(result);
@@ -207,7 +207,7 @@ var workflow = Workflow<HelloState>
 
 ```csharp
 // In Program.cs
-builder.Services.AddAgenticWorkflow()
+builder.Services.AddStrategos()
     .AddWorkflow<HelloWorldWorkflow>();
 
 // In a controller or service
@@ -235,7 +235,7 @@ public class TestController : ControllerBase
 Start your application and call the test endpoint. Check your logs for:
 
 ```plaintext
-info: Agentic.Workflow[0]
+info: Strategos[0]
       Workflow hello-world started with ID: a1b2c3d4-...
       Executing step: SayHello
       Step completed: SayHello
@@ -252,7 +252,7 @@ info: Agentic.Workflow[0]
 error CS0246: The type or namespace name 'IWorkflowState' could not be found
 ```
 
-Ensure `Agentic.Workflow` is referenced and you have `using Agentic.Workflow;`
+Ensure `Strategos` is referenced and you have `using Strategos;`
 
 #### PostgreSQL connection failed
 
@@ -280,4 +280,4 @@ Grant your database user permission to create tables, or run migrations as a sup
 
 ## Next Steps
 
-Now that you have Agentic.Workflow installed, continue to [Your First Workflow](./first-workflow) to build a complete order processing example.
+Now that you have Strategos installed, continue to [Your First Workflow](./first-workflow) to build a complete order processing example.

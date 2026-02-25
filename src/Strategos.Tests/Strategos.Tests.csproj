@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="TUnit" />
+    <PackageReference Include="NSubstitute" />
+    <PackageReference Include="MemoryPack" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Strategos\Strategos.csproj" />
+  </ItemGroup>
+
+</Project>

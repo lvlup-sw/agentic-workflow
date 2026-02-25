@@ -1,6 +1,6 @@
-# Contributing to Agentic.Workflow
+# Contributing to Strategos
 
-Thank you for your interest in contributing to Agentic.Workflow! This document provides guidelines for contributing to the project.
+Thank you for your interest in contributing to Strategos! This document provides guidelines for contributing to the project.
 
 ## Code Style
 
@@ -172,7 +172,7 @@ cd src && dotnet test
 
 We welcome documentation improvements! The docs site is built with VitePress.
 
-- **[Documentation Site](https://lvlup-sw.github.io/agentic-workflow/)** - Live documentation
+- **[Documentation Site](https://lvlup-sw.github.io/strategos/)** - Live documentation
 - **[Docs Contributing Guide](docs/contributing.md)** - Style guidelines and local setup
 
 To contribute documentation:

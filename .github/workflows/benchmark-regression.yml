@@ -10,11 +10,11 @@ name: Benchmark Regression Check
 on:
   pull_request:
     paths:
-      - 'src/Agentic.Workflow.Infrastructure/Selection/**'
-      - 'src/Agentic.Workflow.Infrastructure/LoopDetection/**'
-      - 'src/Agentic.Workflow.Infrastructure/Ledgers/**'
-      - 'src/Agentic.Workflow.Infrastructure/Budget/**'
-      - 'src/Agentic.Workflow.Rag/**'
+      - 'src/Strategos.Infrastructure/Selection/**'
+      - 'src/Strategos.Infrastructure/LoopDetection/**'
+      - 'src/Strategos.Infrastructure/Ledgers/**'
+      - 'src/Strategos.Infrastructure/Budget/**'
+      - 'src/Strategos.Rag/**'
 
 concurrency:
   group: benchmark-${{ github.workflow }}-${{ github.ref }}
@@ -99,12 +99,12 @@ jobs:
           dotnet-quality: 'preview'
 
       - name: Restore dependencies
-        run: dotnet restore src/Agentic.Workflow.Benchmarks/Agentic.Workflow.Benchmarks.csproj
+        run: dotnet restore src/Strategos.Benchmarks/Strategos.Benchmarks.csproj
 
       - name: Run targeted benchmarks
         run: |
           set -o noglob
-          dotnet run -c Release --project src/Agentic.Workflow.Benchmarks -- \
+          dotnet run -c Release --project src/Strategos.Benchmarks -- \
             --filter ${{ needs.detect-changes.outputs.filter }} \
             --exporters json markdown \
             --artifacts ./benchmark-results

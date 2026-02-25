@@ -1,6 +1,6 @@
 # Performance Baseline - January 2026
 
-This document captures performance measurements for the Agentic.Workflow library, including Phase 1 baseline and Phase 2 optimization results.
+This document captures performance measurements for the Strategos library, including Phase 1 baseline and Phase 2 optimization results.
 
 ## Test Environment
 
@@ -302,7 +302,7 @@ Full benchmark results stored in:
 
 To reproduce:
 ```bash
-dotnet run -c Release --project src/Agentic.Workflow.Benchmarks -- --filter '*'
+dotnet run -c Release --project src/Strategos.Benchmarks -- --filter '*'
 ```
 
 ---

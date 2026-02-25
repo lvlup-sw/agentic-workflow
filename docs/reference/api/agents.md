@@ -1,6 +1,6 @@
 # Agents API
 
-The `Agentic.Workflow.Agents` package provides integration with Microsoft.Extensions.AI for LLM-powered workflow steps.
+The `Strategos.Agents` package provides integration with Microsoft.Extensions.AI for LLM-powered workflow steps.
 
 ## IAgentStep\<TState\>
 

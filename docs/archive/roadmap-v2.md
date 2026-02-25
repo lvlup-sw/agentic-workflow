@@ -1,4 +1,4 @@
-# Agentic.Workflow Library Roadmap
+# Strategos Library Roadmap
 
 **A Unified Roadmap for MAF Integration and Workflow Library Enhancements**
 
@@ -22,7 +22,7 @@
 
 ## Executive Summary
 
-This document is the **canonical roadmap** for the Agentic.Workflow library, consolidating all planned enhancements for Microsoft Agent Framework integration and workflow DSL evolution.
+This document is the **canonical roadmap** for the Strategos library, consolidating all planned enhancements for Microsoft Agent Framework integration and workflow DSL evolution.
 
 ### Design Principles
 
@@ -37,11 +37,11 @@ This document is the **canonical roadmap** for the Agentic.Workflow library, con
 
 | Package | Purpose |
 |---------|---------|
-| `Agentic.Workflow` | Core DSL, abstractions, step contracts |
-| `Agentic.Workflow.Infrastructure` | Thompson Sampling, loop detection, budget enforcement |
-| `Agentic.Workflow.Generators` | Roslyn source generators for saga artifacts |
-| `Agentic.Workflow.Agents` | MAF integration, specialist abstractions, streaming |
-| `Agentic.Workflow.Rag` | Vector store adapters (NEW - planned) |
+| `Strategos` | Core DSL, abstractions, step contracts |
+| `Strategos.Infrastructure` | Thompson Sampling, loop detection, budget enforcement |
+| `Strategos.Generators` | Roslyn source generators for saga artifacts |
+| `Strategos.Agents` | MAF integration, specialist abstractions, streaming |
+| `Strategos.Rag` | Vector store adapters (NEW - planned) |
 
 **Consumer Responsibility (NOT part of library):**
 - Concrete DI registration and middleware wiring
@@ -71,17 +71,17 @@ This document is the **canonical roadmap** for the Agentic.Workflow library, con
 
 | Package | Component | Purpose |
 |---------|-----------|---------|
-| **Agentic.Workflow** | `IWorkflowStep<TState>` | Step execution contract |
+| **Strategos** | `IWorkflowStep<TState>` | Step execution contract |
 | | `IWorkflowBuilder<TState>` | Fluent DSL entry point |
 | | `[Append]`, `[Merge]` attributes | State reducer semantics |
-| **Agentic.Workflow.Agents** | `IAgentStep<TState>` | LLM-powered step contract |
+| **Strategos.Agents** | `IAgentStep<TState>` | LLM-powered step contract |
 | | `SpecialistAgent` | Base class with HSM state machine |
 | | `StreamingExecutionMode` | Buffered vs streaming enum |
 | | `StreamingResponseHandler` | Token aggregation and event emission |
 | | `ChatMessageRecorded` | LLM interaction audit event |
 | | `StreamingTokenReceived` | Per-token streaming event |
 | | `IConversationThreadManager` | Per-specialist thread management |
-| **Agentic.Workflow.Infrastructure** | `IAgentSelector` | Thompson Sampling agent selection |
+| **Strategos.Infrastructure** | `IAgentSelector` | Thompson Sampling agent selection |
 | | `ILoopDetector` | Stuck workflow detection |
 | | `IBudgetGuard` | Resource budget enforcement |
 
@@ -91,7 +91,7 @@ This document is the **canonical roadmap** for the Agentic.Workflow library, con
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                           CURRENT STATE                                      │
 ├─────────────────────────────────────────────────────────────────────────────┤
-│  ✅ IAgentStep<TState> contract defined in Agentic.Workflow.Agents          │
+│  ✅ IAgentStep<TState> contract defined in Strategos.Agents          │
 │  ✅ StreamingResponseHandler exists but not integrated                       │
 │  ✅ ChatMessageRecorded events captured in workflows                         │
 │  ⚠️  No IVectorSearchAdapter abstraction in library                         │
@@ -148,14 +148,14 @@ This document is the **canonical roadmap** for the Agentic.Workflow library, con
 **Library Integration Points:**
 | Package | File | Change |
 |---------|------|--------|
-| `Agentic.Workflow.Agents` | `Contracts/IVectorSearchAdapter.cs` | NEW: Vector search abstraction |
-| `Agentic.Workflow.Agents` | `Middleware/RagContextMiddleware.cs` | NEW: IChatClient middleware |
-| `Agentic.Workflow.Agents` | `Configuration/RagConfiguration.cs` | NEW: Options for RAG behavior |
-| `Agentic.Workflow.Rag` | `Adapters/*.cs` | NEW: Vector store implementations |
+| `Strategos.Agents` | `Contracts/IVectorSearchAdapter.cs` | NEW: Vector search abstraction |
+| `Strategos.Agents` | `Middleware/RagContextMiddleware.cs` | NEW: IChatClient middleware |
+| `Strategos.Agents` | `Configuration/RagConfiguration.cs` | NEW: Options for RAG behavior |
+| `Strategos.Rag` | `Adapters/*.cs` | NEW: Vector store implementations |
 
 > **Consumer Wiring:** Consumers register middleware via `chatClientBuilder.UseRagContext(...)` in their DI setup.
 
-**Vector Store Adapters (New Package: `Agentic.Workflow.Rag`):**
+**Vector Store Adapters (New Package: `Strategos.Rag`):**
 | Adapter | Priority | Notes |
 |---------|----------|-------|
 | `AzureAISearchAdapter` | High | Enterprise standard |
@@ -215,10 +215,10 @@ This document is the **canonical roadmap** for the Agentic.Workflow library, con
 **Library Integration Points:**
 | Package | File | Change |
 |---------|------|--------|
-| `Agentic.Workflow.Agents` | `Agents/SpecialistAgent.cs` | Add streaming path in `GenerateCodeAsync()` |
-| `Agentic.Workflow.Agents` | `Services/StreamingResponseHandler.cs` | Already implemented |
-| `Agentic.Workflow.Agents` | `Events/StreamingTokenReceived.cs` | Already defined |
-| `Agentic.Workflow.Agents` | `Extensions/ServiceCollectionExtensions.cs` | NEW: `AddWorkflowAgents()` registers handler |
+| `Strategos.Agents` | `Agents/SpecialistAgent.cs` | Add streaming path in `GenerateCodeAsync()` |
+| `Strategos.Agents` | `Services/StreamingResponseHandler.cs` | Already implemented |
+| `Strategos.Agents` | `Events/StreamingTokenReceived.cs` | Already defined |
+| `Strategos.Agents` | `Extensions/ServiceCollectionExtensions.cs` | NEW: `AddWorkflowAgents()` registers handler |
 
 > **Consumer Wiring:** Consumers call `services.AddWorkflowAgents()` and implement `IStreamingCallback` for UI updates.
 
@@ -242,7 +242,7 @@ This document is the **canonical roadmap** for the Agentic.Workflow library, con
 │                      Conversation Replay Architecture                        │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │                                                                              │
-│   LIBRARY (Agentic.Workflow.Agents)                                          │
+│   LIBRARY (Strategos.Agents)                                          │
 │   ─────────────────────────────────                                          │
 │   ChatMessageRecorded { WorkflowId, TaskId, Specialist, Role, Content }      │
 │        │                                                                     │
@@ -275,11 +275,11 @@ This document is the **canonical roadmap** for the Agentic.Workflow library, con
 **Library Integration Points:**
 | Package | File | Change |
 |---------|------|--------|
-| `Agentic.Workflow.Agents` | `Events/ChatMessageRecorded.cs` | Already defined |
-| `Agentic.Workflow.Agents` | `Contracts/IConversationHistoryService.cs` | NEW: Service abstraction |
-| `Agentic.Workflow.Agents` | `Models/ConversationMessage.cs` | NEW: Message record |
-| `Agentic.Workflow.Agents` | `Models/ConversationReadModel.cs` | NEW: Read model contract |
-| `Agentic.Workflow.Agents` | `Helpers/ConversationReplayBuilder.cs` | NEW: Reconstructs `List<ChatMessage>` from events |
+| `Strategos.Agents` | `Events/ChatMessageRecorded.cs` | Already defined |
+| `Strategos.Agents` | `Contracts/IConversationHistoryService.cs` | NEW: Service abstraction |
+| `Strategos.Agents` | `Models/ConversationMessage.cs` | NEW: Message record |
+| `Strategos.Agents` | `Models/ConversationReadModel.cs` | NEW: Read model contract |
+| `Strategos.Agents` | `Helpers/ConversationReplayBuilder.cs` | NEW: Reconstructs `List<ChatMessage>` from events |
 
 > **Consumer Wiring:** Consumers implement `IConversationHistoryService` using their event store (Marten, EventStoreDB, etc.). The library provides `ConversationReplayBuilder` to reconstruct conversations from raw events.
 
@@ -351,11 +351,11 @@ Workflow<OrderState>
 **Library Integration Points:**
 | Package | File | Change |
 |---------|------|--------|
-| `Agentic.Workflow` | `Builders/StepBuilder.cs` | Add `.WithContext()` method |
-| `Agentic.Workflow` | `Context/IContextBuilder.cs` | Already defined |
-| `Agentic.Workflow` | `Context/ContextBuilder.cs` | Already implemented |
-| `Agentic.Workflow.Generators` | `Emitters/ContextAssemblyEmitter.cs` | NEW: Generator |
-| `Agentic.Workflow` | `Events/ContextAssembled.cs` | NEW: Audit event |
+| `Strategos` | `Builders/StepBuilder.cs` | Add `.WithContext()` method |
+| `Strategos` | `Context/IContextBuilder.cs` | Already defined |
+| `Strategos` | `Context/ContextBuilder.cs` | Already implemented |
+| `Strategos.Generators` | `Emitters/ContextAssemblyEmitter.cs` | NEW: Generator |
+| `Strategos` | `Events/ContextAssembled.cs` | NEW: Audit event |
 
 ---
 
@@ -430,11 +430,11 @@ public record ConversationalState
 **Library Integration Points:**
 | Package | File | Change |
 |---------|------|--------|
-| `Agentic.Workflow` | `Attributes/ConversationHistoryAttribute.cs` | NEW |
-| `Agentic.Workflow` | `Context/IConversationHistoryManager.cs` | NEW |
-| `Agentic.Workflow` | `Context/WindowingStrategy.cs` | NEW: Enum + implementations |
-| `Agentic.Workflow` | `Context/ITokenCounter.cs` | NEW: Provider abstraction |
-| `Agentic.Workflow.Infrastructure` | `Context/TiktokenCounter.cs` | NEW: OpenAI impl |
+| `Strategos` | `Attributes/ConversationHistoryAttribute.cs` | NEW |
+| `Strategos` | `Context/IConversationHistoryManager.cs` | NEW |
+| `Strategos` | `Context/WindowingStrategy.cs` | NEW: Enum + implementations |
+| `Strategos` | `Context/ITokenCounter.cs` | NEW: Provider abstraction |
+| `Strategos.Infrastructure` | `Context/TiktokenCounter.cs` | NEW: OpenAI impl |
 
 ---
 
@@ -500,10 +500,10 @@ Workflow<OrderState>
 **Library Integration Points:**
 | Package | File | Change |
 |---------|------|--------|
-| `Agentic.Workflow` | `Builders/StepBuilder.cs` | Add `.OnFailure()` method |
-| `Agentic.Workflow` | `Definitions/StepFailureHandlerDefinition.cs` | NEW |
-| `Agentic.Workflow.Generators` | `Helpers/FailureHandlerExtractor.cs` | Extend for step scope |
-| `Agentic.Workflow.Generators` | `Emitters/Saga/SagaStepHandlersEmitter.cs` | Add try/catch generation |
+| `Strategos` | `Builders/StepBuilder.cs` | Add `.OnFailure()` method |
+| `Strategos` | `Definitions/StepFailureHandlerDefinition.cs` | NEW |
+| `Strategos.Generators` | `Helpers/FailureHandlerExtractor.cs` | Extend for step scope |
+| `Strategos.Generators` | `Emitters/Saga/SagaStepHandlersEmitter.cs` | Add try/catch generation |
 
 ---
 
@@ -515,10 +515,10 @@ Workflow<OrderState>
 
 | Week | Feature | Deliverable |
 |------|---------|-------------|
-| 1 | F1: RAG Integration | `IVectorSearchAdapter`, `RagContextMiddleware` in Agentic.Workflow.Agents |
+| 1 | F1: RAG Integration | `IVectorSearchAdapter`, `RagContextMiddleware` in Strategos.Agents |
 | 1 | F2: Streaming | `SpecialistAgent` streaming path, `IStreamingCallback` abstraction |
 | 2 | F3: Conversation Replay | `ConversationReplayBuilder`, `IConversationHistoryService` abstraction |
-| 2 | F1: RAG Adapters | `PgVectorAdapter`, `AzureAISearchAdapter` in Agentic.Workflow.Rag |
+| 2 | F1: RAG Adapters | `PgVectorAdapter`, `AzureAISearchAdapter` in Strategos.Rag |
 
 ### Phase 2: DSL Evolution (8-12 days)
 
@@ -545,7 +545,7 @@ Workflow<OrderState>
 F1 (RAG Integration) ────────────────────────────────────────────────►
      │                                                                │
      ├── Adds IVectorSearchAdapter and RagContextMiddleware           │
-     └── Adds vector store adapters in Agentic.Workflow.Rag           │
+     └── Adds vector store adapters in Strategos.Rag           │
                                                                       │
 F4 (Context Assembly DSL) ────────────────────────────────────────────┤
      │                                                                │
@@ -587,7 +587,7 @@ Items to address before or during feature work:
 
 ### Internal Documentation
 - [Agentic Workflow Library Design](../design.md) - Core DSL design
-- [Agentic Workflow Theory](../theory/agentic-workflow-theory.md) - Formal framework
+- [Agentic Workflow Theory](../theory/strategos-theory.md) - Formal framework
 
 ### External Documentation
 - [Microsoft Agent Framework Overview](https://learn.microsoft.com/en-us/agent-framework/overview/agent-framework-overview)

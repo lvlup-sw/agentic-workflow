@@ -2,7 +2,7 @@
 layout: home
 
 hero:
-  name: Agentic.Workflow
+  name: Strategos
   text: Deterministic AI Agent Workflows
   tagline: A fluent DSL for building auditable, reproducible AI agent workflows in .NET
   actions:

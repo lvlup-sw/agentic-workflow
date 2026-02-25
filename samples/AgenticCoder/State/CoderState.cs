@@ -4,8 +4,8 @@
 // </copyright>
 // =============================================================================
 
-using Agentic.Workflow.Abstractions;
-using Agentic.Workflow.Attributes;
+using Strategos.Abstractions;
+using Strategos.Attributes;
 
 namespace AgenticCoder.State;
 

@@ -1,4 +1,4 @@
-# Agentic.Workflow Implementation Roadmap
+# Strategos Implementation Roadmap
 
 **Status:** Milestone 11 Complete - 79% Design Document Coverage
 **Created:** 2025-11-30
@@ -9,14 +9,14 @@
 
 ## Overview
 
-This document captures the complete implementation roadmap for the Agentic.Workflow library - a fluent DSL for deterministic agentic workflow orchestration with source-generated state machines.
+This document captures the complete implementation roadmap for the Strategos library - a fluent DSL for deterministic agentic workflow orchestration with source-generated state machines.
 
 ## Project Structure
 
 ```
 src/
-├── Agentic.Workflow/                         # Runtime library
-│   ├── Agentic.Workflow.csproj
+├── Strategos/                         # Runtime library
+│   ├── Strategos.csproj
 │   ├── GlobalUsings.cs
 │   ├── Abstractions/                         # Core contracts
 │   │   ├── IWorkflowState.cs                 # Base state interface
@@ -61,8 +61,8 @@ src/
 │   └── Extensions/                           # DI extensions
 │       └── ServiceCollectionExtensions.cs    # DI registration
 │
-├── Agentic.Workflow.Generators/              # Source generator (netstandard2.0)
-│   ├── Agentic.Workflow.Generators.csproj
+├── Strategos.Generators/              # Source generator (netstandard2.0)
+│   ├── Strategos.Generators.csproj
 │   ├── WorkflowIncrementalGenerator.cs       # Main IIncrementalGenerator for [Workflow]
 │   ├── StateReducerIncrementalGenerator.cs   # IIncrementalGenerator for [WorkflowState] ✅
 │   ├── FluentDslParser.cs                    # Parse DSL method chains + state type extraction ✅
@@ -90,8 +90,8 @@ src/
 │   └── Polyfills/
 │       └── IsExternalInit.cs                 # netstandard2.0 polyfill
 │
-├── Agentic.Workflow.Tests/                   # Unit tests (265 tests)
-│   ├── Agentic.Workflow.Tests.csproj
+├── Strategos.Tests/                   # Unit tests (265 tests)
+│   ├── Strategos.Tests.csproj
 │   ├── GlobalUsings.cs
 │   ├── Abstractions/
 │   │   ├── IWorkflowStateTests.cs
@@ -116,8 +116,8 @@ src/
 │       ├── TestWorkflowState.cs
 │       └── TestSteps.cs
 │
-└── Agentic.Workflow.Generators.Tests/        # Generator tests (377 tests)
-    ├── Agentic.Workflow.Generators.Tests.csproj
+└── Strategos.Generators.Tests/        # Generator tests (377 tests)
+    ├── Strategos.Generators.Tests.csproj
     ├── GeneratorIntegrationTests.cs
     ├── FluentDslParserTests.cs                   # ✅ Extended for loop/branch extraction (8c)
     ├── DiagnosticTests.cs
@@ -341,7 +341,7 @@ src/
   - `Generator_PhaseEnum_HasJsonConverter`
 - **Implementation:**
   ```csharp
-  [GeneratedCode("Agentic.Workflow.Generators", "1.0.0")]
+  [GeneratedCode("Strategos.Generators", "1.0.0")]
   [JsonConverter(typeof(JsonStringEnumConverter))]
   public enum ProcessOrderPhase
   {
@@ -646,7 +646,7 @@ src/
   - Header/attribute tests
 - **Implementation:**
   ```csharp
-  [GeneratedCode("Agentic.Workflow.Generators", "1.0.0")]
+  [GeneratedCode("Strategos.Generators", "1.0.0")]
   public sealed record Start{PascalName}Command(
       Guid WorkflowId,
       {StateTypeName} InitialState);
@@ -660,7 +660,7 @@ src/
   - `Emit_LoopWorkflow_GeneratesPrefixedCommands`
 - **Implementation:**
   ```csharp
-  [GeneratedCode("Agentic.Workflow.Generators", "1.0.0")]
+  [GeneratedCode("Strategos.Generators", "1.0.0")]
   public sealed record Execute{StepName}Command(
       Guid WorkflowId,
       Guid StepExecutionId);
@@ -677,12 +677,12 @@ src/
   - `Emit_Events_ImportsProgressEventNamespace`
 - **Implementation:**
   ```csharp
-  [GeneratedCode("Agentic.Workflow.Generators", "1.0.0")]
+  [GeneratedCode("Strategos.Generators", "1.0.0")]
   public interface I{PascalName}Event : IProgressEvent
   {
   }
 
-  [GeneratedCode("Agentic.Workflow.Generators", "1.0.0")]
+  [GeneratedCode("Strategos.Generators", "1.0.0")]
   public sealed record {PascalName}Started(
       Guid WorkflowId,
       {StateTypeName} InitialState,
@@ -701,7 +701,7 @@ src/
 - **Implementation:**
   ```csharp
   // Full state included per design decision (not delta)
-  [GeneratedCode("Agentic.Workflow.Generators", "1.0.0")]
+  [GeneratedCode("Strategos.Generators", "1.0.0")]
   public sealed record {StepName}Completed(
       [property: SagaIdentity] Guid WorkflowId,
       Guid StepExecutionId,
@@ -718,7 +718,7 @@ src/
   - Header/namespace tests
 - **Implementation:**
   ```csharp
-  [GeneratedCode("Agentic.Workflow.Generators", "1.0.0")]
+  [GeneratedCode("Strategos.Generators", "1.0.0")]
   public static class {PascalName}Transitions
   {
       public static readonly IReadOnlyDictionary<{PascalName}Phase, {PascalName}Phase[]>
@@ -769,7 +769,7 @@ src/
 #### Emitter Architecture
 
 ```
-src/Agentic.Workflow.Generators/
+src/Strategos.Generators/
 ├── Models/
 │   └── WorkflowModel.cs              # Shared IR for all emitters
 ├── Emitters/
@@ -887,7 +887,7 @@ src/Agentic.Workflow.Generators/
 - **Implementation:**
   ```csharp
   // Generated for [WorkflowState] record with mixed properties
-  [GeneratedCode("Agentic.Workflow.Generators", "1.0.0")]
+  [GeneratedCode("Strategos.Generators", "1.0.0")]
   public static class OrderStateReducer
   {
       public static OrderState Reduce(OrderState current, OrderState update)
@@ -949,7 +949,7 @@ src/Agentic.Workflow.Generators/
       id: "AGSR001",
       title: "Append attribute on non-collection property",
       messageFormat: "Property '{0}' has [Append] attribute but type '{1}' does not implement IEnumerable<T>",
-      category: "Agentic.Workflow.StateReducer",
+      category: "Strategos.StateReducer",
       defaultSeverity: DiagnosticSeverity.Error,
       isEnabledByDefault: true);
 
@@ -958,7 +958,7 @@ src/Agentic.Workflow.Generators/
       id: "AGSR002",
       title: "Merge attribute on non-dictionary property",
       messageFormat: "Property '{0}' has [Merge] attribute but type '{1}' is not a dictionary type",
-      category: "Agentic.Workflow.StateReducer",
+      category: "Strategos.StateReducer",
       defaultSeverity: DiagnosticSeverity.Error,
       isEnabledByDefault: true);
   ```
@@ -997,9 +997,9 @@ A design critique identified several improvements for the source generator. This
 - Version 1 produces `{PascalName}Saga`; Version 2+ produces `{PascalName}SagaV{N}`
 
 **Files Modified:**
-- `src/Agentic.Workflow/Attributes/WorkflowAttribute.cs`
-- `src/Agentic.Workflow.Generators/Models/WorkflowModel.cs`
-- `src/Agentic.Workflow.Generators/WorkflowIncrementalGenerator.cs`
+- `src/Strategos/Attributes/WorkflowAttribute.cs`
+- `src/Strategos.Generators/Models/WorkflowModel.cs`
+- `src/Strategos.Generators/WorkflowIncrementalGenerator.cs`
 
 **Tests Added:**
 - `WorkflowModelTests.cs` - Version defaults, SagaClassName for v1 and v2+
@@ -1029,10 +1029,10 @@ public static partial class ProcessOrderWorkflowV2 { }
 - Reducers: `public static partial class`
 
 **Files Modified:**
-- `src/Agentic.Workflow.Generators/Emitters/CommandsEmitter.cs`
-- `src/Agentic.Workflow.Generators/Emitters/EventsEmitter.cs`
-- `src/Agentic.Workflow.Generators/Emitters/TransitionsEmitter.cs`
-- `src/Agentic.Workflow.Generators/Emitters/StateReducerEmitter.cs`
+- `src/Strategos.Generators/Emitters/CommandsEmitter.cs`
+- `src/Strategos.Generators/Emitters/EventsEmitter.cs`
+- `src/Strategos.Generators/Emitters/TransitionsEmitter.cs`
+- `src/Strategos.Generators/Emitters/StateReducerEmitter.cs`
 
 **Tests Updated:**
 - All emitter unit tests updated to expect `partial` keyword
@@ -1091,7 +1091,7 @@ The following critique items were deferred to future milestones:
 - Generator now produces 5 artifacts per workflow
 
 **Files Modified:**
-- `src/Agentic.Workflow.Generators/WorkflowIncrementalGenerator.cs`
+- `src/Strategos.Generators/WorkflowIncrementalGenerator.cs`
 
 **Generated Files:**
 | File | Content |
@@ -1116,7 +1116,7 @@ The following critique items were deferred to future milestones:
 
 ##### Saga Class Structure
 ```csharp
-[GeneratedCode("Agentic.Workflow.Generators", "1.0.0")]
+[GeneratedCode("Strategos.Generators", "1.0.0")]
 public partial class ProcessOrderSaga : Saga
 {
     /// <summary>
@@ -1352,32 +1352,32 @@ public sealed record WorkflowDefinition<TState> where TState : class, IWorkflowS
 
 | File | Pattern |
 |------|---------|
-| `src/Agentic.Core/Primitives/Result.cs` | Immutable struct with factory methods |
-| `src/Agentic.AgentHost/Events/IProgressEvent.cs` | Event interface contract |
-| `src/Agentic.AgentHost/Orchestration/OrchestratorState.cs` | Enum with JsonConverter |
-| `src/Agentic.AgentHost/Sagas/Commands/WorkflowCommands.cs` | Command record patterns |
-| `src/Agentic.AgentHost/Sagas/WorkflowSaga.cs` | Wolverine saga structure |
-| `src/Agentic.AgentHost/Events/TaskPlanned.cs` | Event with [SagaIdentity] pattern |
-| `src/Agentic.Core.Tests/Primitives/ResultTests.cs` | TUnit test patterns |
-| `src/Agentic.Workflow.Generators/Models/WorkflowModel.cs` | Workflow generator IR (with Loops, Branches) |
-| `src/Agentic.Workflow.Generators/Models/LoopModel.cs` | Loop construct model ✅ NEW |
-| `src/Agentic.Workflow.Generators/Models/BranchModel.cs` | Branch construct model ✅ NEW |
-| `src/Agentic.Workflow.Generators/Models/StateModel.cs` | State reducer generator IR ✅ |
-| `src/Agentic.Workflow.Generators/Emitters/PhaseEnumEmitter.cs` | Emitter pattern reference |
-| `src/Agentic.Workflow.Generators/Emitters/StateReducerEmitter.cs` | State reducer emitter ✅ |
-| `src/Agentic.Workflow.Generators/Emitters/SagaEmitter.cs` | Wolverine saga emitter (Brain & Muscle) ✅ |
-| `src/Agentic.Workflow.Generators/Emitters/WorkerHandlerEmitter.cs` | Worker handler generation ✅ NEW |
-| `src/Agentic.Workflow.Generators/Emitters/ExtensionsEmitter.cs` | DI extensions generation ✅ NEW |
-| `src/Agentic.Workflow.Generators/Models/StepModel.cs` | Step type info for DI ✅ NEW |
-| `src/Agentic.Workflow.Generators/StateReducerIncrementalGenerator.cs` | ForAttributeWithMetadataName pattern ✅ |
-| `src/Agentic.Workflow.Generators/Diagnostics/StateReducerDiagnostics.cs` | Diagnostic descriptor pattern ✅ |
-| `src/Agentic.Workflow.Generators.Tests/Fixtures/GeneratorTestHelper.cs` | Generator test helper (generic) |
-| `src/Agentic.Workflow.Generators.Tests/Fixtures/SourceTexts.cs` | Test source code constants |
-| `src/Agentic.Workflow.Generators.Tests/Emitters/*UnitTests.cs` | Emitter unit test patterns |
-| `src/Agentic.Workflow.Generators.Tests/StateReducerGeneratorIntegrationTests.cs` | Generator integration test pattern ✅ |
-| `src/Agentic.Workflow.Generators.Tests/SagaEmitterIntegrationTests.cs` | Saga emitter integration tests ✅ |
-| `src/Agentic.Workflow.Generators.Tests/WorkerHandlerIntegrationTests.cs` | Worker handler integration tests ✅ NEW |
-| `src/Agentic.Workflow.Generators.Tests/ExtensionsIntegrationTests.cs` | Extensions integration tests ✅ NEW |
+| `src/Strategos/Primitives/Result.cs` | Immutable struct with factory methods |
+| `src/Strategos.Agents/Events/IProgressEvent.cs` | Event interface contract |
+| `src/Strategos.Agents/Orchestration/OrchestratorState.cs` | Enum with JsonConverter |
+| `src/Strategos.Agents/Sagas/Commands/WorkflowCommands.cs` | Command record patterns |
+| `src/Strategos.Agents/Sagas/WorkflowSaga.cs` | Wolverine saga structure |
+| `src/Strategos.Agents/Events/TaskPlanned.cs` | Event with [SagaIdentity] pattern |
+| `src/Strategos.Tests/Primitives/ResultTests.cs` | TUnit test patterns |
+| `src/Strategos.Generators/Models/WorkflowModel.cs` | Workflow generator IR (with Loops, Branches) |
+| `src/Strategos.Generators/Models/LoopModel.cs` | Loop construct model ✅ NEW |
+| `src/Strategos.Generators/Models/BranchModel.cs` | Branch construct model ✅ NEW |
+| `src/Strategos.Generators/Models/StateModel.cs` | State reducer generator IR ✅ |
+| `src/Strategos.Generators/Emitters/PhaseEnumEmitter.cs` | Emitter pattern reference |
+| `src/Strategos.Generators/Emitters/StateReducerEmitter.cs` | State reducer emitter ✅ |
+| `src/Strategos.Generators/Emitters/SagaEmitter.cs` | Wolverine saga emitter (Brain & Muscle) ✅ |
+| `src/Strategos.Generators/Emitters/WorkerHandlerEmitter.cs` | Worker handler generation ✅ NEW |
+| `src/Strategos.Generators/Emitters/ExtensionsEmitter.cs` | DI extensions generation ✅ NEW |
+| `src/Strategos.Generators/Models/StepModel.cs` | Step type info for DI ✅ NEW |
+| `src/Strategos.Generators/StateReducerIncrementalGenerator.cs` | ForAttributeWithMetadataName pattern ✅ |
+| `src/Strategos.Generators/Diagnostics/StateReducerDiagnostics.cs` | Diagnostic descriptor pattern ✅ |
+| `src/Strategos.Generators.Tests/Fixtures/GeneratorTestHelper.cs` | Generator test helper (generic) |
+| `src/Strategos.Generators.Tests/Fixtures/SourceTexts.cs` | Test source code constants |
+| `src/Strategos.Generators.Tests/Emitters/*UnitTests.cs` | Emitter unit test patterns |
+| `src/Strategos.Generators.Tests/StateReducerGeneratorIntegrationTests.cs` | Generator integration test pattern ✅ |
+| `src/Strategos.Generators.Tests/SagaEmitterIntegrationTests.cs` | Saga emitter integration tests ✅ |
+| `src/Strategos.Generators.Tests/WorkerHandlerIntegrationTests.cs` | Worker handler integration tests ✅ NEW |
+| `src/Strategos.Generators.Tests/ExtensionsIntegrationTests.cs` | Extensions integration tests ✅ NEW |
 | `docs/handlers.md` | Brain & Muscle pattern documentation |
 
 ---
@@ -1567,7 +1567,7 @@ public void Handle(SendConfirmationCompleted evt)
 **Solution:** Created `WorkerHandlerEmitter` that generates handler classes:
 
 ```csharp
-[GeneratedCode("Agentic.Workflow.Generators", "1.0.0")]
+[GeneratedCode("Strategos.Generators", "1.0.0")]
 public partial class ValidateOrderHandler(ValidateOrder step)
 {
     private readonly ValidateOrder _step = step;
@@ -1602,7 +1602,7 @@ public partial class ValidateOrderHandler(ValidateOrder step)
 **Solution:** Created `ExtensionsEmitter` that generates registration methods:
 
 ```csharp
-[GeneratedCode("Agentic.Workflow.Generators", "1.0.0")]
+[GeneratedCode("Strategos.Generators", "1.0.0")]
 public static partial class ProcessOrderWorkflowExtensions
 {
     public static IServiceCollection AddProcessOrderWorkflow(
@@ -2176,14 +2176,14 @@ WorkflowIncrementalGenerator
 
 | File | Change |
 |------|--------|
-| `src/Agentic.Workflow/Abstractions/IStepConfiguration.cs` | Added `ValidateState` method signature |
-| `src/Agentic.Workflow/Builders/StepConfigurationBuilder.cs` | Implemented `ValidateState` |
-| `src/Agentic.Workflow.Generators/Models/StepModel.cs` | Added `ValidationPredicate`, `ValidationErrorMessage`, `HasValidation` |
-| `src/Agentic.Workflow.Generators/Models/WorkflowModel.cs` | Added `HasAnyValidation` computed property |
-| `src/Agentic.Workflow.Generators/FluentDslParser.cs` | Added `TryParseValidateState`, validation tracking |
-| `src/Agentic.Workflow.Generators/Emitters/PhaseEnumEmitter.cs` | Conditional `ValidationFailed` phase |
-| `src/Agentic.Workflow.Generators/Emitters/EventsEmitter.cs` | Conditional `{Name}ValidationFailed` event |
-| `src/Agentic.Workflow.Generators/Emitters/SagaEmitter.cs` | Yield-based guard logic emission |
+| `src/Strategos/Abstractions/IStepConfiguration.cs` | Added `ValidateState` method signature |
+| `src/Strategos/Builders/StepConfigurationBuilder.cs` | Implemented `ValidateState` |
+| `src/Strategos.Generators/Models/StepModel.cs` | Added `ValidationPredicate`, `ValidationErrorMessage`, `HasValidation` |
+| `src/Strategos.Generators/Models/WorkflowModel.cs` | Added `HasAnyValidation` computed property |
+| `src/Strategos.Generators/FluentDslParser.cs` | Added `TryParseValidateState`, validation tracking |
+| `src/Strategos.Generators/Emitters/PhaseEnumEmitter.cs` | Conditional `ValidationFailed` phase |
+| `src/Strategos.Generators/Emitters/EventsEmitter.cs` | Conditional `{Name}ValidationFailed` event |
+| `src/Strategos.Generators/Emitters/SagaEmitter.cs` | Yield-based guard logic emission |
 
 #### Test Files Modified
 
@@ -2532,7 +2532,7 @@ The library is production-ready for:
 | Feature | Workaround |
 |---------|------------|
 | **Fork/Join** | Orchestrate parallel calls within a single step using `Task.WhenAll()` |
-| **AwaitApproval** | Use `IHumanApprovalHandler` from `Agentic.Core` in step implementation |
+| **AwaitApproval** | Use `IHumanApprovalHandler` from `Strategos` in step implementation |
 | **OnFailure** | Handle in generated `Failed` phase via partial class extension |
 | **Lambda Steps** | Create small step classes; trade-off is better testability |
 | **AgentStep** | Inherit from `IWorkflowStep<T>` and add agent-specific logic manually |
@@ -2542,6 +2542,6 @@ The library is production-ready for:
 
 | Test Suite | Count | Focus |
 |------------|-------|-------|
-| `Agentic.Workflow.Tests` | 265 | Runtime library |
-| `Agentic.Workflow.Generators.Tests` | 377 | Source generators |
+| `Strategos.Tests` | 265 | Runtime library |
+| `Strategos.Generators.Tests` | 377 | Source generators |
 | **Total** | **642** | |

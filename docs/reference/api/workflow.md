@@ -1,6 +1,6 @@
 # Workflow API
 
-Core types for defining and executing workflows in `Agentic.Workflow`.
+Core types for defining and executing workflows in `Strategos`.
 
 ## Workflow\<TState\>
 

@@ -1,6 +1,6 @@
 # Source Generators
 
-The `Agentic.Workflow.Generators` package transforms fluent DSL definitions into type-safe artifacts at compile time.
+The `Strategos.Generators` package transforms fluent DSL definitions into type-safe artifacts at compile time.
 
 ## Generated Artifacts Overview
 
@@ -232,11 +232,11 @@ public static class ProcessOrderWorkflowExtensions
 ### Usage
 
 ```csharp
-services.AddAgenticWorkflow()
+services.AddStrategos()
     .AddProcessOrderWorkflow();
 
 // Or add all workflows in assembly
-services.AddAgenticWorkflow()
+services.AddStrategos()
     .AddWorkflowsFromAssembly(typeof(ProcessOrderWorkflow).Assembly);
 ```
 
@@ -249,7 +249,7 @@ Generation is triggered by the `[Workflow]` attribute on a class containing a wo
 ### Required Pattern
 
 ```csharp
-using Agentic.Workflow;
+using Strategos;
 
 namespace MyApp.Workflows;
 
@@ -284,13 +284,13 @@ obj/
   Debug/
     net8.0/
       generated/
-        Agentic.Workflow.Generators/
+        Strategos.Generators/
           ProcessOrderWorkflow.g.cs
           ProcessOrderSaga.g.cs
           ProcessOrderStateReducer.g.cs
 ```
 
 ::: tip Viewing Generated Code
-In Visual Studio, expand Dependencies > Analyzers > Agentic.Workflow.Generators to see generated files.
+In Visual Studio, expand Dependencies > Analyzers > Strategos.Generators to see generated files.
 In Rider, use Navigate > Generated Code.
 :::

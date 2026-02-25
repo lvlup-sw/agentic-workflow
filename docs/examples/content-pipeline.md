@@ -685,7 +685,7 @@ builder.Services.AddMarten(opts =>
 .IntegrateWithWolverine();
 
 // Register workflow
-builder.Services.AddAgenticWorkflow()
+builder.Services.AddStrategos()
     .AddWorkflow<ContentPipelineWorkflow>();
 
 // Configure Thompson Sampling

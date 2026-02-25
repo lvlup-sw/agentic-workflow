@@ -8,7 +8,7 @@
 
 ## Executive Summary
 
-This document catalogs all features from the Agentic.Workflow design specification that were intentionally deferred from the initial implementation. Each deferral is analyzed for its rationale, impact, and recommended path forward.
+This document catalogs all features from the Strategos design specification that were intentionally deferred from the initial implementation. Each deferral is analyzed for its rationale, impact, and recommended path forward.
 
 **Total Deferred Features:** 8
 **Deferral Categories:**
@@ -195,7 +195,7 @@ public class ResearchStep(IRetrievalSource retrieval) : IWorkflowStep<ResearchSt
 }
 ```
 
-**Recommendation:** Create a separate `Agentic.Workflow.Rag` package with adapters for common vector stores, keeping the core library dependency-free.
+**Recommendation:** Create a separate `Strategos.Rag` package with adapters for common vector stores, keeping the core library dependency-free.
 
 ---
 
@@ -477,8 +477,8 @@ public class AssessClaimStep : IWorkflowStep<ClaimState>
 - **Exception Context Capture** - Preserve stack traces and step context in failure events
 
 ### Milestone 17+ (Optional)
-- **Agentic.Workflow.Agents** package - Provider-agnostic agent base classes
-- **Agentic.Workflow.Rag** package - Vector store adapters
+- **Strategos.Agents** package - Provider-agnostic agent base classes
+- **Strategos.Rag** package - Vector store adapters
 - **Context Builder** utility - Declarative context assembly helpers
 
 ### Not Planned

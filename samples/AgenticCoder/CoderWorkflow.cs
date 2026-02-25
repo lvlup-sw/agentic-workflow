@@ -4,8 +4,8 @@
 // </copyright>
 // =============================================================================
 
-using Agentic.Workflow.Builders;
-using Agentic.Workflow.Definitions;
+using Strategos.Builders;
+using Strategos.Definitions;
 using AgenticCoder.State;
 using AgenticCoder.Steps;
 

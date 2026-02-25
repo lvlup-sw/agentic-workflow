@@ -1,6 +1,6 @@
 # Agentic Ontology: Semantic Type System for Agentic Operations
 
-> **Scope:** Library design for `Agentic.Ontology` NuGet packages (lives in agentic-workflow repo).
+> **Scope:** Library design for `Strategos.Ontology` NuGet packages (lives in strategos repo).
 > Basileus is the first consumer; this repo receives ADR updates only.
 >
 > **Revision 2** — Incorporates brainstorming decisions: runtime-first architecture,
@@ -21,7 +21,7 @@ Three deficiencies in the current platform:
 
 4. **Untyped telemetry.** Events carry system metadata (tool name, duration, tokens) but not domain context. Observability queries require human domain knowledge to interpret — there is no way to ask "which actions on which object types cost the most tokens."
 
-Palantir's Foundry Ontology solves the first three with a semantic layer: Object Types + Link Types + Action Types + Interfaces, backed by a microservices architecture (OMS + OSS + Object Storage V2 + OSDK). We adapt their architectural insights for the Agentic.Workflow ecosystem, mapping each Palantir component onto our existing infrastructure.
+Palantir's Foundry Ontology solves the first three with a semantic layer: Object Types + Link Types + Action Types + Interfaces, backed by a microservices architecture (OMS + OSS + Object Storage V2 + OSDK). We adapt their architectural insights for the Strategos ecosystem, mapping each Palantir component onto our existing infrastructure.
 
 ---
 
@@ -35,7 +35,7 @@ Palantir's Foundry Ontology solves the first three with a semantic layer: Object
 | First-class events | `ObjectTypeDescriptor` includes `Events` collection from day one; event-driven link materialization via Marten projections |
 | Deterministic structure for stochastic agents | Typed action graph constrains agent planning (CMDP action space reduction) |
 | Domain independence preserved | Cross-domain links resolved at composition time, not declaration time |
-| NuGet package | Reusable across any Agentic.Workflow consumer, not Basileus-specific |
+| NuGet package | Reusable across any Strategos consumer, not Basileus-specific |
 | Palantir-aligned architecture | OMS → OntologyGraph, OSS → ObjectSet algebra, Object Storage V2 → Marten, OSDK → MCP tools |
 
 **Priority ordering for design trade-offs:** Agents (runtime) > Exarchos (orchestrator) > Developers (compile-time).
@@ -85,16 +85,16 @@ Palantir's Foundry Ontology solves the first three with a semantic layer: Object
 
 ### 3.3 Key Architectural Difference from Palantir
 
-Palantir's Ontology **owns storage** (Object Storage V2 is a dedicated persistence layer). Ours **does not** — `Agentic.Ontology` defines abstractions (`IObjectSetProvider`, `IEventStreamProvider`), and consumers provide implementations backed by their persistence layer (Marten in Basileus's case). This keeps domains autonomous while still enabling unified queries through the Object Set algebra.
+Palantir's Ontology **owns storage** (Object Storage V2 is a dedicated persistence layer). Ours **does not** — `Strategos.Ontology` defines abstractions (`IObjectSetProvider`, `IEventStreamProvider`), and consumers provide implementations backed by their persistence layer (Marten in Basileus's case). This keeps domains autonomous while still enabling unified queries through the Object Set algebra.
 
 ---
 
 ## 4. Package Architecture
 
 ```text
-agentic-workflow/
+strategos/
 ├── src/
-│   ├── Agentic.Ontology/                    # Contracts, DSL, runtime graph, Object Set algebra
+│   ├── Strategos.Ontology/                    # Contracts, DSL, runtime graph, Object Set algebra
 │   │   ├── DomainOntology.cs                # Base class for domain modules
 │   │   ├── OntologyGraph.cs                 # Runtime type registry (in-memory)
 │   │   ├── OntologyGraphBuilder.cs          # Internal builder that DomainOntology.Define() drives
@@ -135,7 +135,7 @@ agentic-workflow/
 │   │   └── Extensions/                      # Optional integration points
 │   │       └── WorkflowOntologyExtensions.cs # Consumes<T>/Produces<T>
 │   │
-│   ├── Agentic.Ontology.Generators/         # Roslyn analyzer — diagnostics only
+│   ├── Strategos.Ontology.Generators/         # Roslyn analyzer — diagnostics only
 │   │   ├── OntologyDiagnosticAnalyzer.cs    # Entry point (DiagnosticAnalyzer)
 │   │   └── Analyzers/
 │   │       ├── DomainOntologyAnalyzer.cs    # Validates DomainOntology.Define() calls
@@ -143,7 +143,7 @@ agentic-workflow/
 │   │       ├── CrossDomainLinkAnalyzer.cs   # Validates external references
 │   │       └── EventAnalyzer.cs             # Validates event type declarations
 │   │
-│   └── Agentic.Ontology.MCP/               # MCP tool surface + progressive disclosure
+│   └── Strategos.Ontology.MCP/               # MCP tool surface + progressive disclosure
 │       ├── OntologyMcpTools.cs              # ontology_query, ontology_action, ontology_explore
 │       ├── OntologyStubGenerator.cs         # Enhanced .pyi stub generation
 │       └── OntologyToolDiscovery.cs         # Semantic tool discovery
@@ -152,11 +152,11 @@ agentic-workflow/
 **Dependency graph:**
 
 ```text
-Agentic.Ontology.MCP
+Strategos.Ontology.MCP
     ↓
-Agentic.Ontology  ←──  Agentic.Ontology.Generators (analyzer ref, diagnostics only)
+Strategos.Ontology  ←──  Strategos.Ontology.Generators (analyzer ref, diagnostics only)
     ↓ (optional)
-Agentic.Workflow (for Consumes<T>/Produces<T> extension methods)
+Strategos (for Consumes<T>/Produces<T> extension methods)
 ```
 
 **Consumer-side packages (Basileus-owned, not in this repo):**
@@ -164,12 +164,12 @@ Agentic.Workflow (for Consumes<T>/Produces<T> extension methods)
 ```text
 Basileus.Ontology.Marten/          # IObjectSetProvider backed by Marten LINQ
     ↓                               # IEventStreamProvider backed by Marten event store
-Agentic.Ontology                   # IOntologyProjection backed by Marten projections
+Strategos.Ontology                   # IOntologyProjection backed by Marten projections
     +
 Marten
 ```
 
-`Agentic.Ontology` has **zero dependency on Marten or any persistence library**. The provider abstractions (`IObjectSetProvider`, `IEventStreamProvider`, `IOntologyProjection`) are contracts — implementations live in consumer assemblies.
+`Strategos.Ontology` has **zero dependency on Marten or any persistence library**. The provider abstractions (`IObjectSetProvider`, `IEventStreamProvider`, `IOntologyProjection`) are contracts — implementations live in consumer assemblies.
 
 ---
 
@@ -204,7 +204,7 @@ services.AddOntology(ontology =>
 5. `OntologyGraph` is frozen (immutable after startup) and registered as a singleton
 6. MCP tools are registered against the frozen graph
 
-**Fail-fast validation** replaces compile-time diagnostics for structural errors. The source generator (`Agentic.Ontology.Generators`) provides IDE-time warnings as a supplementary DX enhancement, but the runtime builder is the source of truth.
+**Fail-fast validation** replaces compile-time diagnostics for structural errors. The source generator (`Strategos.Ontology.Generators`) provides IDE-time warnings as a supplementary DX enhancement, but the runtime builder is the source of truth.
 
 ### 5.2 OntologyGraph — The Runtime Registry
 
@@ -451,7 +451,7 @@ builder.CrossDomainLink("KnowledgeInformsStrategy")
 
 ### 6.8 Workflow Integration (Optional Extension)
 
-When both `Agentic.Ontology` and `Agentic.Workflow` are referenced:
+When both `Strategos.Ontology` and `Strategos` are referenced:
 
 ```csharp
 var workflow = Workflow<TradeExecutionState>
@@ -582,7 +582,7 @@ Via MCP tool (JSON representation for agent consumption):
 
 ### 8.1 Role Clarification
 
-The source generator (`Agentic.Ontology.Generators`) is a **Roslyn DiagnosticAnalyzer**, not an `IIncrementalGenerator`. It emits **zero runtime code**. Its sole purpose is IDE-time validation — red squiggles and warnings that supplement the runtime builder's fail-fast validation.
+The source generator (`Strategos.Ontology.Generators`) is a **Roslyn DiagnosticAnalyzer**, not an `IIncrementalGenerator`. It emits **zero runtime code**. Its sole purpose is IDE-time validation — red squiggles and warnings that supplement the runtime builder's fail-fast validation.
 
 ### 8.2 Diagnostic Catalog
 
@@ -925,11 +925,11 @@ builder.Services.AddOntologyMcpTools();
 
 ## 13. Basileus Adoption Strategy
 
-### What Changes in This Repo (agentic-workflow)
+### What Changes in This Repo (strategos)
 
-1. **`Agentic.Ontology` package:** Contracts, DSL, runtime graph, Object Set algebra, telemetry enrichment
-2. **`Agentic.Ontology.Generators` package:** DiagnosticAnalyzer for IDE-time validation (diagnostics only)
-3. **`Agentic.Ontology.MCP` package:** MCP tool definitions (`ontology_query`, `ontology_action`, `ontology_explore`), stub generator
+1. **`Strategos.Ontology` package:** Contracts, DSL, runtime graph, Object Set algebra, telemetry enrichment
+2. **`Strategos.Ontology.Generators` package:** DiagnosticAnalyzer for IDE-time validation (diagnostics only)
+3. **`Strategos.Ontology.MCP` package:** MCP tool definitions (`ontology_query`, `ontology_action`, `ontology_explore`), stub generator
 
 ### What Changes in Basileus Repo
 

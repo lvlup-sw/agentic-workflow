@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-Agentic.Workflow is a .NET library for building durable agentic workflows. It provides deterministic orchestration for probabilistic AI agents through event-sourced persistence, enabling complete audit trails and reproducible decision histories.
+Strategos is a .NET library for building durable agentic workflows. It provides deterministic orchestration for probabilistic AI agents through event-sourced persistence, enabling complete audit trails and reproducible decision histories.
 
 The library bridges agent frameworks and workflow engines by treating each agent decision as an immutable event, allowing time-travel debugging and full auditability.
 
@@ -26,7 +26,7 @@ The library bridges agent frameworks and workflow engines by treating each agent
 
 ```
 src/
-├── Agentic.Workflow/           # Core fluent DSL and abstractions
+├── Strategos/           # Core fluent DSL and abstractions
 │   ├── Abstractions/           # Core interfaces
 │   ├── Builders/               # Fluent builder implementations
 │   ├── Configuration/          # DI and setup
@@ -36,10 +36,10 @@ src/
 │   ├── Primitives/             # Value types
 │   ├── Selection/              # Agent selection (Thompson Sampling)
 │   └── Steps/                  # Step implementations
-├── Agentic.Workflow.Generators/    # Compile-time code generation
-├── Agentic.Workflow.Agents/        # Microsoft Agent Framework integration
-├── Agentic.Workflow.Infrastructure/ # Production implementations
-├── Agentic.Workflow.Rag/           # Vector store adapters
+├── Strategos.Generators/    # Compile-time code generation
+├── Strategos.Agents/        # Microsoft Agent Framework integration
+├── Strategos.Infrastructure/ # Production implementations
+├── Strategos.Rag/           # Vector store adapters
 └── *Tests/                         # Test projects (co-located)
 
 docs/                           # VitePress documentation site

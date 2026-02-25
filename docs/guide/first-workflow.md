@@ -1,6 +1,6 @@
 # Your First Workflow
 
-In this tutorial, you will build a complete order processing workflow that validates orders, processes payments, fulfills shipments, and sends confirmations. This example demonstrates the core patterns you will use in every Agentic.Workflow application.
+In this tutorial, you will build a complete order processing workflow that validates orders, processes payments, fulfills shipments, and sends confirmations. This example demonstrates the core patterns you will use in every Strategos application.
 
 ## What You Will Build
 
@@ -18,7 +18,7 @@ Each step receives the current state, performs work, and returns an updated stat
 Every workflow needs a state object that holds all data as the workflow progresses. State is immutable - steps create new state instances rather than modifying the original.
 
 ```csharp
-using Agentic.Workflow;
+using Strategos;
 
 [WorkflowState]
 public record OrderState : IWorkflowState
@@ -207,7 +207,7 @@ public class SendConfirmation : IWorkflowStep<OrderState>
 Register the workflow and its dependencies in your DI container:
 
 ```csharp
-services.AddAgenticWorkflow()
+services.AddStrategos()
     .AddWorkflow<ProcessOrderWorkflow>();
 
 // Register step dependencies

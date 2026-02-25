@@ -2,7 +2,7 @@
 
 ## Summary
 
-Systematic performance enhancements for the Agentic.Workflow library targeting latency, throughput, and memory efficiency across all critical subsystems.
+Systematic performance enhancements for the Strategos library targeting latency, throughput, and memory efficiency across all critical subsystems.
 
 **Approach:** Phased implementation (A → B → C) with measurement between phases to validate impact and guide priorities.
 
@@ -32,7 +32,7 @@ Key issues:
 
 ### A.1 Thompson Sampling - Parallelize Belief Fetching
 
-**File:** `src/Agentic.Workflow.Infrastructure/Selection/ThompsonSamplingAgentSelector.cs`
+**File:** `src/Strategos.Infrastructure/Selection/ThompsonSamplingAgentSelector.cs`
 **Lines:** 82-99
 
 **Current:** Sequential loop fetching beliefs for each candidate agent.
@@ -58,7 +58,7 @@ var beliefs = await Task.WhenAll(beliefTasks);
 
 ### A.2 Thompson Sampling - Add Secondary Indices to Belief Store
 
-**File:** `src/Agentic.Workflow.Infrastructure/Selection/InMemoryBeliefStore.cs`
+**File:** `src/Strategos.Infrastructure/Selection/InMemoryBeliefStore.cs`
 **Lines:** 82-84, 96-98
 
 **Current:** O(n) filter on all beliefs for `GetBeliefsForAgentAsync` and `GetBeliefsForCategoryAsync`.
@@ -78,7 +78,7 @@ private readonly ConcurrentDictionary<string, ConcurrentBag<AgentBelief>> _byCat
 
 ### A.3 Thompson Sampling - Early Exit When No Exclusions
 
-**File:** `src/Agentic.Workflow.Infrastructure/Selection/ThompsonSamplingAgentSelector.cs`
+**File:** `src/Strategos.Infrastructure/Selection/ThompsonSamplingAgentSelector.cs`
 **Lines:** 65-67
 
 **Current:** Always materializes list even when `ExcludedAgents` is null/empty.
@@ -99,7 +99,7 @@ var candidates = context.ExcludedAgents is { Count: > 0 }
 
 ### A.4 Loop Detection - Skip Semantic Similarity on High-Confidence Signals
 
-**File:** `src/Agentic.Workflow.Infrastructure/LoopDetection/LoopDetector.cs`
+**File:** `src/Strategos.Infrastructure/LoopDetection/LoopDetector.cs`
 **Lines:** 74-96
 
 **Current:** Semantic similarity calculated unconditionally, even when exact repetition detected.
@@ -131,7 +131,7 @@ var semanticScore = await _similarityCalculator.CalculateMaxSimilarityAsync(...)
 
 ### A.5 Loop Detection - Fix String Comparison
 
-**File:** `src/Agentic.Workflow.Infrastructure/LoopDetection/LoopDetector.cs`
+**File:** `src/Strategos.Infrastructure/LoopDetection/LoopDetector.cs`
 **Line:** 271
 
 **Current:** Reference equality comparison.
@@ -150,7 +150,7 @@ if (string.Equals(actions[i], actions[i % period], StringComparison.Ordinal))
 
 ### A.6 Loop Detection - Avoid Intermediate List in Repetition Scoring
 
-**File:** `src/Agentic.Workflow.Infrastructure/LoopDetection/LoopDetector.cs`
+**File:** `src/Strategos.Infrastructure/LoopDetection/LoopDetector.cs`
 **Lines:** 196-202
 
 **Current:** Creates intermediate list for max count.
@@ -170,7 +170,7 @@ var maxCount = entries.GroupBy(e => e.Action).Max(g => g.Count());
 
 ### A.7 Budget Guards - Cache OverallScarcity
 
-**File:** `src/Agentic.Workflow.Infrastructure/Budget/WorkflowBudget.cs`
+**File:** `src/Strategos.Infrastructure/Budget/WorkflowBudget.cs`
 **Lines:** 46-60
 
 **Current:** Computed property iterates all resources on every access.
@@ -197,7 +197,7 @@ public sealed record WorkflowBudget : IWorkflowBudget
 
 ### A.8 Workflow Execution - Replace Append().ToList()
 
-**File:** `src/Agentic.Workflow.Infrastructure/Ledgers/ProgressLedger.cs`
+**File:** `src/Strategos.Infrastructure/Ledgers/ProgressLedger.cs`
 **Lines:** 69-77
 
 **Current:** Creates new list on every append.
@@ -222,7 +222,7 @@ public IProgressLedger WithEntry(ProgressEntry entry)
 
 ### A.9 Workflow Execution - Use ValueTask for Sync Paths
 
-**File:** `src/Agentic.Workflow.Infrastructure/ExecutionLedgers/InMemoryStepExecutionLedger.cs`
+**File:** `src/Strategos.Infrastructure/ExecutionLedgers/InMemoryStepExecutionLedger.cs`
 **Lines:** 44-101
 
 **Current:** Returns `Task.FromResult()` for synchronous dictionary lookups.
@@ -245,7 +245,7 @@ public ValueTask<TResult?> TryGetCachedResultAsync<TResult>(...)
 
 ### A.10 Source Generators - Cache Compilation Metadata Lookups
 
-**File:** `src/Agentic.Workflow.Generators/StateReducerIncrementalGenerator.cs`
+**File:** `src/Strategos.Generators/StateReducerIncrementalGenerator.cs`
 **Lines:** 185, 209-210
 
 **Current:** Repeated `GetTypeByMetadataName()` calls per property.
@@ -273,7 +273,7 @@ private sealed class WellKnownTypes
 
 ### A.11 Source Generators - Use HashSet for Contains Checks
 
-**File:** `src/Agentic.Workflow.Generators/WorkflowIncrementalGenerator.cs`
+**File:** `src/Strategos.Generators/WorkflowIncrementalGenerator.cs`
 **Lines:** 203, 214, 238, 246
 
 **Current:** O(n) `.Contains()` on List.
@@ -293,7 +293,7 @@ if (!existingStepNames.Contains(handlerStep))
 
 ### A.12 Source Generators - Pre-allocate List Capacities
 
-**File:** `src/Agentic.Workflow.Generators/WorkflowIncrementalGenerator.cs`
+**File:** `src/Strategos.Generators/WorkflowIncrementalGenerator.cs`
 **Lines:** 195-197
 
 **Current:** Default capacity lists.
@@ -319,7 +319,7 @@ allStepNames.AddRange(stepNames);
 
 ### B.1 Vector Search - Partial Sort with PriorityQueue
 
-**File:** `src/Agentic.Workflow.Rag/Adapters/InMemoryVectorSearchAdapterGeneric.cs`
+**File:** `src/Strategos.Rag/Adapters/InMemoryVectorSearchAdapterGeneric.cs`
 **Lines:** 49-52
 
 **Current:** Full sort then take top-K: O(n log n).
@@ -347,7 +347,7 @@ for (int i = results.Length - 1; i >= 0; i--)
 
 ### B.2 Vector Search - Implement Filter Indexing
 
-**File:** `src/Agentic.Workflow.Rag/Adapters/InMemoryVectorSearchAdapterGeneric.cs`
+**File:** `src/Strategos.Rag/Adapters/InMemoryVectorSearchAdapterGeneric.cs`
 **Line:** 46
 
 **Current:** `filters` parameter ignored.
@@ -387,7 +387,7 @@ public Task<IReadOnlyList<VectorSearchResult>> SearchAsync(..., IReadOnlyDiction
 
 ### B.3 Vector Search - Add Batch Search API
 
-**File:** `src/Agentic.Workflow.Rag/Abstractions/IVectorSearchAdapter.cs`
+**File:** `src/Strategos.Rag/Abstractions/IVectorSearchAdapter.cs`
 
 **Change:** Add batch interface.
 ```csharp
@@ -405,7 +405,7 @@ Task<IReadOnlyList<IReadOnlyList<VectorSearchResult>>> BatchSearchAsync(
 
 ### B.4 Loop Detection - ArrayPool for Temporary Collections
 
-**File:** `src/Agentic.Workflow.Infrastructure/LoopDetection/LoopDetector.cs`
+**File:** `src/Strategos.Infrastructure/LoopDetection/LoopDetector.cs`
 **Line:** 237
 
 **Current:** Allocates new array.
@@ -435,7 +435,7 @@ finally
 
 ### B.5 Loop Detection - Rolling Hash for O(n) Pattern Detection
 
-**File:** `src/Agentic.Workflow.Infrastructure/LoopDetection/LoopDetector.cs`
+**File:** `src/Strategos.Infrastructure/LoopDetection/LoopDetector.cs`
 **Lines:** 230-248
 
 **Current:** O(n²) nested loop for oscillation detection.
@@ -472,7 +472,7 @@ private static double CalculateOscillationScore(IReadOnlyList<ProgressEntry> ent
 
 ### B.6 Task Ledger - Incremental Hash Computation
 
-**File:** `src/Agentic.Workflow.Infrastructure/Ledgers/TaskLedger.cs`
+**File:** `src/Strategos.Infrastructure/Ledgers/TaskLedger.cs`
 **Lines:** 138-152
 
 **Current:** Full JSON serialization and SHA256 on every update.
@@ -505,7 +505,7 @@ public sealed record TaskLedger : ITaskLedger
 
 ### B.7 Condition Registry - Remove Boxing
 
-**File:** `src/Agentic.Workflow/Services/WorkflowConditionRegistry.cs`
+**File:** `src/Strategos/Services/WorkflowConditionRegistry.cs`
 **Lines:** 65, 96
 
 **Current:** Stores `Func<TState, bool>` as `object`, requiring cast on every evaluation.
@@ -582,7 +582,7 @@ Add LRU cache with TTL for repeated queries.
 
 Create benchmark project for baseline and regression tracking.
 
-**New project:** `Agentic.Workflow.Benchmarks`
+**New project:** `Strategos.Benchmarks`
 
 **Benchmarks:**
 - `ThompsonSamplingBenchmarks` - Selection latency vs candidate count

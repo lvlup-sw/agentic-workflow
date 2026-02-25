@@ -365,7 +365,7 @@ The random sampling from Beta distributions means:
 
 You have completed the Guide tutorials. You now know how to:
 
-- Install and configure Agentic.Workflow
+- Install and configure Strategos
 - Build sequential, branching, parallel, and iterative workflows
 - Incorporate human approvals
 - Use intelligent agent selection

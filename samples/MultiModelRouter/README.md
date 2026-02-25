@@ -339,5 +339,5 @@ The tests verify:
 ## Learn More
 
 - [Thompson Sampling Pattern](../../docs/examples/thompson-sampling.md) - Detailed algorithm documentation
-- [IAgentSelector Interface](../../src/Agentic.Workflow/Abstractions/IAgentSelector.cs) - The abstraction this sample implements
+- [IAgentSelector Interface](../../src/Strategos/Abstractions/IAgentSelector.cs) - The abstraction this sample implements
 - [Multi-Armed Bandits (Wikipedia)](https://en.wikipedia.org/wiki/Multi-armed_bandit) - Mathematical background

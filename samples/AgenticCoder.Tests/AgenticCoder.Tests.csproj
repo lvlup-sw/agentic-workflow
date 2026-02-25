@@ -13,7 +13,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\AgenticCoder\AgenticCoder.csproj" />
-    <ProjectReference Include="..\..\src\Agentic.Workflow\Agentic.Workflow.csproj" />
+    <ProjectReference Include="..\..\src\Strategos\Strategos.csproj" />
   </ItemGroup>
 
 </Project>

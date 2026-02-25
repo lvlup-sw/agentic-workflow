@@ -1,20 +1,20 @@
 # Package Ecosystem
 
-Agentic.Workflow is distributed as multiple NuGet packages, allowing you to include only what you need.
+Strategos is distributed as multiple NuGet packages, allowing you to include only what you need.
 
 ## Package Overview
 
 | Package | Purpose | Required |
 |---------|---------|----------|
-| `Agentic.Workflow` | Core fluent DSL, abstractions, and type definitions | Yes |
-| `Agentic.Workflow.Generators` | Roslyn source generators for compile-time code generation | Yes |
-| `Agentic.Workflow.Infrastructure` | Production implementations (Thompson Sampling, loop detection, budgets) | Recommended |
-| `Agentic.Workflow.Agents` | Microsoft.Extensions.AI integration for LLM-powered steps | For AI workflows |
-| `Agentic.Workflow.Rag` | Vector store adapters for RAG patterns | For RAG workflows |
+| `Strategos` | Core fluent DSL, abstractions, and type definitions | Yes |
+| `Strategos.Generators` | Roslyn source generators for compile-time code generation | Yes |
+| `Strategos.Infrastructure` | Production implementations (Thompson Sampling, loop detection, budgets) | Recommended |
+| `Strategos.Agents` | Microsoft.Extensions.AI integration for LLM-powered steps | For AI workflows |
+| `Strategos.Rag` | Vector store adapters for RAG patterns | For RAG workflows |
 
 ---
 
-## Agentic.Workflow
+## Strategos
 
 The core package containing the fluent DSL for defining workflows and all foundational abstractions.
 
@@ -49,12 +49,12 @@ The core package containing the fluent DSL for defining workflows and all founda
 ### Installation
 
 ```bash
-dotnet add package Agentic.Workflow
+dotnet add package Strategos
 ```
 
 ---
 
-## Agentic.Workflow.Generators
+## Strategos.Generators
 
 Roslyn source generators that transform fluent DSL definitions into type-safe artifacts at compile time.
 
@@ -85,7 +85,7 @@ The generator reports errors and warnings at compile time. See [Diagnostics Refe
 ### Installation
 
 ```bash
-dotnet add package Agentic.Workflow.Generators
+dotnet add package Strategos.Generators
 ```
 
 ::: info Development Dependency
@@ -94,7 +94,7 @@ This is a compile-time dependency. It runs during build and produces no runtime 
 
 ---
 
-## Agentic.Workflow.Infrastructure
+## Strategos.Infrastructure
 
 Production-ready implementations of core abstractions including Thompson Sampling, loop detection, and budget enforcement.
 
@@ -128,13 +128,13 @@ Detects stuck workflows using four strategies:
 ### Installation
 
 ```bash
-dotnet add package Agentic.Workflow.Infrastructure
+dotnet add package Strategos.Infrastructure
 ```
 
 ### Usage
 
 ```csharp
-services.AddAgenticWorkflow()
+services.AddStrategos()
     .AddThompsonSampling(options => options
         .WithPrior(alpha: 2, beta: 2))
     .AddLoopDetection()
@@ -145,7 +145,7 @@ services.AddAgenticWorkflow()
 
 ---
 
-## Agentic.Workflow.Agents
+## Strategos.Agents
 
 Integration with Microsoft.Extensions.AI for LLM-powered workflow steps.
 
@@ -166,7 +166,7 @@ Integration with Microsoft.Extensions.AI for LLM-powered workflow steps.
 ### Installation
 
 ```bash
-dotnet add package Agentic.Workflow.Agents
+dotnet add package Strategos.Agents
 ```
 
 ### Usage
@@ -199,7 +199,7 @@ public class AnalyzeDocumentStep : IAgentStep<DocumentState>
 
 ---
 
-## Agentic.Workflow.Rag
+## Strategos.Rag
 
 Vector store adapters for Retrieval-Augmented Generation (RAG) patterns.
 
@@ -226,7 +226,7 @@ Vector store adapters for Retrieval-Augmented Generation (RAG) patterns.
 ### Installation
 
 ```bash
-dotnet add package Agentic.Workflow.Rag
+dotnet add package Strategos.Rag
 ```
 
 ### Usage
@@ -262,8 +262,8 @@ public class RetrieveContextStep : IWorkflowStep<QueryState>
 For workflows that don't involve LLM agents:
 
 ```bash
-dotnet add package Agentic.Workflow
-dotnet add package Agentic.Workflow.Generators
+dotnet add package Strategos
+dotnet add package Strategos.Generators
 ```
 
 ### Standard (LLM-Powered Workflows)
@@ -271,10 +271,10 @@ dotnet add package Agentic.Workflow.Generators
 Most common setup for AI agent workflows:
 
 ```bash
-dotnet add package Agentic.Workflow
-dotnet add package Agentic.Workflow.Generators
-dotnet add package Agentic.Workflow.Agents
-dotnet add package Agentic.Workflow.Infrastructure
+dotnet add package Strategos
+dotnet add package Strategos.Generators
+dotnet add package Strategos.Agents
+dotnet add package Strategos.Infrastructure
 ```
 
 ### Full (With RAG)
@@ -282,11 +282,11 @@ dotnet add package Agentic.Workflow.Infrastructure
 For workflows that include retrieval-augmented generation:
 
 ```bash
-dotnet add package Agentic.Workflow
-dotnet add package Agentic.Workflow.Generators
-dotnet add package Agentic.Workflow.Agents
-dotnet add package Agentic.Workflow.Infrastructure
-dotnet add package Agentic.Workflow.Rag
+dotnet add package Strategos
+dotnet add package Strategos.Generators
+dotnet add package Strategos.Agents
+dotnet add package Strategos.Infrastructure
+dotnet add package Strategos.Rag
 ```
 
 ---
@@ -294,24 +294,24 @@ dotnet add package Agentic.Workflow.Rag
 ## Package Dependencies
 
 ```plaintext
-Agentic.Workflow (core)
+Strategos (core)
 +-- No external dependencies
 
-Agentic.Workflow.Generators
+Strategos.Generators
 +-- Microsoft.CodeAnalysis.CSharp
 +-- [Compile-time only]
 
-Agentic.Workflow.Infrastructure
-+-- Agentic.Workflow
+Strategos.Infrastructure
++-- Strategos
 +-- Microsoft.Extensions.Caching.Memory
 +-- Microsoft.Extensions.DependencyInjection.Abstractions
 
-Agentic.Workflow.Agents
-+-- Agentic.Workflow
+Strategos.Agents
++-- Strategos
 +-- Microsoft.Extensions.AI
 +-- Microsoft.Extensions.AI.Abstractions
 +-- Microsoft.Extensions.DependencyInjection.Abstractions
 
-Agentic.Workflow.Rag
-+-- Agentic.Workflow.Agents
+Strategos.Rag
++-- Strategos.Agents
 ```

@@ -1,4 +1,4 @@
-# Agentic.Workflow
+# Strategos
 
 **A Design Document for Deterministic Agentic Workflow Orchestration**
 
@@ -32,7 +32,7 @@ Last Updated: 2025-12-26
 
 ## Executive Summary
 
-Agentic.Workflow is a .NET library for building production-grade agentic workflows. It combines the ergonomics of modern agent frameworks with the reliability guarantees of enterprise workflow engines, while adding capabilities unique to AI-powered systems.
+Strategos is a .NET library for building production-grade agentic workflows. It combines the ergonomics of modern agent frameworks with the reliability guarantees of enterprise workflow engines, while adding capabilities unique to AI-powered systems.
 
 ### Vision Statement
 
@@ -49,7 +49,7 @@ Current solutions force a choice between two unsatisfying options:
 
 ### Our Solution
 
-Agentic.Workflow resolves this tension through a key insight: while agent outputs are probabilistic, the workflow itself can be deterministic if we treat each agent decision as an immutable event in an event-sourced system.
+Strategos resolves this tension through a key insight: while agent outputs are probabilistic, the workflow itself can be deterministic if we treat each agent decision as an immutable event in an event-sourced system.
 
 The library provides:
 
@@ -875,7 +875,7 @@ Outer_Inner_Step       // Nested loop hierarchy preserved
 For each workflow, a source generator produces an enumeration of all possible phases:
 
 ```csharp
-[GeneratedCode("Agentic.Workflow", "1.0")]
+[GeneratedCode("Strategos", "1.0")]
 public enum ProcessClaimPhase
 {
     NotStarted,
@@ -896,7 +896,7 @@ This provides type-safe workflow position tracking and enables efficient queries
 The generator produces a transition table for validation:
 
 ```csharp
-[GeneratedCode("Agentic.Workflow", "1.0")]
+[GeneratedCode("Strategos", "1.0")]
 public static class ProcessClaimTransitions
 {
     public static readonly IReadOnlyDictionary<Phase, Phase[]>
@@ -953,7 +953,7 @@ The source generator produces the following artifacts (condensed for illustratio
 // 1. Phase Enumeration
 // ═══════════════════════════════════════════════════════════════════════
 
-[GeneratedCode("Agentic.Workflow", "1.0")]
+[GeneratedCode("Strategos", "1.0")]
 public enum ProcessClaimPhase
 {
     NotStarted,
@@ -971,16 +971,16 @@ public enum ProcessClaimPhase
 // 2. Commands (Wolverine Messages)
 // ═══════════════════════════════════════════════════════════════════════
 
-[GeneratedCode("Agentic.Workflow", "1.0")]
+[GeneratedCode("Strategos", "1.0")]
 public sealed record StartProcessClaimCommand(
     Guid WorkflowId,
     ClaimState InitialState);
 
-[GeneratedCode("Agentic.Workflow", "1.0")]
+[GeneratedCode("Strategos", "1.0")]
 public sealed record ExecuteGatherContextCommand(
     [property: SagaIdentity] Guid WorkflowId);
 
-[GeneratedCode("Agentic.Workflow", "1.0")]
+[GeneratedCode("Strategos", "1.0")]
 public sealed record ExecuteAssessClaimCommand(
     [property: SagaIdentity] Guid WorkflowId);
 
@@ -990,7 +990,7 @@ public sealed record ExecuteAssessClaimCommand(
 // 3. Saga Class
 // ═══════════════════════════════════════════════════════════════════════
 
-[GeneratedCode("Agentic.Workflow", "1.0")]
+[GeneratedCode("Strategos", "1.0")]
 public partial class ProcessClaimSaga : Saga
 {
     [SagaIdentity]
@@ -1096,7 +1096,7 @@ public partial class ProcessClaimSaga : Saga
 // 4. Projection (Read Model)
 // ═══════════════════════════════════════════════════════════════════════
 
-[GeneratedCode("Agentic.Workflow", "1.0")]
+[GeneratedCode("Strategos", "1.0")]
 public class ProcessClaimProjection : SingleStreamProjection<ProcessClaimReadModel>
 {
     public ProcessClaimReadModel Create(ProcessClaimStarted evt) => new()
@@ -1130,7 +1130,7 @@ This example demonstrates the key patterns: saga lifecycle management, command c
 The implementation spans three projects with 169 total types:
 
 ```
-src/Agentic.Workflow/                     (73 files, 93 types)
+src/Strategos/                     (73 files, 93 types)
 ├── Abstractions/                          20 interfaces
 │   ├── IWorkflowStep.cs                   Step contract
 │   ├── IBeliefStore.cs                    Thompson Sampling persistence
@@ -1156,14 +1156,14 @@ src/Agentic.Workflow/                     (73 files, 93 types)
     ├── StepDefinition.cs                  Step metadata
     └── ...
 
-src/Agentic.Workflow.Infrastructure/      (14 files, 16 types)
+src/Strategos.Infrastructure/      (14 files, 16 types)
 └── Selection/                             5 implementations
     ├── InMemoryBeliefStore.cs             Testing/dev persistence
     ├── ContextualAgentSelector.cs         Thompson Sampling selector
     ├── KeywordTaskFeatureExtractor.cs     Category classification
     └── ...
 
-src/Agentic.Workflow.Generators/          (66 files, 60 types)
+src/Strategos.Generators/          (66 files, 60 types)
 ├── Emitters/                              27 implementations
 │   ├── PhaseEnumEmitter.cs                Phase enumeration
 │   ├── CommandsEmitter.cs                 Wolverine commands
@@ -1193,7 +1193,7 @@ src/Agentic.Workflow.Generators/          (66 files, 60 types)
 
 ### Positioning
 
-Agentic.Workflow occupies a unique position in the framework landscape:
+Strategos occupies a unique position in the framework landscape:
 
 | Framework | Strengths | Gaps We Address |
 |-----------|-----------|-----------------|
@@ -1205,7 +1205,7 @@ Agentic.Workflow occupies a unique position in the framework landscape:
 
 ### Unique Capabilities
 
-The following capabilities are unique to Agentic.Workflow or rare among alternatives:
+The following capabilities are unique to Strategos or rare among alternatives:
 
 - Confidence-based routing as a first-class DSL feature
 - Declarative context assembly with automatic capture
@@ -1217,7 +1217,7 @@ The following capabilities are unique to Agentic.Workflow or rare among alternat
 
 ### Target Use Cases
 
-Agentic.Workflow is ideal for:
+Strategos is ideal for:
 
 - Production AI systems requiring reliability and auditability
 - Regulated industries needing complete decision trails
@@ -1333,7 +1333,7 @@ Managing workflow definition changes when instances are in flight: migration str
 
 ## Conclusion
 
-Agentic.Workflow represents a synthesis of two previously separate domains: the ergonomics of modern agent frameworks and the reliability of enterprise workflow engines. By treating agent decisions as events in an event-sourced system, we achieve deterministic workflow behavior from probabilistic agent outputs.
+Strategos represents a synthesis of two previously separate domains: the ergonomics of modern agent frameworks and the reliability of enterprise workflow engines. By treating agent decisions as events in an event-sourced system, we achieve deterministic workflow behavior from probabilistic agent outputs.
 
 The design prioritizes:
 

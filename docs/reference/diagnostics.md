@@ -1,6 +1,6 @@
 # Compiler Diagnostics
 
-The Agentic.Workflow source generator includes compile-time diagnostics that catch workflow definition errors before runtime.
+The Strategos source generator includes compile-time diagnostics that catch workflow definition errors before runtime.
 
 ## Diagnostic Namespaces
 

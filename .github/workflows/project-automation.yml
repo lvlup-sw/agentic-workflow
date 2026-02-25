@@ -131,7 +131,7 @@ jobs:
               labels.push('type:question');
             }
 
-            // Scope detection for agentic-workflow
+            // Scope detection for strategos
             if (text.match(/workflow|step|state|execution/)) {
               labels.push('scope:workflow');
             }

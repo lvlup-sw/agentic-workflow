@@ -1,6 +1,6 @@
 # RAG Types
 
-The `Agentic.Workflow.Rag` package provides vector store adapters for Retrieval-Augmented Generation (RAG) patterns.
+The `Strategos.Rag` package provides vector store adapters for Retrieval-Augmented Generation (RAG) patterns.
 
 ## IVectorSearchAdapter
 

@@ -4,7 +4,7 @@ outline: deep
 
 # Core Concepts
 
-Understanding these fundamental concepts will help you design effective workflows with Agentic.Workflow.
+Understanding these fundamental concepts will help you design effective workflows with Strategos.
 
 ## Workflow
 
@@ -114,7 +114,7 @@ Events are append-only. Once recorded, they're never modified or deleted. This g
 
 ## Event Sourcing
 
-**Event sourcing** is the architectural pattern at the heart of Agentic.Workflow. Instead of storing only the current state, we store the complete sequence of events that produced that state.
+**Event sourcing** is the architectural pattern at the heart of Strategos. Instead of storing only the current state, we store the complete sequence of events that produced that state.
 
 ### How It Works
 
@@ -172,4 +172,4 @@ This architecture gives you the flexibility of agent frameworks with the durabil
 
 ## What's Next
 
-Now that you understand the core concepts, see how Agentic.Workflow [compares to alternatives](/learn/comparison) or jump into the [Getting Started guide](/guide/).
+Now that you understand the core concepts, see how Strategos [compares to alternatives](/learn/comparison) or jump into the [Getting Started guide](/guide/).

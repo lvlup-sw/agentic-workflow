@@ -1,21 +1,21 @@
-# Agentic.Workflow
+# Strategos
 
-[![NuGet](https://img.shields.io/nuget/v/Agentic.Workflow.svg)](https://www.nuget.org/packages/Agentic.Workflow)
-[![Build Status](https://img.shields.io/github/actions/workflow/status/lvlup-sw/agentic-workflow/ci.yml?branch=main)](https://github.com/lvlup-sw/agentic-workflow/actions)
+[![NuGet](https://img.shields.io/nuget/v/Strategos.svg)](https://www.nuget.org/packages/Strategos)
+[![Build Status](https://img.shields.io/github/actions/workflow/status/lvlup-sw/strategos/ci.yml?branch=main)](https://github.com/lvlup-sw/strategos/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 > Deterministic orchestration for AI-powered workflows
 
 ## Documentation
 
-**[View the full documentation](https://lvlup-sw.github.io/agentic-workflow/)**
+**[View the full documentation](https://lvlup-sw.github.io/strategos/)**
 
-- [Learn](https://lvlup-sw.github.io/agentic-workflow/learn/) - Core concepts and value proposition
-- [Guide](https://lvlup-sw.github.io/agentic-workflow/guide/) - Step-by-step tutorials
-- [Reference](https://lvlup-sw.github.io/agentic-workflow/reference/) - API documentation
-- [Examples](https://lvlup-sw.github.io/agentic-workflow/examples/) - Real-world workflows
+- [Learn](https://lvlup-sw.github.io/strategos/learn/) - Core concepts and value proposition
+- [Guide](https://lvlup-sw.github.io/strategos/guide/) - Step-by-step tutorials
+- [Reference](https://lvlup-sw.github.io/strategos/reference/) - API documentation
+- [Examples](https://lvlup-sw.github.io/strategos/examples/) - Real-world workflows
 
-## Why Agentic.Workflow?
+## Why Strategos?
 
 Building AI-powered automation? You need more than just "call the LLM":
 
@@ -23,7 +23,7 @@ Building AI-powered automation? You need more than just "call the LLM":
 - **Multi-model systems** need intelligent routing that learns
 - **Agentic coding** needs iteration loops with guardrails
 
-Agentic.Workflow provides these patterns out of the box, with complete audit trails.
+Strategos provides these patterns out of the box, with complete audit trails.
 
 ### Try the Samples
 
@@ -48,7 +48,7 @@ AI agents are inherently probabilistic—given the same input, an LLM may produc
 
 ## The Solution
 
-Agentic.Workflow bridges these domains with a key insight: while agent *outputs* are probabilistic, the *workflow itself* can be deterministic if we treat each agent decision as an immutable event in an event-sourced system.
+Strategos bridges these domains with a key insight: while agent *outputs* are probabilistic, the *workflow itself* can be deterministic if we treat each agent decision as an immutable event in an event-sourced system.
 
 ```csharp
 var workflow = Workflow<OrderState>
@@ -73,31 +73,31 @@ The library builds on proven .NET infrastructure rather than reinventing durabil
 
 | Package | Purpose |
 |---------|---------|
-| `Agentic.Workflow` | Core fluent DSL and abstractions |
-| `Agentic.Workflow.Generators` | Compile-time source generation (sagas, events, phase enums) |
-| `Agentic.Workflow.Infrastructure` | Production implementations (Thompson Sampling, loop detection, budgets) |
-| `Agentic.Workflow.Agents` | Microsoft Agent Framework integration for LLM-powered steps |
-| `Agentic.Workflow.Rag` | Vector store adapters for RAG patterns |
+| `Strategos` | Core fluent DSL and abstractions |
+| `Strategos.Generators` | Compile-time source generation (sagas, events, phase enums) |
+| `Strategos.Infrastructure` | Production implementations (Thompson Sampling, loop detection, budgets) |
+| `Strategos.Agents` | Microsoft Agent Framework integration for LLM-powered steps |
+| `Strategos.Rag` | Vector store adapters for RAG patterns |
 
 **Minimal setup** (workflows without LLM agents):
 ```bash
-dotnet add package Agentic.Workflow
-dotnet add package Agentic.Workflow.Generators
+dotnet add package Strategos
+dotnet add package Strategos.Generators
 ```
 
 **With LLM integration** (most common):
 ```bash
-dotnet add package Agentic.Workflow
-dotnet add package Agentic.Workflow.Generators
-dotnet add package Agentic.Workflow.Agents
-dotnet add package Agentic.Workflow.Infrastructure
+dotnet add package Strategos
+dotnet add package Strategos.Generators
+dotnet add package Strategos.Agents
+dotnet add package Strategos.Infrastructure
 ```
 
 See [Package Documentation](docs/packages.md) for detailed guidance.
 
 ## How It Compares
 
-| Capability | Agentic.Workflow | [LangGraph](https://www.langchain.com/langgraph) | [MAF Workflows](https://learn.microsoft.com/en-us/agent-framework/user-guide/workflows/overview) | [Temporal](https://temporal.io/) |
+| Capability | Strategos | [LangGraph](https://www.langchain.com/langgraph) | [MAF Workflows](https://learn.microsoft.com/en-us/agent-framework/user-guide/workflows/overview) | [Temporal](https://temporal.io/) |
 |------------|:----------------:|:---------:|:-------------:|:--------:|
 | .NET native | ✓ | | ✓ | ✓ |
 | Durable execution | event-sourced | checkpoints | checkpoints (BSP) | event history |
@@ -127,7 +127,7 @@ See [Package Documentation](docs/packages.md) for detailed guidance.
 
 ```csharp
 // Register workflows at startup
-services.AddAgenticWorkflow()
+services.AddStrategos()
     .AddWorkflow<ProcessOrderWorkflow>();
 
 // Define a workflow

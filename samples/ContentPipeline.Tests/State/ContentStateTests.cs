@@ -4,7 +4,7 @@
 // </copyright>
 // =============================================================================
 
-using Agentic.Workflow.Abstractions;
+using Strategos.Abstractions;
 using ContentPipeline.State;
 
 namespace ContentPipeline.Tests.State;

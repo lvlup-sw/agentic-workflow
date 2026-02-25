@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <IsPackable>false</IsPackable>
+    <IsPublishable>false</IsPublishable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="BenchmarkDotNet" />
+    <PackageReference Include="BenchmarkDotNet.Diagnostics.Windows"
+                      Condition="$([MSBuild]::IsOSPlatform('Windows'))" />
+    <PackageReference Include="MemoryPack" />
+    <PackageReference Include="BitFaster.Caching" />
+    <PackageReference Include="CommunityToolkit.HighPerformance" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Strategos.Infrastructure\Strategos.Infrastructure.csproj" />
+    <ProjectReference Include="..\Strategos.Rag\Strategos.Rag.csproj" />
+    <ProjectReference Include="..\Strategos\Strategos.csproj" />
+  </ItemGroup>
+</Project>

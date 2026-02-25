@@ -4,7 +4,7 @@
 // </copyright>
 // =============================================================================
 
-using Agentic.Workflow.Steps;
+using Strategos.Steps;
 using ContentPipeline;
 using ContentPipeline.Services;
 using ContentPipeline.State;

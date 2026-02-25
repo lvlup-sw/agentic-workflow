@@ -1,6 +1,6 @@
 # Contributing to Documentation
 
-Thank you for your interest in improving the Agentic.Workflow documentation! This guide will help you get started with local development and submitting changes.
+Thank you for your interest in improving the Strategos documentation! This guide will help you get started with local development and submitting changes.
 
 ## Prerequisites
 
@@ -13,8 +13,8 @@ Thank you for your interest in improving the Agentic.Workflow documentation! Thi
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/lvlup-sw/agentic-workflow.git
-cd agentic-workflow
+git clone https://github.com/lvlup-sw/strategos.git
+cd strategos
 ```
 
 ### 2. Install Dependencies
@@ -93,7 +93,7 @@ For shell commands:
 
 ~~~markdown
 ```bash
-dotnet add package Agentic.Workflow
+dotnet add package Strategos
 ```
 ~~~
 

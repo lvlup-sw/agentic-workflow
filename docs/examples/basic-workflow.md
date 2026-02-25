@@ -396,7 +396,7 @@ public class SendConfirmation : IWorkflowStep<OrderState>
 ### Service Registration
 
 ```csharp
-services.AddAgenticWorkflow()
+services.AddStrategos()
     .AddWorkflow<ProcessOrderWorkflow>();
 
 // Register step dependencies

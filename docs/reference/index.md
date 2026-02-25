@@ -1,6 +1,6 @@
 # Reference
 
-Complete API reference and technical documentation for Agentic.Workflow.
+Complete API reference and technical documentation for Strategos.
 
 ## What's in this Section
 

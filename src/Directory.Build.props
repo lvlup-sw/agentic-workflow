@@ -1,6 +1,6 @@
 <Project>
   <PropertyGroup>
-    <Title>Agentic.Workflow</Title>
+    <Title>Strategos</Title>
     <LangVersion>latest</LangVersion>
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
@@ -16,8 +16,8 @@
     <Company>Levelup Software</Company>
     <Copyright>Copyright (c) 2025-2026 Levelup Software</Copyright>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <PackageProjectUrl>https://github.com/levelup-software/agentic-workflow</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/levelup-software/agentic-workflow</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/levelup-software/strategos</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/levelup-software/strategos</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageTags>workflow;agent;llm;ai;durable;event-sourcing;wolverine;marten;saga;thompson-sampling</PackageTags>
   </PropertyGroup>

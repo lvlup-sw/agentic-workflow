@@ -1,6 +1,6 @@
 # Configuration
 
-Agentic.Workflow integrates with proven .NET infrastructure. This reference covers setup and configuration for each integration.
+Strategos integrates with proven .NET infrastructure. This reference covers setup and configuration for each integration.
 
 ## Overview
 
@@ -239,8 +239,8 @@ builder.Services.AddWolverineWithMarten(opts =>
 builder.Services.AddSingleton<IChatClient>(
     new OpenAIChatClient("gpt-4o", apiKey));
 
-// Agentic.Workflow
-builder.Services.AddAgenticWorkflow()
+// Strategos
+builder.Services.AddStrategos()
     .AddWorkflow<ProcessOrderWorkflow>()
     .AddThompsonSampling()
     .AddLoopDetection()
@@ -253,13 +253,13 @@ builder.Services.AddAgenticWorkflow()
 
 ### pgvector
 
-Status: Planned for `Agentic.Workflow.Rag`
+Status: Planned for `Strategos.Rag`
 
 Will provide `PgVectorAdapter` implementing `IVectorSearchAdapter` for vector similarity search using the same PostgreSQL database.
 
 ### Azure AI Search
 
-Status: Planned for `Agentic.Workflow.Rag`
+Status: Planned for `Strategos.Rag`
 
 Will provide `AzureAISearchAdapter` for enterprise-scale vector and hybrid search.
 

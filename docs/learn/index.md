@@ -2,9 +2,9 @@
 outline: deep
 ---
 
-# Why Agentic.Workflow
+# Why Strategos
 
-Agentic.Workflow provides deterministic orchestration for probabilistic AI agents. It bridges the gap between flexible agent frameworks and battle-tested workflow engines, giving you the best of both worlds.
+Strategos provides deterministic orchestration for probabilistic AI agents. It bridges the gap between flexible agent frameworks and battle-tested workflow engines, giving you the best of both worlds.
 
 ## The Problem
 
@@ -32,7 +32,7 @@ You end up writing significant glue code to adapt generic workflow primitives to
 
 ## The Solution
 
-Agentic.Workflow bridges these domains with a key insight:
+Strategos bridges these domains with a key insight:
 
 > While agent *outputs* are probabilistic, the *workflow itself* can be deterministic if we treat each agent decision as an immutable event in an event-sourced system.
 
@@ -55,7 +55,7 @@ The workflow definition is simple and declarative. Behind the scenes, the librar
 
 ## Built on Proven Infrastructure
 
-Rather than reinventing durability primitives, Agentic.Workflow builds on proven .NET infrastructure:
+Rather than reinventing durability primitives, Strategos builds on proven .NET infrastructure:
 
 **[Wolverine](https://wolverine.netlify.app/)** provides saga orchestration. Each workflow becomes a saga with automatic message routing, transactional outbox (state and messages commit atomically), and configurable retry policies.
 
@@ -94,4 +94,4 @@ See the [Sample Applications](/examples/#sample-applications) for details.
 
 ## What's Next
 
-Now that you understand why Agentic.Workflow exists, learn about the [Core Concepts](/learn/core-concepts) that power it, or see how it [compares to alternatives](/learn/comparison).
+Now that you understand why Strategos exists, learn about the [Core Concepts](/learn/core-concepts) that power it, or see how it [compares to alternatives](/learn/comparison).

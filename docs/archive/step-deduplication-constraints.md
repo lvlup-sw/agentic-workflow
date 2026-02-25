@@ -6,7 +6,7 @@
 
 ## Executive Summary
 
-The Agentic.Workflow source generators implement step deduplication during DSL parsing to support branch constructs where the same step type legitimately appears in multiple exclusive paths. However, this deduplication masks a class of developer errors where the same step type is incorrectly used multiple times in contexts where Wolverine's message-based routing cannot distinguish between occurrences.
+The Strategos source generators implement step deduplication during DSL parsing to support branch constructs where the same step type legitimately appears in multiple exclusive paths. However, this deduplication masks a class of developer errors where the same step type is incorrectly used multiple times in contexts where Wolverine's message-based routing cannot distinguish between occurrences.
 
 This document describes the architectural constraint, its implications, and potential remediation strategies.
 
@@ -346,7 +346,7 @@ This generates:
 
 ### Test Coverage
 
-See `src/Agentic.Workflow.Generators.Tests/`:
+See `src/Strategos.Generators.Tests/`:
 - `DiagnosticTests.cs` - Four new duplicate detection tests
 - `Helpers/StepExtractorContextTests.cs` - Six context tracking tests
 
@@ -354,12 +354,12 @@ See `src/Agentic.Workflow.Generators.Tests/`:
 
 ## References
 
-- `src/Agentic.Workflow.Generators/Helpers/StepExtractor.cs` - StepContext enum, ExtractRawStepInfos()
-- `src/Agentic.Workflow.Generators/Diagnostics/WorkflowDiagnostics.cs` - AGWF003 definition
-- `src/Agentic.Workflow.Generators/WorkflowIncrementalGenerator.cs:283-315` - Context-aware duplicate detection
-- `src/Agentic.Workflow.Generators/FluentDslParser.cs:89-99` - ExtractRawStepInfos() facade
-- `src/Agentic.Workflow.Generators.Tests/DiagnosticTests.cs` - Duplicate detection tests
-- `src/Agentic.Workflow.Generators.Tests/Helpers/StepExtractorContextTests.cs` - Context tracking tests
+- `src/Strategos.Generators/Helpers/StepExtractor.cs` - StepContext enum, ExtractRawStepInfos()
+- `src/Strategos.Generators/Diagnostics/WorkflowDiagnostics.cs` - AGWF003 definition
+- `src/Strategos.Generators/WorkflowIncrementalGenerator.cs:283-315` - Context-aware duplicate detection
+- `src/Strategos.Generators/FluentDslParser.cs:89-99` - ExtractRawStepInfos() facade
+- `src/Strategos.Generators.Tests/DiagnosticTests.cs` - Duplicate detection tests
+- `src/Strategos.Generators.Tests/Helpers/StepExtractorContextTests.cs` - Context tracking tests
 
 ---
 

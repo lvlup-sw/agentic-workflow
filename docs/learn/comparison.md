@@ -4,11 +4,11 @@ outline: deep
 
 # Framework Comparison
 
-How does Agentic.Workflow compare to other solutions? This page provides an accurate, detailed comparison to help you choose the right tool.
+How does Strategos compare to other solutions? This page provides an accurate, detailed comparison to help you choose the right tool.
 
 ## Quick Comparison
 
-| Capability | Agentic.Workflow | LangGraph | MAF Workflows | Temporal |
+| Capability | Strategos | LangGraph | MAF Workflows | Temporal |
 |------------|:----------------:|:---------:|:-------------:|:--------:|
 | .NET native | :white_check_mark: | | :white_check_mark: | :white_check_mark: |
 | Python native | | :white_check_mark: | :white_check_mark: | :white_check_mark: |
@@ -70,7 +70,7 @@ graph = builder.compile(checkpointer=PostgresSaver(...))
 - You need deep LangChain ecosystem integration
 - Rapid prototyping is more important than audit compliance
 
-**Choose Agentic.Workflow when:**
+**Choose Strategos when:**
 - You're building in .NET
 - You need complete audit trails (what did the agent see?)
 - Compile-time safety is a priority
@@ -123,7 +123,7 @@ var workflow = builder.Build();
 - Visual debugging dashboard is important
 - Human approvals may take hours/days
 
-**Choose Agentic.Workflow when:**
+**Choose Strategos when:**
 - You need cloud portability (any .NET host)
 - Complete audit trails are required ("what did the agent see?")
 - You want learning-based agent selection (Thompson Sampling)
@@ -194,7 +194,7 @@ public class OrderWorkflow : IOrderWorkflow
 - You need Temporal's specific scale characteristics
 - Saga compensation is critical and you want battle-tested maturity
 
-**Choose Agentic.Workflow when:**
+**Choose Strategos when:**
 - Your workflows center around AI agent decisions
 - You want confidence routing out of the box
 - Thompson Sampling for agent selection is valuable
@@ -209,12 +209,12 @@ One area that deserves special attention is how each framework handles compensat
 
 | Framework | Compensation Support | How It Works |
 |-----------|---------------------|--------------|
-| **Agentic.Workflow** | `.Compensate<T>()` DSL | Automatic reverse-order execution, compile-time wiring |
+| **Strategos** | `.Compensate<T>()` DSL | Automatic reverse-order execution, compile-time wiring |
 | **Temporal** | `saga.addCompensation()` | Runtime registration, LIFO execution |
 | **LangGraph** | None | Manual rollback in exception handlers |
 | **MAF Workflows** | None | Manual rollback via conditional edges |
 
-**Agentic.Workflow compensation:**
+**Strategos compensation:**
 ```csharp
 Workflow<OrderState>
     .Create("process-order")
@@ -235,7 +235,7 @@ On failure, compensations run automatically in reverse order: `ReleaseInventory`
 
 ### Event-Sourced Audit Trail
 
-Unlike checkpoint-based systems, Agentic.Workflow captures every decision as an immutable event:
+Unlike checkpoint-based systems, Strategos captures every decision as an immutable event:
 
 ```csharp
 // What gets captured for every agent decision:
@@ -317,7 +317,7 @@ Low-confidence decisions automatically route to human review without custom cond
 
 ## Decision Guide
 
-**You need Agentic.Workflow if:**
+**You need Strategos if:**
 - :white_check_mark: Building AI agent workflows in .NET
 - :white_check_mark: Audit compliance requires full decision history
 - :white_check_mark: You want compile-time safety for workflow definitions
@@ -336,4 +336,4 @@ Low-confidence decisions automatically route to human review without custom cond
 
 ## What's Next
 
-Ready to get started? Head to the [installation guide](/guide/installation) to add Agentic.Workflow to your project, or see [complete examples](/examples/) of workflows in action.
+Ready to get started? Head to the [installation guide](/guide/installation) to add Strategos to your project, or see [complete examples](/examples/) of workflows in action.

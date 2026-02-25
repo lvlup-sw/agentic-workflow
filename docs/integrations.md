@@ -1,6 +1,6 @@
 # Integration Patterns
 
-Agentic.Workflow builds on proven .NET infrastructure rather than reinventing durability. This document explains how the library integrates with each component.
+Strategos builds on proven .NET infrastructure rather than reinventing durability. This document explains how the library integrates with each component.
 
 ## Overview
 
@@ -177,7 +177,7 @@ services.AddWolverineWithMarten(opts =>
 
 ### How Agent Steps Integrate
 
-The `Agentic.Workflow.Agents` package provides `IAgentStep<TState>` which integrates with `IChatClient` from Microsoft.Extensions.AI:
+The `Strategos.Agents` package provides `IAgentStep<TState>` which integrates with `IChatClient` from Microsoft.Extensions.AI:
 
 ```csharp
 public class AnalyzeStep : IAgentStep<DocumentState>
@@ -239,13 +239,13 @@ public class StreamingStep : IAgentStep<ChatState>
 
 ### pgvector (PostgreSQL Vector Extension)
 
-Status: Planned for `Agentic.Workflow.Rag`
+Status: Planned for `Strategos.Rag`
 
 Will provide `PgVectorAdapter` implementing `IVectorSearchAdapter` for vector similarity search using the same PostgreSQL database.
 
 ### Azure AI Search
 
-Status: Planned for `Agentic.Workflow.Rag`
+Status: Planned for `Strategos.Rag`
 
 Will provide `AzureAISearchAdapter` for enterprise-scale vector and hybrid search.
 
@@ -278,8 +278,8 @@ builder.Services.AddWolverineWithMarten(opts =>
 builder.Services.AddSingleton<IChatClient>(
     new OpenAIChatClient("gpt-4o", apiKey));
 
-// Agentic.Workflow
-builder.Services.AddAgenticWorkflow()
+// Strategos
+builder.Services.AddStrategos()
     .AddWorkflow<ProcessOrderWorkflow>()
     .AddThompsonSampling()
     .AddLoopDetection()

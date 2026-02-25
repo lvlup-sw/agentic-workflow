@@ -1,10 +1,10 @@
 # Getting Started
 
-Welcome to Agentic.Workflow! This guide walks you through building deterministic, auditable AI agent workflows in .NET. By the end, you will understand how to create workflows that are reliable, testable, and production-ready.
+Welcome to Strategos! This guide walks you through building deterministic, auditable AI agent workflows in .NET. By the end, you will understand how to create workflows that are reliable, testable, and production-ready.
 
 ## What You Will Learn
 
-- **Installation** - Add Agentic.Workflow packages to your project
+- **Installation** - Add Strategos packages to your project
 - **Basic Workflows** - Create your first workflow with state and steps
 - **Branching** - Route execution based on conditions
 - **Parallel Execution** - Run independent tasks concurrently
@@ -26,11 +26,11 @@ If you prefer to jump straight into code, here is the minimal setup:
 
 ```csharp
 // 1. Install packages
-// dotnet add package Agentic.Workflow
-// dotnet add package Agentic.Workflow.Marten
+// dotnet add package Strategos
+// dotnet add package Strategos.Marten
 
 // 2. Configure services
-services.AddAgenticWorkflow()
+services.AddStrategos()
     .AddMartenPersistence(connectionString);
 
 // 3. Define a workflow

@@ -2,7 +2,7 @@
 
 ## Problem Statement
 
-Agentic.Workflow has comprehensive Markdown documentation scattered across `docs/` but lacks a navigable, user-friendly website. Developers evaluating the library struggle to understand its value proposition quickly, while those integrating it have difficulty finding relevant guides and references. A structured documentation site will improve discoverability, onboarding, and adoption.
+Strategos has comprehensive Markdown documentation scattered across `docs/` but lacks a navigable, user-friendly website. Developers evaluating the library struggle to understand its value proposition quickly, while those integrating it have difficulty finding relevant guides and references. A structured documentation site will improve discoverability, onboarding, and adoption.
 
 ## Chosen Approach
 
@@ -29,7 +29,7 @@ docs/
 │   └── logo.svg            # Site logo/favicon
 ├── index.md                # Landing page (hero + features)
 ├── learn/
-│   ├── index.md            # Why Agentic.Workflow
+│   ├── index.md            # Why Strategos
 │   ├── concepts.md         # Core concepts (event sourcing, sagas)
 │   └── comparison.md       # vs LangGraph, Temporal, etc.
 ├── guide/
@@ -45,7 +45,7 @@ docs/
 │   ├── index.md            # Reference overview
 │   ├── packages.md         # Package ecosystem
 │   ├── api/
-│   │   ├── workflow.md     # Agentic.Workflow types
+│   │   ├── workflow.md     # Strategos types
 │   │   ├── generators.md   # Source generator outputs
 │   │   ├── infrastructure.md
 │   │   ├── agents.md
@@ -67,7 +67,7 @@ docs/
 import { defineConfig } from 'vitepress'
 
 export default defineConfig({
-  title: 'Agentic.Workflow',
+  title: 'Strategos',
   description: 'Deterministic, auditable AI agent workflows for .NET',
 
   head: [
@@ -89,7 +89,7 @@ export default defineConfig({
         {
           text: 'Learn',
           items: [
-            { text: 'Why Agentic.Workflow', link: '/learn/' },
+            { text: 'Why Strategos', link: '/learn/' },
             { text: 'Core Concepts', link: '/learn/concepts' },
             { text: 'Comparison', link: '/learn/comparison' }
           ]
@@ -133,7 +133,7 @@ export default defineConfig({
         {
           text: 'API',
           items: [
-            { text: 'Agentic.Workflow', link: '/reference/api/workflow' },
+            { text: 'Strategos', link: '/reference/api/workflow' },
             { text: 'Generators', link: '/reference/api/generators' },
             { text: 'Infrastructure', link: '/reference/api/infrastructure' },
             { text: 'Agents', link: '/reference/api/agents' },
@@ -155,7 +155,7 @@ export default defineConfig({
     },
 
     socialLinks: [
-      { icon: 'github', link: 'https://github.com/lvlup-sw/agentic-workflow' }
+      { icon: 'github', link: 'https://github.com/lvlup-sw/strategos' }
     ],
 
     search: {
@@ -163,7 +163,7 @@ export default defineConfig({
     },
 
     editLink: {
-      pattern: 'https://github.com/lvlup-sw/agentic-workflow/edit/main/docs/:path',
+      pattern: 'https://github.com/lvlup-sw/strategos/edit/main/docs/:path',
       text: 'Edit this page on GitHub'
     },
 
@@ -184,7 +184,7 @@ The `index.md` landing page uses VitePress frontmatter for hero section:
 layout: home
 
 hero:
-  name: Agentic.Workflow
+  name: Strategos
   text: Deterministic AI Agent Workflows
   tagline: Build auditable, event-sourced workflows for .NET with a fluent DSL
   actions:
@@ -297,7 +297,7 @@ jobs:
 ```json
 // docs/package.json
 {
-  "name": "agentic-workflow-docs",
+  "name": "strategos-docs",
   "private": true,
   "type": "module",
   "scripts": {
