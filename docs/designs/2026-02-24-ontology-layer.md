@@ -2,6 +2,10 @@
 
 > **Scope:** Library design for `Agentic.Ontology` NuGet packages (lives in agentic-workflow repo).
 > Basileus is the first consumer; this repo receives ADR updates only.
+>
+> **Revision 2** — Incorporates brainstorming decisions: runtime-first architecture,
+> Object Set algebra, first-class events, Marten-backed instance queries,
+> ontology-enriched telemetry. See [Palantir Ontology reference](https://www.palantir.com/docs/foundry/ontology/overview).
 
 ---
 
@@ -13,9 +17,11 @@ Three deficiencies in the current platform:
 
 2. **Flat tool discovery.** MCP tools are flat lists with string descriptions. Progressive disclosure tells agents *what tools exist* but not *what types flow between them*. An agent cannot ask "what actions can I take on a Position?" — it must grep tool descriptions.
 
-3. **Blind planning.** Agents plan using natural language reasoning over unstructured context. There is no compile-time world model that constrains which operations are valid, which types they accept/produce, or how workflows chain together.
+3. **Blind planning.** Agents plan using natural language reasoning over unstructured context. There is no runtime world model that constrains which operations are valid, which types they accept/produce, or how workflows chain together.
 
-Palantir's Foundry Ontology solves all three with a semantic layer: Object Types + Link Types + Action Types + Interfaces, backed by a code-generated SDK (OSDK). We adapt their key architectural insights for the Agentic.Workflow ecosystem.
+4. **Untyped telemetry.** Events carry system metadata (tool name, duration, tokens) but not domain context. Observability queries require human domain knowledge to interpret — there is no way to ask "which actions on which object types cost the most tokens."
+
+Palantir's Foundry Ontology solves the first three with a semantic layer: Object Types + Link Types + Action Types + Interfaces, backed by a microservices architecture (OMS + OSS + Object Storage V2 + OSDK). We adapt their architectural insights for the Agentic.Workflow ecosystem, mapping each Palantir component onto our existing infrastructure.
 
 ---
 
@@ -23,52 +29,124 @@ Palantir's Foundry Ontology solves all three with a semantic layer: Object Types
 
 | Principle | Implication |
 |-----------|------------|
-| Compile-time over reflection | Roslyn source generators, not runtime type scanning |
-| Extend progressive disclosure | Ontology metadata enhances tool stubs, doesn't replace filesystem discovery |
+| Agent-first, developer-second | Runtime query performance over compile-time DX; Object Set algebra as primary interface |
+| Runtime-first (EF Core model) | Fluent builder populates `OntologyGraph` at startup; source generators emit diagnostics only, not runtime code |
+| Extend progressive disclosure | Ontology metadata enriches tool stubs, follows 3-level skill progressive disclosure pattern |
+| First-class events | `ObjectTypeDescriptor` includes `Events` collection from day one; event-driven link materialization via Marten projections |
 | Deterministic structure for stochastic agents | Typed action graph constrains agent planning (CMDP action space reduction) |
-| Domain independence preserved | Cross-domain links resolved at composition, not declaration |
-| NuGet package | Reusable across any Agentic.Workflow consumer, not basileus-specific |
-| EF Core familiarity | Fluent builder API follows established .NET conventions |
+| Domain independence preserved | Cross-domain links resolved at composition time, not declaration time |
+| NuGet package | Reusable across any Agentic.Workflow consumer, not Basileus-specific |
+| Palantir-aligned architecture | OMS → OntologyGraph, OSS → ObjectSet algebra, Object Storage V2 → Marten, OSDK → MCP tools |
+
+**Priority ordering for design trade-offs:** Agents (runtime) > Exarchos (orchestrator) > Developers (compile-time).
 
 ---
 
-## 3. Package Architecture
+## 3. Palantir → Agentic Ontology Architecture Mapping
+
+### 3.1 Component Mapping
+
+| Palantir Component | Role | Agentic Equivalent | Implementation |
+|---|---|---|---|
+| **OMS** (Ontology Metadata Service) | Runtime type registry | `OntologyGraph` | Built by fluent DSL at startup, in-memory |
+| **Object Set Service** (OSS) | Composable query algebra | `ObjectSet<T>` algebra | Expression tree translated to Marten LINQ |
+| **Object Storage V2** | Scalable object store | Marten document store | PostgreSQL-backed, event-sourced |
+| **Object Data Funnel** | Ingests data sources into store | Marten event projections | Domain events materialize links and state |
+| **Actions Service** | Structured mutations + audit | Action dispatch layer | Routes to Wolverine sagas, emits Marten events |
+| **OSDK** (code-generated SDK) | Type-safe client bindings | MCP tool surface | `ontology_query`, `ontology_action`, `ontology_explore` |
+| **Security policies** | Per-object permissions | ControlPlane Policy Engine | Pre/post-execution validation (existing) |
+
+### 3.2 Three-Part Structure (Palantir's Language / Engine / Toolchain)
+
+```text
+┌─────────────────────────────────────────────────┐
+│  TOOLCHAIN — Agent-Facing Surface               │
+│  MCP Tools: ontology_query, ontology_action      │
+│  Progressive Disclosure: enriched .pyi stubs     │
+│  Exarchos: graph traversal for planning          │
+├─────────────────────────────────────────────────┤
+│  ENGINE — Runtime Query & Mutation               │
+│  ObjectSet<T> algebra (schema + instance queries) │
+│  Action dispatch (workflow/tool binding)          │
+│  Event stream (temporal queries)                 │
+├─────────────────────────────────────────────────┤
+│  LANGUAGE — Domain Definition                    │
+│  DomainOntology.Define() fluent DSL              │
+│  OntologyGraph (runtime type registry)           │
+│  Descriptors: Object, Property, Link, Action,    │
+│               Event, Interface, Domain           │
+├─────────────────────────────────────────────────┤
+│  PERSISTENCE — Marten + PostgreSQL               │
+│  Event store (domain events)                     │
+│  Projections (link materialization, state views)  │
+│  Document store (object instances)               │
+└─────────────────────────────────────────────────┘
+```
+
+### 3.3 Key Architectural Difference from Palantir
+
+Palantir's Ontology **owns storage** (Object Storage V2 is a dedicated persistence layer). Ours **does not** — `Agentic.Ontology` defines abstractions (`IObjectSetProvider`, `IEventStreamProvider`), and consumers provide implementations backed by their persistence layer (Marten in Basileus's case). This keeps domains autonomous while still enabling unified queries through the Object Set algebra.
+
+---
+
+## 4. Package Architecture
 
 ```text
 agentic-workflow/
 ├── src/
-│   ├── Agentic.Ontology/              # Contracts, DSL, builder interfaces
-│   │   ├── DomainOntology.cs           # Base class for domain modules
-│   │   ├── IOntologyBuilder.cs         # Fluent API entry point
-│   │   ├── IObjectTypeBuilder.cs       # Object type configuration
-│   │   ├── IActionBuilder.cs           # Action definition
-│   │   ├── IInterfaceBuilder.cs        # Polymorphic interfaces
-│   │   ├── ICrossDomainLinkBuilder.cs  # Cross-domain relationships
-│   │   ├── Descriptors/               # Compile-time metadata types
+│   ├── Agentic.Ontology/                    # Contracts, DSL, runtime graph, Object Set algebra
+│   │   ├── DomainOntology.cs                # Base class for domain modules
+│   │   ├── OntologyGraph.cs                 # Runtime type registry (in-memory)
+│   │   ├── OntologyGraphBuilder.cs          # Internal builder that DomainOntology.Define() drives
+│   │   ├── Builder/                         # Fluent API interfaces
+│   │   │   ├── IOntologyBuilder.cs          # Entry point
+│   │   │   ├── IObjectTypeBuilder.cs        # Object type configuration
+│   │   │   ├── IActionBuilder.cs            # Action definition
+│   │   │   ├── IEventBuilder.cs             # Event declaration
+│   │   │   ├── IInterfaceBuilder.cs         # Polymorphic interfaces
+│   │   │   └── ICrossDomainLinkBuilder.cs   # Cross-domain relationships
+│   │   ├── Descriptors/                     # Runtime metadata types
 │   │   │   ├── ObjectTypeDescriptor.cs
 │   │   │   ├── PropertyDescriptor.cs
 │   │   │   ├── LinkDescriptor.cs
 │   │   │   ├── ActionDescriptor.cs
+│   │   │   ├── EventDescriptor.cs           # NEW: first-class event metadata
+│   │   │   ├── InterfaceDescriptor.cs
 │   │   │   └── DomainDescriptor.cs
-│   │   └── Query/                     # Agent-facing query contracts
-│   │       ├── IOntologyQuery.cs
-│   │       └── OntologyQueryResult.cs
+│   │   ├── ObjectSets/                      # Object Set algebra
+│   │   │   ├── ObjectSet.cs                 # Composable query expression tree
+│   │   │   ├── ObjectSetExpression.cs       # Expression node types
+│   │   │   ├── IObjectSetProvider.cs        # Provider abstraction (Marten adapter)
+│   │   │   └── ObjectSetResult.cs           # Query result envelope
+│   │   ├── Actions/                         # Action dispatch
+│   │   │   ├── IActionDispatcher.cs         # Routes actions to workflows/tools
+│   │   │   ├── ActionContext.cs             # Telemetry-enriched execution context
+│   │   │   └── ActionResult.cs
+│   │   ├── Events/                          # Event integration
+│   │   │   ├── IEventStreamProvider.cs      # Temporal event queries
+│   │   │   ├── IOntologyProjection.cs       # Link materialization contract
+│   │   │   └── EventQuery.cs               # Event filter expressions
+│   │   ├── Query/                           # Schema query contracts
+│   │   │   ├── IOntologyQuery.cs            # Schema-level queries
+│   │   │   └── OntologyQueryResult.cs
+│   │   ├── Telemetry/                       # Observability enrichment
+│   │   │   ├── OntologyTelemetryContext.cs  # Semantic context for events
+│   │   │   └── IOntologyMetrics.cs          # Per-action/type metrics
+│   │   └── Extensions/                      # Optional integration points
+│   │       └── WorkflowOntologyExtensions.cs # Consumes<T>/Produces<T>
 │   │
-│   ├── Agentic.Ontology.Generators/   # Roslyn incremental source generator
-│   │   ├── OntologySourceGenerator.cs  # Entry point (IIncrementalGenerator)
-│   │   ├── Analyzers/
-│   │   │   ├── DomainOntologyAnalyzer.cs   # Parses DomainOntology.Define()
-│   │   │   └── CompositionAnalyzer.cs      # Merges cross-assembly domains
-│   │   └── Emitters/
-│   │       ├── RegistryEmitter.cs          # OntologyRegistry
-│   │       ├── DescriptorEmitter.cs        # Per-object descriptors
-│   │       ├── AccessorEmitter.cs          # Typed accessors
-│   │       └── ValidationEmitter.cs        # Cross-domain link validation
+│   ├── Agentic.Ontology.Generators/         # Roslyn analyzer — diagnostics only
+│   │   ├── OntologyDiagnosticAnalyzer.cs    # Entry point (DiagnosticAnalyzer)
+│   │   └── Analyzers/
+│   │       ├── DomainOntologyAnalyzer.cs    # Validates DomainOntology.Define() calls
+│   │       ├── PropertyAnalyzer.cs          # Validates expression trees resolve
+│   │       ├── CrossDomainLinkAnalyzer.cs   # Validates external references
+│   │       └── EventAnalyzer.cs             # Validates event type declarations
 │   │
-│   └── Agentic.Ontology.MCP/         # Progressive disclosure integration
-│       ├── OntologyStubGenerator.cs    # Enhanced .pyi stub generation
-│       ├── OntologyToolDiscovery.cs    # Semantic tool discovery
-│       └── OntologyMcpTools.cs         # MCP tools for ontology queries
+│   └── Agentic.Ontology.MCP/               # MCP tool surface + progressive disclosure
+│       ├── OntologyMcpTools.cs              # ontology_query, ontology_action, ontology_explore
+│       ├── OntologyStubGenerator.cs         # Enhanced .pyi stub generation
+│       └── OntologyToolDiscovery.cs         # Semantic tool discovery
 ```
 
 **Dependency graph:**
@@ -76,40 +154,90 @@ agentic-workflow/
 ```text
 Agentic.Ontology.MCP
     ↓
-Agentic.Ontology  ←──  Agentic.Ontology.Generators (analyzer ref)
-    ↓
-Agentic.Workflow (optional — for workflow binding)
+Agentic.Ontology  ←──  Agentic.Ontology.Generators (analyzer ref, diagnostics only)
+    ↓ (optional)
+Agentic.Workflow (for Consumes<T>/Produces<T> extension methods)
 ```
 
-`Agentic.Ontology` has zero dependency on `Agentic.Workflow`. The workflow binding (`BoundToWorkflow`) is an optional extension method provided when both packages are referenced.
+**Consumer-side packages (Basileus-owned, not in this repo):**
+
+```text
+Basileus.Ontology.Marten/          # IObjectSetProvider backed by Marten LINQ
+    ↓                               # IEventStreamProvider backed by Marten event store
+Agentic.Ontology                   # IOntologyProjection backed by Marten projections
+    +
+Marten
+```
+
+`Agentic.Ontology` has **zero dependency on Marten or any persistence library**. The provider abstractions (`IObjectSetProvider`, `IEventStreamProvider`, `IOntologyProjection`) are contracts — implementations live in consumer assemblies.
 
 ---
 
-## 4. Palantir → Agentic Ontology Mapping
+## 5. Runtime Model
 
-| Palantir Concept | Agentic Ontology | Notes |
-|-----------------|------------------|-------|
-| Object Type | `builder.Object<T>()` | Maps existing C# type into ontology |
-| Object | Instance of `T` at runtime | Ontology doesn't own storage |
-| Property | `obj.Property(x => x.Prop)` | Expression tree → compile-time extraction |
-| Link Type | `obj.HasMany<T>()`, `ManyToMany<T>()` | Typed, directional, optional edge type |
-| Action Type | `obj.Action("name")` | Bound to workflow or MCP tool |
-| Interface | `builder.Interface<T>()` | C# interface → ontology polymorphism |
-| OSDK | Source-generated `OntologyAccessor` | Typed, per-domain accessors |
-| OMS (metadata service) | Source-generated `OntologyRegistry` | Compile-time catalog |
-| Object Storage V2 | Domain-owned (Marten, pgvector, etc.) | Ontology doesn't own persistence |
-| Object Set Service | `IOntologyQuery` | Agent-facing query interface |
-| Security policies | Deferred to ControlPlane policy engine | Future: per-object permissions in ontology |
+### 5.1 EF Core Pattern — Builder Executes at Startup
 
-**Key architectural difference:** Palantir's Ontology owns storage (Object Storage V2). Ours does not — it is a semantic layer over domain-owned persistence. This keeps domains autonomous and avoids a monolithic data layer.
+The ontology follows the same pattern as EF Core's `DbContext.OnModelCreating()`: the fluent builder executes at application startup and populates an in-memory `OntologyGraph`. No source generator emits runtime code.
+
+```csharp
+// At ControlPlane startup (Basileus.AppHost or ControlPlane host)
+services.AddOntology(ontology =>
+{
+    // Register domain ontologies — each calls Define() at startup
+    ontology.AddDomain<TradingOntology>();
+    ontology.AddDomain<KnowledgeOntology>();
+    ontology.AddDomain<StyleEngineOntology>();
+
+    // Register provider implementations (Basileus-specific)
+    ontology.UseObjectSetProvider<MartenObjectSetProvider>();
+    ontology.UseEventStreamProvider<MartenEventStreamProvider>();
+    ontology.UseActionDispatcher<WolverineActionDispatcher>();
+});
+```
+
+**Startup sequence:**
+
+1. Each `DomainOntology.Define(IOntologyBuilder)` executes, populating descriptor collections
+2. `OntologyGraphBuilder` validates cross-domain links (fail-fast on unresolvable references)
+3. `OntologyGraphBuilder` validates interface implementations (property type compatibility)
+4. `OntologyGraphBuilder` validates workflow chaining (`Produces<T>` → `Consumes<T>`)
+5. `OntologyGraph` is frozen (immutable after startup) and registered as a singleton
+6. MCP tools are registered against the frozen graph
+
+**Fail-fast validation** replaces compile-time diagnostics for structural errors. The source generator (`Agentic.Ontology.Generators`) provides IDE-time warnings as a supplementary DX enhancement, but the runtime builder is the source of truth.
+
+### 5.2 OntologyGraph — The Runtime Registry
+
+```csharp
+/// <summary>
+/// Immutable, thread-safe runtime registry of all ontology metadata.
+/// Analogous to Palantir's Ontology Metadata Service (OMS).
+/// Built once at startup by OntologyGraphBuilder, then frozen.
+/// </summary>
+public sealed class OntologyGraph
+{
+    public IReadOnlyList<DomainDescriptor> Domains { get; }
+    public IReadOnlyList<ObjectTypeDescriptor> ObjectTypes { get; }
+    public IReadOnlyList<InterfaceDescriptor> Interfaces { get; }
+    public IReadOnlyList<ResolvedCrossDomainLink> CrossDomainLinks { get; }
+    public IReadOnlyList<WorkflowChain> WorkflowChains { get; }
+
+    // Fast lookups (pre-computed at freeze time)
+    public ObjectTypeDescriptor? GetObjectType(string domain, string name);
+    public IReadOnlyList<ObjectTypeDescriptor> GetImplementors(string interfaceName);
+    public IReadOnlyList<LinkTraversalResult> TraverseLinks(
+        string domain, string objectTypeName, int maxDepth = 2);
+    public IReadOnlyList<WorkflowChain> FindWorkflowChains(string targetWorkflow);
+}
+```
 
 ---
 
-## 5. DSL Specification
+## 6. DSL Specification
 
-### 5.1 DomainOntology — Entry Point
+### 6.1 DomainOntology — Entry Point
 
-Each domain assembly defines exactly one `DomainOntology` subclass. The source generator discovers it and parses the `Define` method body.
+Each domain assembly defines one or more `DomainOntology` subclasses. The `Define` method executes at startup and populates the runtime graph.
 
 ```csharp
 namespace Basileus.Trading;
@@ -120,18 +248,12 @@ public sealed class TradingOntology : DomainOntology
 
     protected override void Define(IOntologyBuilder builder)
     {
-        // Object types, links, actions, interfaces defined here
+        // Object types, links, actions, events, interfaces defined here
     }
 }
 ```
 
-The source generator:
-1. Finds all types deriving from `DomainOntology` in the compilation
-2. Parses the `Define` method's syntax tree
-3. Extracts builder method calls and their arguments
-4. Emits descriptors and registry types
-
-### 5.2 Object Types
+### 6.2 Object Types
 
 Object types map existing C# records/classes into the ontology. The `Object<T>()` call declares that `T` participates in the semantic layer. Properties are selectively exposed via expression trees.
 
@@ -167,28 +289,24 @@ protected override void Define(IOntologyBuilder builder)
 
 **Design decisions:**
 
-- `Object<T>()` takes a generic parameter referencing an existing type. The ontology does not generate domain types — it maps them.
+- `Object<T>()` references an existing type. The ontology does not generate domain types — it maps them.
 - `Key()` designates the identity property. Required for entity resolution and linking.
-- `Property()` uses expression trees for compile-time member resolution. Only explicitly exposed properties are ontology-visible.
+- `Property()` uses expression trees for member resolution. Only explicitly exposed properties are ontology-visible.
 - `.Required()` and `.Computed()` are metadata hints for progressive disclosure stubs and validation.
 
-### 5.3 Links
+### 6.3 Links
 
 Links define typed, directional relationships between object types. Three cardinalities are supported, mirroring Palantir's link types.
 
 ```csharp
 builder.Object<Position>(obj =>
 {
-    // One Position has many TradeOrders
     obj.HasMany<TradeOrder>("Orders");
-
-    // One Position belongs to one Strategy
     obj.HasOne<Strategy>("Strategy");
 });
 
 builder.Object<Strategy>(obj =>
 {
-    // Inverse: one Strategy has many Positions
     obj.HasMany<Position>("Positions");
 });
 ```
@@ -207,7 +325,7 @@ builder.Object<AtomicNote>(obj =>
 });
 ```
 
-The edge type is a lightweight struct with no separate ontology registration — its properties are declared inline. For complex edges backed by existing C# types:
+For complex edges backed by existing C# types:
 
 ```csharp
 obj.ManyToMany<AtomicNote>("SemanticLinks")
@@ -218,9 +336,9 @@ obj.ManyToMany<AtomicNote>("SemanticLinks")
     });
 ```
 
-### 5.4 Actions
+### 6.4 Actions
 
-Actions are operations that can be performed on an object type. Each action declares its input/output types and its execution binding (workflow or MCP tool).
+Actions are operations that can be performed on an object type. Each action declares its input/output types and its execution binding.
 
 ```csharp
 builder.Object<Position>(obj =>
@@ -238,42 +356,68 @@ builder.Object<Position>(obj =>
         .Accepts<QuoteRequest>()
         .Returns<Quote>()
         .BoundToTool("MarketDataMcpTools", "GetQuoteAsync");
+
+    // Unbound action (implementation registered separately by consumer)
+    obj.Action("Hedge")
+        .Description("Hedge this position against adverse movement")
+        .Accepts<HedgeRequest>()
+        .Returns<HedgeResult>();
 });
 ```
 
-**Unbound actions** (declared in ontology, implementation deferred):
+### 6.5 Events — First-Class Event Awareness
+
+Events are first-class members of object types. Each event declaration specifies the CLR event type and its effects on the object's state and links.
 
 ```csharp
-obj.Action("Hedge")
-    .Description("Hedge this position against adverse movement")
-    .Accepts<HedgeRequest>()
-    .Returns<HedgeResult>();
-    // No binding — implementation registered separately
-```
-
-This supports the case where the ontology is defined in a library but implementations are provided by the consuming application.
-
-### 5.5 Interfaces — Polymorphic Object Types
-
-Interfaces define shared shapes across object types, enabling cross-domain polymorphic queries. They map directly to C# interfaces.
-
-```csharp
-protected override void Define(IOntologyBuilder builder)
+builder.Object<Position>(obj =>
 {
-    // Declare an ontology interface backed by a C# interface
-    builder.Interface<ISearchable>("Searchable", iface =>
+    // Declare events this object type can emit
+    obj.Event<TradeExecuted>(evt =>
     {
-        iface.Property(s => s.Title);
-        iface.Property(s => s.Description);
-        iface.Property(s => s.Embedding);
+        evt.Description("A trade was executed against this position");
+
+        // Event-driven link materialization (Marten projection registered automatically)
+        evt.MaterializesLink("Orders", e => e.OrderId);
+
+        // Event-driven property updates
+        evt.UpdatesProperty(p => p.UnrealizedPnL, e => e.NewPnL);
     });
-}
+
+    obj.Event<PositionUpdated>(evt =>
+    {
+        evt.Description("Position state was recalculated");
+        evt.UpdatesProperty(p => p.Quantity, e => e.NewQuantity);
+    });
+
+    obj.Event<RiskThresholdBreached>(evt =>
+    {
+        evt.Description("Risk threshold exceeded for this position");
+        evt.Severity(EventSeverity.Alert);
+    });
+});
 ```
 
-Object types declare interface implementations with optional property mapping:
+**Design decisions:**
+
+- Events are declared per object type, producing an `Events` collection on `ObjectTypeDescriptor`.
+- `MaterializesLink()` registers a Marten projection handler via `IOntologyProjection`. When the event fires, the projection materializes the specified link.
+- `UpdatesProperty()` declares which properties change when the event fires — enables agents to reason about event effects without executing them.
+- `Severity()` classifies events for observability (Info, Warning, Alert, Critical).
+- Adding events later is **non-breaking** — the `Events` collection is additive.
+
+### 6.6 Interfaces — Polymorphic Object Types
+
+Interfaces define shared shapes across object types, enabling cross-domain polymorphic queries.
 
 ```csharp
-// In TradingOntology
+builder.Interface<ISearchable>("Searchable", iface =>
+{
+    iface.Property(s => s.Title);
+    iface.Property(s => s.Description);
+    iface.Property(s => s.Embedding);
+});
+
 builder.Object<Position>(obj =>
 {
     obj.Implements<ISearchable>(map =>
@@ -283,207 +427,281 @@ builder.Object<Position>(obj =>
         map.Via(p => p.SearchEmbedding, s => s.Embedding);
     });
 });
+```
 
-// In KnowledgeOntology
-builder.Object<AtomicNote>(obj =>
-{
-    obj.Implements<ISearchable>(map =>
+**Agent query enabled:** "Find all `Searchable` objects matching 'machine learning'" returns results from any domain transparently.
+
+### 6.7 Cross-Domain Links
+
+Domains are independently compiled. Cross-domain relationships use string-based external references, resolved at startup.
+
+```csharp
+builder.CrossDomainLink("KnowledgeInformsStrategy")
+    .From<AtomicNote>()
+    .ToExternal("trading", "Strategy")
+    .ManyToMany()
+    .WithEdge(edge =>
     {
-        map.Via(n => n.Title, s => s.Title);
-        map.Via(n => n.Definition, s => s.Description);
-        map.Via(n => n.Embedding, s => s.Embedding);
+        edge.Property<double>("Relevance");
+        edge.Property<string>("Rationale");
     });
-});
 ```
 
-**Agent query enabled:** "Find all `Searchable` objects matching 'machine learning'" returns results from any domain — `Position`, `AtomicNote`, `StyleCard` — transparently.
+**Resolution:** `OntologyGraphBuilder` validates at startup that `"trading"."Strategy"` exists. Unresolvable references throw `OntologyCompositionException` (fail-fast).
 
-### 5.6 Cross-Domain Links
+### 6.8 Workflow Integration (Optional Extension)
 
-Domains are independently compiled. Cross-domain relationships are declared by the originating domain using string-based external references, then resolved at composition time.
-
-```csharp
-// In KnowledgeOntology
-protected override void Define(IOntologyBuilder builder)
-{
-    builder.Object<AtomicNote>(obj => { /* ... */ });
-
-    // Cross-domain: knowledge informs trading strategies
-    builder.CrossDomainLink("KnowledgeInformsStrategy")
-        .From<AtomicNote>()
-        .ToExternal("trading", "Strategy")
-        .ManyToMany()
-        .WithEdge(edge =>
-        {
-            edge.Property<double>("Relevance");
-            edge.Property<string>("Rationale");
-        });
-}
-```
-
-**Resolution:** The source generator in the composing assembly (e.g., `Basileus.AppHost`) validates that `"trading"."Strategy"` exists and the link is structurally sound. Unresolvable external references produce compile errors.
-
-### 5.7 Workflow Integration (Optional Extension)
-
-When both `Agentic.Ontology` and `Agentic.Workflow` are referenced, workflows can declare their ontological context:
+When both `Agentic.Ontology` and `Agentic.Workflow` are referenced:
 
 ```csharp
-// In the workflow definition (existing Agentic.Workflow DSL)
 var workflow = Workflow<TradeExecutionState>
     .Create("execute-trade")
-    .Consumes<Position>()               // Ontology input type
-    .Produces<TradeOrder>()             // Ontology output type
+    .Consumes<Position>()
+    .Produces<TradeOrder>()
     .StartWith<ValidateOrder>()
     .Then<RouteToExchange>()
     .Then<ConfirmExecution>()
     .Finally<UpdatePosition>();
 ```
 
-`Consumes<T>()` and `Produces<T>()` are extension methods from `Agentic.Ontology`. They:
+`Consumes<T>()` and `Produces<T>()` are extension methods that register the workflow in the `OntologyGraph` at startup:
 
 1. Register the workflow as an action on the consumed type (auto-binding)
-2. Enable **workflow chaining inference** — the source generator validates that Workflow A's `Produces<T>` is type-compatible with Workflow B's `Consumes<T>`
-3. Give agents a typed dependency graph: "To get a `TradeOrder`, I need to run `execute-trade`, which consumes a `Position`"
+2. Enable workflow chaining inference (`Produces<T>` → `Consumes<T>` compatibility)
+3. Give agents a typed dependency graph for multi-step planning
 
 ---
 
-## 6. Source Generator Pipeline
+## 7. Object Set Algebra
 
-### 6.1 Per-Domain Generation (Domain Assembly)
+### 7.1 Core Concept
 
-When a domain assembly references `Agentic.Ontology.Generators`, the incremental source generator:
-
-1. **Discovers** `DomainOntology` subclasses via `INamedTypeSymbol`
-2. **Parses** the `Define()` method body as a Roslyn syntax tree
-3. **Extracts** builder method calls: `Object<T>()`, `Property()`, `HasMany<T>()`, `Action()`, etc.
-4. **Resolves** expression trees to member symbols (compile-time type checking)
-5. **Emits** per-domain artifacts:
+An `ObjectSet<T>` is a lazy, composable query expression — analogous to `IQueryable<T>` but operating over ontology-typed domain objects. It is the **primary primitive** that agents interact with, mirroring Palantir's Object Set Service.
 
 ```csharp
-// Generated: TradingOntologyDescriptor.g.cs
-[assembly: OntologyDomain("trading", typeof(TradingOntologyDescriptor))]
-
-public static class TradingOntologyDescriptor
+/// <summary>
+/// Composable query expression over ontology-typed objects.
+/// Builds an expression tree that is translated by IObjectSetProvider
+/// into the appropriate persistence query (Marten LINQ, SQL, etc.).
+/// </summary>
+public sealed class ObjectSet<T> where T : class
 {
-    public static DomainDescriptor Descriptor { get; } = new DomainDescriptor
-    {
-        DomainName = "trading",
-        ObjectTypes = ImmutableArray.Create(
-            PositionDescriptor.Descriptor,
-            TradeOrderDescriptor.Descriptor,
-            StrategyDescriptor.Descriptor),
-        CrossDomainLinks = ImmutableArray.Create(/* ... */),
-        Interfaces = ImmutableArray.Create(/* ... */)
-    };
-}
+    // Filtering
+    public ObjectSet<T> Where(Expression<Func<T, bool>> predicate);
 
-// Generated: PositionDescriptor.g.cs
-public static class PositionDescriptor
-{
-    public static ObjectTypeDescriptor Descriptor { get; } = new ObjectTypeDescriptor
-    {
-        Name = "Position",
-        DomainName = "trading",
-        ClrType = typeof(Position),
-        KeyProperty = "Id",
-        Properties = ImmutableArray.Create(
-            new PropertyDescriptor("Symbol", typeof(string), required: true),
-            new PropertyDescriptor("Quantity", typeof(decimal), required: false),
-            new PropertyDescriptor("UnrealizedPnL", typeof(decimal), computed: true)),
-        Links = ImmutableArray.Create(
-            new LinkDescriptor("Orders", typeof(TradeOrder), LinkCardinality.OneToMany),
-            new LinkDescriptor("Strategy", typeof(Strategy), LinkCardinality.ManyToOne)),
-        Actions = ImmutableArray.Create(
-            new ActionDescriptor("ExecuteTrade",
-                accepts: typeof(TradeExecutionRequest),
-                returns: typeof(TradeExecutionResult),
-                binding: ActionBinding.Workflow("execute-trade")),
-            new ActionDescriptor("GetQuote",
-                accepts: typeof(QuoteRequest),
-                returns: typeof(Quote),
-                binding: ActionBinding.Tool("MarketDataMcpTools", "GetQuoteAsync"))),
-        Interfaces = ImmutableArray.Create("Searchable")
-    };
+    // Link traversal (returns a new ObjectSet of the linked type)
+    public ObjectSet<TLinked> TraverseLink<TLinked>(string linkName) where TLinked : class;
+
+    // Interface narrowing (cross-domain polymorphic query)
+    public ObjectSet<TInterface> OfInterface<TInterface>() where TInterface : class;
+
+    // Action application (batch-capable)
+    public Task<IReadOnlyList<ActionResult>> ApplyAsync(
+        string actionName, object request, CancellationToken ct = default);
+
+    // Event queries (temporal)
+    public IAsyncEnumerable<OntologyEvent> EventsAsync(
+        TimeSpan? since = null, IReadOnlyList<string>? eventTypes = null);
+
+    // Projection selection (control what's included in results)
+    public ObjectSet<T> Include(ObjectSetInclusion inclusion);
+
+    // Materialization
+    public Task<ObjectSetResult<T>> ExecuteAsync(CancellationToken ct = default);
+    public IAsyncEnumerable<T> StreamAsync(CancellationToken ct = default);
 }
 ```
 
-### 6.2 Host Composition Generation (AppHost Assembly)
+### 7.2 ObjectSet Inclusion (Progressive Data Loading)
 
-The composing assembly (e.g., `Basileus.AppHost`) references all domain assemblies. Its source generator:
-
-1. **Discovers** all `[assembly: OntologyDomain]` attributes from referenced assemblies
-2. **Merges** domain descriptors into a unified graph
-3. **Resolves** cross-domain links (validates external references exist)
-4. **Validates** interface implementations (all mapped properties exist on source types)
-5. **Validates** workflow chaining (`Produces<T>` → `Consumes<T>` compatibility)
-6. **Emits** composed artifacts:
+Agents control what data is returned per query, following progressive disclosure:
 
 ```csharp
-// Generated: ComposedOntology.g.cs
-public static class ComposedOntology
+[Flags]
+public enum ObjectSetInclusion
 {
-    public static OntologyGraph Graph { get; } = OntologyGraph.Compose(
-        TradingOntologyDescriptor.Descriptor,
-        KnowledgeOntologyDescriptor.Descriptor,
-        StyleEngineOntologyDescriptor.Descriptor);
-
-    // Compile-time validated cross-domain links
-    public static ImmutableArray<ResolvedCrossDomainLink> CrossDomainLinks { get; } =
-        ImmutableArray.Create(
-            new ResolvedCrossDomainLink(
-                name: "KnowledgeInformsStrategy",
-                from: KnowledgeOntologyDescriptor.AtomicNoteDescriptor,
-                to: TradingOntologyDescriptor.StrategyDescriptor,
-                cardinality: LinkCardinality.ManyToMany));
-
-    // Workflow chain graph
-    public static ImmutableArray<WorkflowChain> WorkflowChains { get; } =
-        ImmutableArray.Create(
-            new WorkflowChain(
-                producer: "ingest-knowledge",
-                producesType: typeof(AtomicNote),
-                consumer: "execute-trade",
-                consumesType: typeof(Position),
-                bridgedVia: "KnowledgeInformsStrategy"));
+    Properties = 1,      // Object properties
+    Actions = 2,         // Available actions with signatures
+    Links = 4,           // Direct link descriptors
+    Events = 8,          // Recent events (configurable window)
+    Interfaces = 16,     // Implemented interfaces
+    LinkedObjects = 32,  // Resolved linked object instances (1-hop)
+    Schema = Properties | Actions | Links | Interfaces,  // Schema-only (no data)
+    Full = Schema | Events | LinkedObjects               // Everything
 }
 ```
 
-### 6.3 Compile-Time Diagnostics
+### 7.3 Provider Abstraction
 
-The source generator emits diagnostics (errors/warnings) for:
+```csharp
+/// <summary>
+/// Translates ObjectSet expression trees into persistence queries.
+/// Consumers implement this for their specific persistence layer.
+/// Basileus provides MartenObjectSetProvider.
+/// </summary>
+public interface IObjectSetProvider
+{
+    Task<ObjectSetResult<T>> ExecuteAsync<T>(
+        ObjectSetExpression expression, CancellationToken ct = default) where T : class;
+
+    IAsyncEnumerable<T> StreamAsync<T>(
+        ObjectSetExpression expression, CancellationToken ct = default) where T : class;
+}
+```
+
+### 7.4 Agent Interaction Example
+
+```csharp
+// Inside Phronesis ThinkStep — assembling context for a Position task
+var context = await ontology.ObjectSet<Position>()
+    .Where(p => p.Id == task.TargetObjectId)
+    .Include(ObjectSetInclusion.Full)
+    .ExecuteAsync(ct);
+
+// Result includes typed properties, available actions, linked objects,
+// recent events, and interface information — all in one composable query.
+```
+
+Via MCP tool (JSON representation for agent consumption):
+
+```json
+{
+  "tool": "ontology_query",
+  "params": {
+    "objectType": "Position",
+    "filter": { "UnrealizedPnL": { "gt": 10000 } },
+    "include": ["properties", "actions", "links", "events"],
+    "events": { "since": "1h" }
+  }
+}
+```
+
+---
+
+## 8. Source Generator — Diagnostics Only
+
+### 8.1 Role Clarification
+
+The source generator (`Agentic.Ontology.Generators`) is a **Roslyn DiagnosticAnalyzer**, not an `IIncrementalGenerator`. It emits **zero runtime code**. Its sole purpose is IDE-time validation — red squiggles and warnings that supplement the runtime builder's fail-fast validation.
+
+### 8.2 Diagnostic Catalog
 
 | Code | Severity | Condition |
 |------|----------|-----------|
 | `ONTO001` | Error | Object type has no `Key()` declaration |
 | `ONTO002` | Error | Property expression references non-existent member |
-| `ONTO003` | Error | Cross-domain link references unknown domain or object |
-| `ONTO004` | Warning | Object type has no actions (pure data, not actionable) |
+| `ONTO003` | Warning | Cross-domain link references unknown domain (can't validate at compile-time across assemblies) |
+| `ONTO004` | Info | Object type has no actions (pure data, not actionable) |
 | `ONTO005` | Error | Interface mapping references incompatible property types |
-| `ONTO006` | Warning | Workflow `Produces<T>` has no matching `Consumes<T>` consumer |
-| `ONTO007` | Error | Circular cross-domain link dependency |
-| `ONTO008` | Warning | Action bound to workflow that doesn't exist in composition |
+| `ONTO006` | Warning | Workflow `Produces<T>` has no matching `Consumes<T>` consumer in same assembly |
+| `ONTO007` | Error | Duplicate object type registration in same domain |
+| `ONTO008` | Warning | Event type not declared on any object type |
+| `ONTO009` | Error | Event `MaterializesLink` references undeclared link name |
+| `ONTO010` | Warning | Object type has events but no `IEventStreamProvider` likely registered |
+
+**Note:** Cross-assembly validation (ONTO003, ONTO006) can only produce warnings, not errors, because the analyzer can't see other assemblies' `DomainOntology` classes. Full validation happens at runtime via `OntologyGraphBuilder`.
 
 ---
 
-## 7. Progressive Disclosure Integration
+## 9. MCP Tool Surface
 
-### 7.1 Schema-Driven Stub Generation
+### 9.1 Design Principles (from Skill-Building Best Practices)
 
-Today, progressive disclosure generates Python wrapper functions from `[McpServerTool]` attributes. With the ontology, stubs are enriched with type context:
+The MCP tool surface follows Anthropic's skill-building best practices:
 
-**Before (current):**
-```python
-# servers/trading.py
-def open_position(symbol: str, quantity: float) -> dict:
-    """Open a new trading position."""
-    return call_mcp_tool("TradingMcpTools", "OpenPosition", symbol=symbol, quantity=quantity)
+- **Progressive disclosure:** Level 1 (tool listing) → Level 2 (rich descriptions) → Level 3 (full typed responses)
+- **Problem-first framing:** Agents describe outcomes, tools route to the right data
+- **Context-aware tool selection:** One composable query endpoint rather than separate tools per layer
+- **Domain-specific intelligence:** Ontology context embedded in every response
+
+### 9.2 MCP Tool Catalog
+
+Three tools, following the "minimal surface, maximum composability" principle:
+
+#### `ontology_query` — Read Operations
+
+```json
+{
+  "name": "ontology_query",
+  "description": "Query the ontology for object types, instances, links, events, and actions. Use when exploring what's available in a domain, finding objects matching criteria, or understanding relationships between types.",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "objectType": { "type": "string", "description": "Object type name (e.g., 'Position')" },
+      "domain": { "type": "string", "description": "Domain name (e.g., 'trading'). Optional if objectType is unique." },
+      "filter": { "type": "object", "description": "Property filters (e.g., {\"UnrealizedPnL\": {\"gt\": 10000}})" },
+      "traverseLink": { "type": "string", "description": "Link name to traverse (returns linked objects)" },
+      "interface": { "type": "string", "description": "Filter to objects implementing this interface" },
+      "include": {
+        "type": "array",
+        "items": { "type": "string", "enum": ["properties", "actions", "links", "events", "interfaces", "linkedObjects"] },
+        "description": "What to include in results. Defaults to schema-only."
+      },
+      "events": {
+        "type": "object",
+        "properties": {
+          "since": { "type": "string", "description": "Time window (e.g., '1h', '24h')" },
+          "types": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    },
+    "required": ["objectType"]
+  }
+}
 ```
 
-**After (ontology-enhanced):**
+#### `ontology_action` — Write Operations
+
+```json
+{
+  "name": "ontology_action",
+  "description": "Execute an action on one or more objects. Routes to the bound workflow or tool. Use when you need to modify state, trigger workflows, or perform operations.",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "objectType": { "type": "string" },
+      "objectId": { "type": "string", "description": "Target object ID (or omit for batch via filter)" },
+      "filter": { "type": "object", "description": "Alternative: apply action to all matching objects" },
+      "action": { "type": "string", "description": "Action name (e.g., 'ExecuteTrade')" },
+      "request": { "type": "object", "description": "Action input payload" }
+    },
+    "required": ["objectType", "action", "request"]
+  }
+}
+```
+
+#### `ontology_explore` — Schema Discovery
+
+```json
+{
+  "name": "ontology_explore",
+  "description": "Explore the ontology schema: list domains, object types, actions, links, interfaces, events, and workflow chains. Use when planning which actions to take or understanding the domain model.",
+  "inputSchema": {
+    "type": "object",
+    "properties": {
+      "scope": {
+        "type": "string",
+        "enum": ["domains", "objectTypes", "actions", "links", "interfaces", "events", "workflowChains"],
+        "description": "What aspect of the schema to explore"
+      },
+      "domain": { "type": "string", "description": "Filter to a specific domain" },
+      "objectType": { "type": "string", "description": "Filter to a specific object type" },
+      "traverseFrom": { "type": "string", "description": "Start graph traversal from this object type" },
+      "maxDepth": { "type": "integer", "default": 2 }
+    },
+    "required": ["scope"]
+  }
+}
+```
+
+### 9.3 Progressive Disclosure Integration
+
+At sandbox creation, the ControlPlane generates enriched tool stubs from the `OntologyGraph`:
+
 ```python
-# servers/trading/position.pyi
+# servers/trading/position.pyi — generated at sandbox creation
 class Position:
-    """Object Type: Position (domain: trading)
+    """trading.Position — tradable financial position
 
     Properties:
         symbol: str (required)
@@ -496,127 +714,247 @@ class Position:
 
     Actions:
         execute_trade(request: TradeExecutionRequest) -> TradeExecutionResult
+            Bound to workflow: execute-trade. Produces: TradeOrder
         get_quote(request: QuoteRequest) -> Quote
+            Bound to tool: MarketDataMcpTools.GetQuoteAsync
+        hedge(request: HedgeRequest) -> HedgeResult
+
+    Events:
+        TradeExecuted -> materializes Orders link, updates UnrealizedPnL
+        PositionUpdated -> updates Quantity
+        RiskThresholdBreached (severity: alert)
 
     Interfaces: Searchable
     """
-    symbol: str
-    quantity: float
-    unrealized_pnl: float
-
-    def execute_trade(self, request: TradeExecutionRequest) -> TradeExecutionResult: ...
-    def get_quote(self, request: QuoteRequest) -> Quote: ...
 ```
-
-The stub generator reads `ObjectTypeDescriptor` at ControlPlane startup and produces richer stubs with:
-- Type annotations matching ontology properties
-- Methods for each declared action
-- Docstrings describing links and interfaces
-- Cross-references to related object types
-
-### 7.2 Ontology-Aware Tool Discovery
-
-Agents currently discover tools via `ls servers/`. With the ontology, a meta-tool enables semantic discovery:
-
-```python
-# Agent asks: "What can I do with a Position?"
-result = ontology.query(object_type="Position", include=["actions", "links"])
-
-# Returns structured response:
-# {
-#   "object": "Position",
-#   "domain": "trading",
-#   "actions": [
-#     {"name": "ExecuteTrade", "accepts": "TradeExecutionRequest", "returns": "TradeExecutionResult"},
-#     {"name": "GetQuote", "accepts": "QuoteRequest", "returns": "Quote"}
-#   ],
-#   "links": [
-#     {"name": "Orders", "target": "TradeOrder", "cardinality": "one-to-many"},
-#     {"name": "Strategy", "target": "Strategy", "cardinality": "many-to-one"}
-#   ],
-#   "implements": ["Searchable"]
-# }
-```
-
-This transforms agent planning from "grep tool descriptions" to "query typed action graph" — directly reducing the CMDP action space per §2.3 of the agentic workflow theory.
 
 ---
 
-## 8. Agent Query Interface
+## 10. Event Integration and Marten Projections
 
-The ontology exposes an `IOntologyQuery` contract for agent-facing queries:
+### 10.1 Event-Driven Link Materialization
+
+When a `DomainOntology` declares `evt.MaterializesLink()`, the ontology registers an `IOntologyProjection` handler. In the Marten implementation, this translates to a Marten `IProjection`:
 
 ```csharp
-public interface IOntologyQuery
+// Auto-registered by Basileus.Ontology.Marten based on ontology declarations
+public class PositionOrdersLinkProjection : SingleStreamProjection<PositionOrdersLink>
 {
-    /// <summary>List all domains in the composed ontology.</summary>
-    IReadOnlyList<DomainDescriptor> ListDomains();
-
-    /// <summary>Get all object types in a domain.</summary>
-    IReadOnlyList<ObjectTypeDescriptor> GetObjectTypes(string domain);
-
-    /// <summary>Get full descriptor for a specific object type.</summary>
-    ObjectTypeDescriptor? GetObjectType(string domain, string objectTypeName);
-
-    /// <summary>Find all actions available on an object type.</summary>
-    IReadOnlyList<ActionDescriptor> GetActions(string domain, string objectTypeName);
-
-    /// <summary>Find all object types implementing an interface.</summary>
-    IReadOnlyList<ObjectTypeDescriptor> GetImplementors(string interfaceName);
-
-    /// <summary>Traverse the link graph from a given object type.</summary>
-    IReadOnlyList<LinkTraversalResult> TraverseLinks(
-        string domain, string objectTypeName, int maxDepth = 2);
-
-    /// <summary>Find workflow chains: which workflows can produce the input for a target workflow.</summary>
-    IReadOnlyList<WorkflowChain> FindWorkflowChains(string targetWorkflow);
+    public void Apply(TradeExecuted evt, PositionOrdersLink link)
+    {
+        link.PositionId = evt.PositionId;
+        link.TradeOrderId = evt.OrderId;
+        link.MaterializedAt = evt.Timestamp;
+    }
 }
 ```
 
-**Implementation:** `OntologyQueryService` backed by the source-generated `ComposedOntology`. All queries resolve against compile-time descriptors — no runtime reflection.
+Links are always consistent — derived from the immutable event stream, not stale caches.
 
-**MCP exposure:** `Agentic.Ontology.MCP` provides `OntologyMcpTools` that wraps `IOntologyQuery` as MCP tools, exposable via the ControlPlane or AgentHost Workflow MCP Server.
+### 10.2 Temporal Event Queries
+
+The `IEventStreamProvider` enables temporal queries over domain events:
+
+```csharp
+public interface IEventStreamProvider
+{
+    IAsyncEnumerable<OntologyEvent> QueryEventsAsync(
+        string domain,
+        string objectTypeName,
+        string? objectId = null,
+        TimeSpan? since = null,
+        IReadOnlyList<string>? eventTypes = null,
+        CancellationToken ct = default);
+}
+```
+
+In the Marten implementation, this reads directly from the Marten event store with appropriate filters.
+
+### 10.3 Event Causality Chains
+
+First-class events enable typed causality tracing across the system:
+
+```text
+Agent request: "Hedge all positions where PnL < -5000"
+
+Causality chain (auto-captured):
+1. ontology_query: Position.Where(PnL < -5000) → 3 objects
+2. ontology_action: Position[pos-123].Hedge(HedgeRequest)
+   → Event: HedgeRequested
+   → Event: TradeExecuted { orderId: "ord-456" }
+   → Materialization: Position→TradeOrder link
+   → Event: PositionUpdated { PnL: -2300 → -1100 }
+3. ontology_action: Position[pos-456].Hedge(HedgeRequest)
+   ...
+```
 
 ---
 
-## 9. Exarchos Integration
+## 11. Telemetry and Observability
 
-Exarchos (the SDLC orchestrator) consumes the ontology to plan multi-step operations:
+### 11.1 Ontology-Enriched Telemetry Context
 
-1. **Workflow MCP Server** (already exists in AgentHost) gains ontology query tools alongside existing workflow event tools
-2. Exarchos queries the ontology to understand available operations before dispatching work
-3. Workflow chaining metadata enables Exarchos to plan operation sequences: "ingesting knowledge produces `AtomicNote`, which can inform `Strategy` via the `KnowledgeInformsStrategy` link"
+Every action dispatched through the ontology automatically enriches telemetry events with semantic context:
 
-The ontology functions as the "map" that Exarchos uses for strategic planning, while individual agents use it tactically during execution.
+```csharp
+/// <summary>
+/// Attached to every Marten event emitted through ontology action dispatch.
+/// Transforms flat system telemetry into typed, domain-queryable signals.
+/// </summary>
+public sealed record OntologyTelemetryContext
+{
+    public required string Domain { get; init; }
+    public required string ObjectType { get; init; }
+    public required string? ObjectId { get; init; }
+    public required string Action { get; init; }
+    public required string? InputType { get; init; }
+    public required string? OutputType { get; init; }
+    public required IReadOnlyList<string> TraversedLinks { get; init; }
+    public required IReadOnlyList<string> ProducedEvents { get; init; }
+    public required IReadOnlyList<string> MaterializedLinks { get; init; }
+}
+```
+
+### 11.2 Amplification Across Feedback Loops
+
+**Loop 1–2 (Thompson Sampling):** Strategy outcomes gain dimensional context — per-(objectType, action, linkContext) priors instead of flat per-strategy priors. Thompson Sampling selects strategies based on the typed context of the current task.
+
+**Loop 3 (Task Router):** Ontology graph complexity (link count, cross-domain link presence) becomes a routing factor. Tasks with high graph complexity route to higher-capability tiers.
+
+**Loop 4 (Profile Evolution):** Execution profiles auto-tune per-object-type. `Trading.FundamentalAnalysis.RagConfig.TopK` can be 12 for Position (complex) and 5 for TradeOrder (simple).
+
+**Loop 5 (Knowledge Enrichment):** Link materializations are telemetry events. Exarchos knows when new knowledge-strategy connections form.
+
+**Loop 6 (Panoptikon):** Production incidents correlate to ontology actions and object types, not just tools and services. "TradeExecution failures" → "Position.ExecuteTrade action" → root cause in ontology graph.
+
+### 11.3 OntologyMetricsView (New CQRS View)
+
+A Marten projection materializes ontology-specific metrics alongside the existing 7 CQRS views:
+
+```csharp
+public sealed class OntologyMetricsView
+{
+    /// <summary>Per-action latency, success rate, token consumption.</summary>
+    public IReadOnlyDictionary<string, ActionMetrics> ActionMetrics { get; init; }
+
+    /// <summary>Per-object-type event frequency and distribution.</summary>
+    public IReadOnlyDictionary<string, EventFrequency> EventFrequency { get; init; }
+
+    /// <summary>Link materialization rates and lag.</summary>
+    public IReadOnlyDictionary<string, LinkMaterializationRate> LinkHealth { get; init; }
+
+    /// <summary>Which links are actually traversed by agents vs. declared but unused.</summary>
+    public IReadOnlyList<TraversalPattern> TraversalHotPaths { get; init; }
+
+    /// <summary>Thompson Sampling priors conditioned on ontology context.</summary>
+    public IReadOnlyDictionary<string, ConditionalPrior> ConditionalPriors { get; init; }
+}
+```
 
 ---
 
-## 10. Basileus Adoption Strategy
+## 12. Platform Integration
 
-### What Changes in This Repo
+### 12.1 Phronesis ThinkStep — Ontology as Context Source
 
-1. **ADR update:** Add Ontology Layer section to `docs/adrs/platform-architecture.md`
-2. **Domain ontology classes:** Each domain assembly adds a `DomainOntology` subclass:
-   - `domains/trading/` → `TradingOntology`
-   - `domains/knowledge/` → `KnowledgeOntology`
-   - `domains/style-engine/` → `StyleEngineOntology`
-3. **Package references:** Domain assemblies reference `Agentic.Ontology` + `Agentic.Ontology.Generators`
-4. **AppHost composition:** Register all domain ontologies for cross-domain resolution
-5. **ControlPlane enhancement:** Progressive disclosure uses ontology descriptors for richer stubs
-6. **`ISearchable` interface:** Shared interface in `Basileus.Core` implemented by key domain types
+The ThinkStep currently references `ComposedOntology` for context assembly. With the ontology layer, this becomes a concrete `ObjectSet` query:
+
+```csharp
+// In ThinkStep — assembling context for the current task
+var taskContext = await ontology.ObjectSet<Position>()
+    .Where(p => p.Id == task.TargetObjectId)
+    .Include(ObjectSetInclusion.Full)
+    .ExecuteAsync(ct);
+
+// Uses result to:
+// 1. Constrain execution profile tool subset (only actions on Position)
+// 2. Enrich LLM prompt with typed context
+// 3. Identify workflow chains for multi-step planning
+```
+
+### 12.2 Execution Profiles — Ontology-Driven Tool Subsetting
+
+```csharp
+// Derive tool subset from object type's declared actions
+var profile = ExecutionProfile.FromOntology(ontology, "trading", "Position");
+// Automatically includes: ExecuteTrade, GetQuote, Hedge
+// Plus tools from linked types reachable within configurable hop depth
+```
+
+This directly reduces the CMDP action space — instead of evaluating all ~100+ tools, the ontology constrains to the 3–8 actions relevant to the target object type.
+
+### 12.3 Exarchos — Strategic Planning via Ontology Graph
+
+Exarchos queries the ontology through the Workflow MCP Server for multi-step planning:
+
+```text
+Exarchos query: "How do I get from ingested knowledge to an informed trade?"
+
+Ontology graph traversal response:
+  AtomicNote --[KnowledgeInformsStrategy]--> Strategy
+  Strategy --[HasMany]--> Position
+  Position --[Action:ExecuteTrade]--> TradeOrder
+
+  Workflow chain:
+    1. ingest-knowledge (produces: AtomicNote)
+    2. [cross-domain link: KnowledgeInformsStrategy]
+    3. execute-trade (consumes: Position, produces: TradeOrder)
+```
+
+### 12.4 ControlPlane Hosting
+
+The `OntologyGraph` is hosted **in-process** on the ControlPlane:
+
+```csharp
+// In ControlPlane startup
+builder.Services.AddOntology(ontology =>
+{
+    ontology.AddDomain<TradingOntology>();
+    ontology.AddDomain<KnowledgeOntology>();
+    ontology.AddDomain<StyleEngineOntology>();
+    ontology.UseObjectSetProvider<MartenObjectSetProvider>();
+    ontology.UseEventStreamProvider<MartenEventStreamProvider>();
+    ontology.UseActionDispatcher<WolverineActionDispatcher>();
+});
+
+// MCP tools registered automatically from ontology
+builder.Services.AddOntologyMcpTools();
+```
+
+---
+
+## 13. Basileus Adoption Strategy
+
+### What Changes in This Repo (agentic-workflow)
+
+1. **`Agentic.Ontology` package:** Contracts, DSL, runtime graph, Object Set algebra, telemetry enrichment
+2. **`Agentic.Ontology.Generators` package:** DiagnosticAnalyzer for IDE-time validation (diagnostics only)
+3. **`Agentic.Ontology.MCP` package:** MCP tool definitions (`ontology_query`, `ontology_action`, `ontology_explore`), stub generator
+
+### What Changes in Basileus Repo
+
+1. **ADR update:** Update `platform-architecture.md` ontology sections to reflect runtime-first architecture, Object Set algebra, first-class events, telemetry integration
+2. **`Basileus.Ontology.Marten` package:** `IObjectSetProvider`, `IEventStreamProvider`, `IOntologyProjection` implementations backed by Marten
+3. **Domain ontology classes:** Each domain assembly adds a `DomainOntology` subclass
+4. **ControlPlane registration:** `AddOntology()` with all domain ontologies and Marten providers
+5. **Phronesis ThinkStep update:** Use `ObjectSet` queries for context assembly
+6. **Execution profile enhancement:** `FromOntology()` factory for ontology-driven tool subsetting
+7. **`ISearchable` interface:** Shared interface implemented by key domain types
+8. **`OntologyMetricsView`:** New Marten projection for ontology-specific observability
 
 ### What Does NOT Change
 
 - Domain types (Position, AtomicNote, StyleCard) — unchanged, ontology maps them
 - Existing MCP tools — unchanged, ontology binds to them
 - Existing workflows — unchanged, optional `Consumes`/`Produces` added incrementally
+- Existing event types — unchanged, ontology declares awareness of them
 - Domain independence — preserved, cross-domain links resolved at composition
 
 ---
 
-## 11. Illustrative Example: Full Domain Ontology
+## 14. Illustrative Example: Full Domain Ontology
 
-Complete `KnowledgeOntology` showing all DSL features together:
+Complete `KnowledgeOntology` showing all DSL features:
 
 ```csharp
 namespace Basileus.Knowledge;
@@ -649,6 +987,7 @@ public sealed class KnowledgeOntology : DomainOntology
             obj.Property(n => n.CreatedAt);
             obj.Property(n => n.ModifiedAt);
 
+            // Links
             obj.ManyToMany<AtomicNote>("SemanticLinks")
                 .WithEdge<KnowledgeLink>(edge =>
                 {
@@ -656,9 +995,9 @@ public sealed class KnowledgeOntology : DomainOntology
                     edge.MapProperty(l => l.Confidence);
                     edge.MapProperty(l => l.ContextDescription);
                 });
-
             obj.HasMany<SourceReference>("Sources");
 
+            // Actions
             obj.Action("Ingest")
                 .Description("Ingest a source document into the knowledge graph")
                 .Accepts<IngestRequest>()
@@ -671,6 +1010,20 @@ public sealed class KnowledgeOntology : DomainOntology
                 .Returns<KnowledgeQueryResult>()
                 .BoundToWorkflow("query-knowledge");
 
+            // Events
+            obj.Event<KnowledgeIngested>(evt =>
+            {
+                evt.Description("A source document was ingested, producing atomic notes");
+                evt.MaterializesLink("Sources", e => e.SourceReferenceId);
+            });
+
+            obj.Event<SemanticLinkCreated>(evt =>
+            {
+                evt.Description("A semantic relationship between notes was identified");
+                evt.MaterializesLink("SemanticLinks", e => e.TargetNoteId);
+            });
+
+            // Interface implementation
             obj.Implements<ISearchable>(map =>
             {
                 map.Via(n => n.Title, s => s.Title);
@@ -681,7 +1034,7 @@ public sealed class KnowledgeOntology : DomainOntology
 
         builder.Object<SourceReference>(obj =>
         {
-            obj.Key(s => s.Title);  // Natural key
+            obj.Key(s => s.Title);
             obj.Property(s => s.Author);
             obj.Property(s => s.Uri);
             obj.Property(s => s.RetrievedAt);
@@ -713,11 +1066,11 @@ public sealed class KnowledgeOntology : DomainOntology
 
 ---
 
-## 12. Future Considerations
+## 15. Future Considerations
 
 - **Object-level security policies:** Per-object type permission declarations in the ontology, enforced by ControlPlane policy engine
-- **Ontology versioning:** Schema evolution with backward compatibility guarantees (additive changes safe, breaking changes produce compile errors)
-- **Runtime object resolution:** Given an ontology object descriptor, resolve actual instances from domain persistence (Marten, pgvector, etc.)
-- **Ontology visualization:** Generate Mermaid/D3 diagrams from the compiled ontology graph
+- **Ontology versioning:** Schema evolution with backward compatibility guarantees (additive changes safe, breaking changes detected at startup)
+- **Ontology visualization:** Generate Mermaid/D3 diagrams from the `OntologyGraph` at runtime
 - **Cost profiles on actions:** Budget metadata per action for scarcity-aware agent planning (§4.3 of workflow theory)
-- **Event typing:** Marten events annotated with ontology types for richer audit trails
+- **Streaming Object Sets:** Real-time Object Set subscriptions via Marten `ISubscription` for reactive agent patterns
+- **Multi-tenant ontology isolation:** Per-tenant domain registration for SaaS scenarios

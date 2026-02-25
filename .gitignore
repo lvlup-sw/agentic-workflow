@@ -67,3 +67,7 @@ docs/workflow-state/
 
 # Git worktrees
 .worktrees/
+
+# Claude Code
+.claude/
+~/.claude/
