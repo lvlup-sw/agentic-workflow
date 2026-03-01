@@ -7,7 +7,7 @@ public interface IObjectTypeBuilder<T>
 {
     void Key(Expression<Func<T, object>> keySelector);
 
-    IPropertyBuilder Property(Expression<Func<T, object>> propertySelector);
+    IPropertyBuilder<T> Property(Expression<Func<T, object>> propertySelector);
 
     void HasOne<TLinked>(string linkName);
 
@@ -15,9 +15,16 @@ public interface IObjectTypeBuilder<T>
 
     void ManyToMany<TLinked>(string linkName, Action<IEdgeBuilder>? edgeConfig);
 
-    IActionBuilder Action(string actionName);
+    IActionBuilder<T> Action(string actionName);
 
     void Event<TEvent>(Action<IEventBuilder<TEvent>> configure);
 
     void Implements<TInterface>(Action<IInterfaceMapping<T, TInterface>> configure);
+
+    void Lifecycle<TEnum>(
+        Expression<Func<T, object>> propertySelector,
+        Action<ILifecycleBuilder<TEnum>> configure)
+        where TEnum : struct, Enum;
+
+    void AcceptsExternalLinks(string name, Action<IExtensionPointBuilder> configure);
 }

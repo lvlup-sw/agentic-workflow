@@ -16,4 +16,10 @@ public sealed record ObjectTypeDescriptor(
     public IReadOnlyList<EventDescriptor> Events { get; init; } = [];
 
     public IReadOnlyList<InterfaceDescriptor> ImplementedInterfaces { get; init; } = [];
+
+    public LifecycleDescriptor? Lifecycle { get; init; }
+
+    public IReadOnlyList<InterfaceActionMapping> InterfaceActionMappings { get; init; } = [];
+
+    public IReadOnlyList<ExternalLinkExtensionPoint> ExternalLinkExtensionPoints { get; init; } = [];
 }

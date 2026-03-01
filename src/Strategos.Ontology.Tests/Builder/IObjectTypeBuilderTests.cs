@@ -26,7 +26,7 @@ public class IObjectTypeBuilderTests
     public async Task IObjectTypeBuilder_Property_ReturnsPropertyBuilder()
     {
         var substitute = Substitute.For<IObjectTypeBuilder<TestPosition>>();
-        var propertyBuilder = Substitute.For<IPropertyBuilder>();
+        var propertyBuilder = Substitute.For<IPropertyBuilder<TestPosition>>();
         substitute.Property(Arg.Any<Expression<Func<TestPosition, object>>>())
             .Returns(propertyBuilder);
 
@@ -69,7 +69,7 @@ public class IObjectTypeBuilderTests
     public async Task IObjectTypeBuilder_Action_ReturnsActionBuilder()
     {
         var substitute = Substitute.For<IObjectTypeBuilder<TestPosition>>();
-        var actionBuilder = Substitute.For<IActionBuilder>();
+        var actionBuilder = Substitute.For<IActionBuilder<TestPosition>>();
         substitute.Action("ExecuteTrade").Returns(actionBuilder);
 
         var result = substitute.Action("ExecuteTrade");

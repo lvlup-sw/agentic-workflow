@@ -7,4 +7,6 @@ public sealed record InterfaceDescriptor(
 {
     public IReadOnlyList<PropertyDescriptor> Properties { get; init; } =
         Properties ?? [];
+
+    public IReadOnlyList<InterfaceActionDescriptor> Actions { get; init; } = [];
 }

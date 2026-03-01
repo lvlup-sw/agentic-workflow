@@ -22,6 +22,17 @@ internal static class ExpressionHelper
         };
     }
 
+    public static string ExtractPredicateString<T>(Expression<Func<T, bool>> predicate)
+    {
+        var body = predicate.Body.ToString();
+
+        // Strip the parameter prefix (e.g., "p." or "p => p.")
+        var paramName = predicate.Parameters[0].Name ?? "p";
+        body = body.Replace($"{paramName}.", string.Empty);
+
+        return body;
+    }
+
     private static MemberExpression ExtractMemberExpression(Expression expression) =>
         expression switch
         {

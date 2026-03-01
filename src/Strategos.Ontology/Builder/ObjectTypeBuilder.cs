@@ -7,11 +7,14 @@ internal sealed class ObjectTypeBuilder<T>(string domainName) : IObjectTypeBuild
     where T : class
 {
     private PropertyDescriptor? _keyProperty;
-    private readonly List<PropertyBuilder> _propertyBuilders = [];
+    private readonly List<PropertyBuilder<T>> _propertyBuilders = [];
     private readonly List<LinkDescriptor> _links = [];
-    private readonly List<ActionBuilder> _actionBuilders = [];
+    private readonly List<ActionBuilder<T>> _actionBuilders = [];
     private readonly List<EventDescriptor> _events = [];
     private readonly List<InterfaceDescriptor> _interfaces = [];
+    private readonly List<InterfaceActionMapping> _interfaceActionMappings = [];
+    private readonly List<ExtensionPointBuilder> _extensionPointBuilders = [];
+    private LifecycleDescriptor? _lifecycle;
 
     public void Key(Expression<Func<T, object>> keySelector)
     {
@@ -20,11 +23,11 @@ internal sealed class ObjectTypeBuilder<T>(string domainName) : IObjectTypeBuild
         _keyProperty = new PropertyDescriptor(memberName, memberType);
     }
 
-    public IPropertyBuilder Property(Expression<Func<T, object>> propertySelector)
+    public IPropertyBuilder<T> Property(Expression<Func<T, object>> propertySelector)
     {
         var memberName = ExpressionHelper.ExtractMemberName(propertySelector);
         var memberType = ExpressionHelper.ExtractMemberType(propertySelector);
-        var builder = new PropertyBuilder(memberName, memberType);
+        var builder = new PropertyBuilder<T>(memberName, memberType);
         _propertyBuilders.Add(builder);
         return builder;
     }
@@ -55,9 +58,9 @@ internal sealed class ObjectTypeBuilder<T>(string domainName) : IObjectTypeBuild
         });
     }
 
-    public IActionBuilder Action(string actionName)
+    public IActionBuilder<T> Action(string actionName)
     {
-        var builder = new ActionBuilder(actionName);
+        var builder = new ActionBuilder<T>(actionName);
         _actionBuilders.Add(builder);
         return builder;
     }
@@ -74,6 +77,38 @@ internal sealed class ObjectTypeBuilder<T>(string domainName) : IObjectTypeBuild
         var mapping = new InterfaceMapping<T, TInterface>();
         configure(mapping);
         _interfaces.Add(new InterfaceDescriptor(typeof(TInterface).Name, typeof(TInterface)));
+        _interfaceActionMappings.AddRange(mapping.GetActionMappings());
+
+        // Register any default actions as regular actions on this type
+        foreach (var defaultAction in mapping.GetDefaultActions())
+        {
+            var builder = new ActionBuilder<T>(defaultAction.Name);
+            if (!string.IsNullOrEmpty(defaultAction.Description))
+            {
+                builder.Description(defaultAction.Description);
+            }
+
+            _actionBuilders.Add(builder);
+        }
+    }
+
+    public void Lifecycle<TEnum>(
+        Expression<Func<T, object>> propertySelector,
+        Action<ILifecycleBuilder<TEnum>> configure)
+        where TEnum : struct, Enum
+    {
+        var propertyName = ExpressionHelper.ExtractMemberName(propertySelector);
+        var lifecycleBuilder = new LifecycleBuilder<TEnum>();
+        configure(lifecycleBuilder);
+        var descriptor = lifecycleBuilder.Build();
+        _lifecycle = descriptor with { PropertyName = propertyName };
+    }
+
+    public void AcceptsExternalLinks(string name, Action<IExtensionPointBuilder> configure)
+    {
+        var builder = new ExtensionPointBuilder(name);
+        configure(builder);
+        _extensionPointBuilders.Add(builder);
     }
 
     public ObjectTypeDescriptor Build() =>
@@ -85,5 +120,8 @@ internal sealed class ObjectTypeBuilder<T>(string domainName) : IObjectTypeBuild
             Actions = _actionBuilders.ConvertAll(b => b.Build()).AsReadOnly(),
             Events = _events.AsReadOnly(),
             ImplementedInterfaces = _interfaces.AsReadOnly(),
+            Lifecycle = _lifecycle,
+            InterfaceActionMappings = _interfaceActionMappings.AsReadOnly(),
+            ExternalLinkExtensionPoints = _extensionPointBuilders.ConvertAll(b => b.Build()).AsReadOnly(),
         };
 }
