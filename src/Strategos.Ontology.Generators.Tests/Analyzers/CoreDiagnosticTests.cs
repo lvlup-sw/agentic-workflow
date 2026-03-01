@@ -162,6 +162,193 @@ public class TestDomain : DomainOntology
     }
 
     [Test]
+    public async Task AONT002_PropertyExpressionNotSimpleMember_ReportsError()
+    {
+        var source = @"
+using Strategos.Ontology;
+using Strategos.Ontology.Builder;
+
+public class TestModel { public System.Guid Id { get; set; } public string Name { get; set; } }
+
+public class TestDomain : DomainOntology
+{
+    public override string DomainName => ""test"";
+    protected override void Define(IOntologyBuilder builder)
+    {
+        builder.Object<TestModel>(obj =>
+        {
+            obj.Key(p => p.Id);
+            obj.Property(p => p.ToString());
+        });
+    }
+}";
+
+        var diagnostics = await AnalyzerTestHelper.GetDiagnosticsWithIdAsync(source, OntologyDiagnosticIds.InvalidPropertyExpression);
+
+        await Assert.That(diagnostics.Length).IsEqualTo(1);
+    }
+
+    [Test]
+    public async Task AONT002_SimpleMemberAccess_NoDiagnostic()
+    {
+        var source = @"
+using Strategos.Ontology;
+using Strategos.Ontology.Builder;
+
+public class TestModel { public System.Guid Id { get; set; } public string Name { get; set; } }
+
+public class TestDomain : DomainOntology
+{
+    public override string DomainName => ""test"";
+    protected override void Define(IOntologyBuilder builder)
+    {
+        builder.Object<TestModel>(obj =>
+        {
+            obj.Key(p => p.Id);
+            obj.Property(p => p.Name);
+        });
+    }
+}";
+
+        var diagnostics = await AnalyzerTestHelper.GetDiagnosticsWithIdAsync(source, OntologyDiagnosticIds.InvalidPropertyExpression);
+
+        await Assert.That(diagnostics.Length).IsEqualTo(0);
+    }
+
+    [Test]
+    public async Task AONT005_InterfaceMappingNonexistentProperty_ReportsError()
+    {
+        var source = @"
+using Strategos.Ontology;
+using Strategos.Ontology.Builder;
+
+public interface ISearchable { string Query { get; set; } }
+public class TestModel : ISearchable { public System.Guid Id { get; set; } public string Query { get; set; } public string Name { get; set; } }
+
+public class TestDomain : DomainOntology
+{
+    public override string DomainName => ""test"";
+    protected override void Define(IOntologyBuilder builder)
+    {
+        builder.Interface<ISearchable>(""ISearchable"", iface =>
+        {
+            iface.Property(p => p.Query);
+        });
+        builder.Object<TestModel>(obj =>
+        {
+            obj.Key(p => p.Id);
+            obj.Property(p => p.Name);
+            obj.Implements<ISearchable>(m =>
+            {
+                m.Via(p => p.Query, i => i.Query);
+            });
+        });
+    }
+}";
+
+        var diagnostics = await AnalyzerTestHelper.GetDiagnosticsWithIdAsync(source, OntologyDiagnosticIds.InterfaceMappingBadProperty);
+
+        await Assert.That(diagnostics.Length).IsEqualTo(1);
+    }
+
+    [Test]
+    public async Task AONT005_ValidMapping_NoDiagnostic()
+    {
+        var source = @"
+using Strategos.Ontology;
+using Strategos.Ontology.Builder;
+
+public interface ISearchable { string Query { get; set; } }
+public class TestModel : ISearchable { public System.Guid Id { get; set; } public string Query { get; set; } }
+
+public class TestDomain : DomainOntology
+{
+    public override string DomainName => ""test"";
+    protected override void Define(IOntologyBuilder builder)
+    {
+        builder.Interface<ISearchable>(""ISearchable"", iface =>
+        {
+            iface.Property(p => p.Query);
+        });
+        builder.Object<TestModel>(obj =>
+        {
+            obj.Key(p => p.Id);
+            obj.Property(p => p.Query);
+            obj.Implements<ISearchable>(m =>
+            {
+                m.Via(p => p.Query, i => i.Query);
+            });
+        });
+    }
+}";
+
+        var diagnostics = await AnalyzerTestHelper.GetDiagnosticsWithIdAsync(source, OntologyDiagnosticIds.InterfaceMappingBadProperty);
+
+        await Assert.That(diagnostics.Length).IsEqualTo(0);
+    }
+
+    [Test]
+    public async Task AONT008_ManyToManyEdgeNoProperties_ReportsError()
+    {
+        var source = @"
+using Strategos.Ontology;
+using Strategos.Ontology.Builder;
+
+public class TestModel { public System.Guid Id { get; set; } }
+public class OtherModel { public System.Guid Id { get; set; } }
+
+public class TestDomain : DomainOntology
+{
+    public override string DomainName => ""test"";
+    protected override void Define(IOntologyBuilder builder)
+    {
+        builder.Object<TestModel>(obj =>
+        {
+            obj.Key(p => p.Id);
+            obj.ManyToMany<OtherModel>(""Others"", edge => { });
+        });
+        builder.Object<OtherModel>(obj => { obj.Key(p => p.Id); });
+    }
+}";
+
+        var diagnostics = await AnalyzerTestHelper.GetDiagnosticsWithIdAsync(source, OntologyDiagnosticIds.EdgeTypeMissingProperty);
+
+        await Assert.That(diagnostics.Length).IsEqualTo(1);
+    }
+
+    [Test]
+    public async Task AONT008_EdgeWithProperties_NoDiagnostic()
+    {
+        var source = @"
+using Strategos.Ontology;
+using Strategos.Ontology.Builder;
+
+public class TestModel { public System.Guid Id { get; set; } }
+public class OtherModel { public System.Guid Id { get; set; } }
+
+public class TestDomain : DomainOntology
+{
+    public override string DomainName => ""test"";
+    protected override void Define(IOntologyBuilder builder)
+    {
+        builder.Object<TestModel>(obj =>
+        {
+            obj.Key(p => p.Id);
+            obj.ManyToMany<OtherModel>(""Others"", edge =>
+            {
+                edge.Property<decimal>(""Weight"");
+            });
+        });
+        builder.Object<OtherModel>(obj => { obj.Key(p => p.Id); });
+    }
+}";
+
+        var diagnostics = await AnalyzerTestHelper.GetDiagnosticsWithIdAsync(source, OntologyDiagnosticIds.EdgeTypeMissingProperty);
+
+        await Assert.That(diagnostics.Length).IsEqualTo(0);
+    }
+
+    [Test]
     public async Task NonDomainOntology_NoDiagnostics()
     {
         var source = @"

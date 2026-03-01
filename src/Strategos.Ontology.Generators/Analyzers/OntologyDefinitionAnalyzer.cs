@@ -16,24 +16,40 @@ public sealed class OntologyDefinitionAnalyzer : DiagnosticAnalyzer
     public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics =>
         ImmutableArray.Create(
             OntologyDiagnostics.MissingKey,
+            OntologyDiagnostics.InvalidPropertyExpression,
             OntologyDiagnostics.LinkTargetNotRegistered,
             OntologyDiagnostics.ActionNotBound,
+            OntologyDiagnostics.InterfaceMappingBadProperty,
             OntologyDiagnostics.DuplicateObjectType,
             OntologyDiagnostics.CrossDomainLinkUnverifiable,
+            OntologyDiagnostics.EdgeTypeMissingProperty,
             OntologyDiagnostics.EmitsEventUndeclared,
             OntologyDiagnostics.ModifiesUndeclaredProperty,
             OntologyDiagnostics.CreatesLinkedUndeclared,
             OntologyDiagnostics.RequiresLinkUndeclared,
+            OntologyDiagnostics.PostconditionOverlapsEvent,
             OntologyDiagnostics.LifecyclePropertyUndeclared,
             OntologyDiagnostics.LifecycleInitialStateCount,
             OntologyDiagnostics.LifecycleNoTerminalState,
             OntologyDiagnostics.LifecycleTransitionBadState,
             OntologyDiagnostics.LifecycleTransitionBadAction,
+            OntologyDiagnostics.LifecycleTransitionBadEvent,
+            OntologyDiagnostics.LifecycleUnreachableState,
+            OntologyDiagnostics.LifecycleDeadEndState,
             OntologyDiagnostics.DerivedFromUndeclaredProperty,
             OntologyDiagnostics.DerivedFromNonComputed,
+            OntologyDiagnostics.DerivationCycle,
+            OntologyDiagnostics.DerivedFromExternalUnresolvable,
             OntologyDiagnostics.ComputedNoDerivedFrom,
             OntologyDiagnostics.InterfaceActionUnmapped,
-            OntologyDiagnostics.ActionViaBadReference);
+            OntologyDiagnostics.ActionViaBadReference,
+            OntologyDiagnostics.InterfaceActionIncompatible,
+            OntologyDiagnostics.InterfaceActionNoImplementors,
+            OntologyDiagnostics.CrossDomainLinkNoExtensionPoint,
+            OntologyDiagnostics.ExtensionPointInterfaceUnsatisfied,
+            OntologyDiagnostics.ExtensionPointEdgeMissing,
+            OntologyDiagnostics.ExtensionPointNoLinks,
+            OntologyDiagnostics.ExtensionPointMaxLinksExceeded);
 
     public override void Initialize(AnalysisContext context)
     {
@@ -189,6 +205,11 @@ public sealed class OntologyDefinitionAnalyzer : DiagnosticAnalyzer
                     {
                         info.DeclaredProperties.Add(propName);
                     }
+                    else if (invocation.ArgumentList.Arguments.Count > 0)
+                    {
+                        // Property expression is not a simple member access
+                        info.InvalidPropertyExpressions.Add(invocation.GetLocation());
+                    }
 
                     break;
 
@@ -203,6 +224,31 @@ public sealed class OntologyDefinitionAnalyzer : DiagnosticAnalyzer
                     {
                         var linkTargetType = calledMethod.TypeArguments[0].Name;
                         info.LinkTargets.Add((linkName ?? "", linkTargetType, invocation.GetLocation()));
+                    }
+
+                    // Track ManyToMany edge configs for AONT008
+                    if (methodName == "ManyToMany" && invocation.ArgumentList.Arguments.Count >= 2)
+                    {
+                        var edgeArg = invocation.ArgumentList.Arguments[1].Expression;
+                        var hasEdgeProperty = false;
+                        if (edgeArg is LambdaExpressionSyntax edgeLambda)
+                        {
+                            var edgeInvocations = edgeLambda.DescendantNodes().OfType<InvocationExpressionSyntax>();
+                            foreach (var edgeInv in edgeInvocations)
+                            {
+                                var edgeSymbolInfo = model.GetSymbolInfo(edgeInv);
+                                if (edgeSymbolInfo.Symbol is IMethodSymbol edgeMethod && edgeMethod.Name == "Property")
+                                {
+                                    hasEdgeProperty = true;
+                                    break;
+                                }
+                            }
+                        }
+
+                        if (!hasEdgeProperty)
+                        {
+                            info.EdgesWithoutProperties.Add((linkName ?? "", invocation.GetLocation()));
+                        }
                     }
 
                     break;
@@ -462,6 +508,17 @@ public sealed class OntologyDefinitionAnalyzer : DiagnosticAnalyzer
                 continue;
             }
 
+            if (calledMethod.Name == "Via" &&
+                invocation.ArgumentList.Arguments.Count >= 2)
+            {
+                // Via(p => p.SourceProp, i => i.TargetProp)
+                var sourceProp = ExtractPropertyNameFromLambdaArg(invocation.ArgumentList.Arguments[0].Expression);
+                if (sourceProp != null)
+                {
+                    info.InterfaceViaMappings.Add((interfaceTypeName, sourceProp, invocation.GetLocation()));
+                }
+            }
+
             if (calledMethod.Name == "ActionVia" &&
                 invocation.ArgumentList.Arguments.Count >= 2)
             {
@@ -504,6 +561,30 @@ public sealed class OntologyDefinitionAnalyzer : DiagnosticAnalyzer
             {
                 context.ReportDiagnostic(Diagnostic.Create(
                     OntologyDiagnostics.MissingKey, ot.Location, ot.Name));
+            }
+
+            // AONT002: Invalid property expression
+            foreach (var location in ot.InvalidPropertyExpressions)
+            {
+                context.ReportDiagnostic(Diagnostic.Create(
+                    OntologyDiagnostics.InvalidPropertyExpression, location, ot.Name));
+            }
+
+            // AONT005: Interface mapping references non-existent property
+            foreach (var (interfaceType, propName, location) in ot.InterfaceViaMappings)
+            {
+                if (!ot.DeclaredProperties.Contains(propName))
+                {
+                    context.ReportDiagnostic(Diagnostic.Create(
+                        OntologyDiagnostics.InterfaceMappingBadProperty, location, ot.Name, propName));
+                }
+            }
+
+            // AONT008: Edge type missing properties
+            foreach (var (linkName, location) in ot.EdgesWithoutProperties)
+            {
+                context.ReportDiagnostic(Diagnostic.Create(
+                    OntologyDiagnostics.EdgeTypeMissingProperty, location, linkName, ot.Name));
             }
 
             // AONT003: Link target not registered
@@ -860,8 +941,13 @@ public sealed class OntologyDefinitionAnalyzer : DiagnosticAnalyzer
         public HashSet<string> PropertiesWithDerivedFrom { get; } = new HashSet<string>();
         public HashSet<string> ImplementedInterfaces { get; } = new HashSet<string>();
 
+        public List<Location> InvalidPropertyExpressions { get; } = new List<Location>();
+
         public List<(string LinkName, string TargetType, Location Location)> LinkTargets { get; } =
             new List<(string, string, Location)>();
+
+        public List<(string LinkName, Location Location)> EdgesWithoutProperties { get; } =
+            new List<(string, Location)>();
 
         public Dictionary<string, Location> ActionLocations { get; } = new Dictionary<string, Location>();
 
@@ -896,6 +982,10 @@ public sealed class OntologyDefinitionAnalyzer : DiagnosticAnalyzer
         // Interface action mappings
         public List<(string InterfaceType, string InterfaceAction, string ConcreteAction, Location Location)> InterfaceActionMappings { get; } =
             new List<(string, string, string, Location)>();
+
+        // Interface Via() property mappings
+        public List<(string InterfaceType, string PropertyName, Location Location)> InterfaceViaMappings { get; } =
+            new List<(string, string, Location)>();
     }
 
     private sealed class CrossDomainLinkInfo
