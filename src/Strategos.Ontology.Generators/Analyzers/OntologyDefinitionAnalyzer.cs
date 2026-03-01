@@ -153,7 +153,11 @@ public sealed class OntologyDefinitionAnalyzer : DiagnosticAnalyzer
                 var linkName = ExtractStringArg(invocation, 0);
                 if (linkName != null)
                 {
-                    info.CrossDomainLinks.Add(new CrossDomainLinkInfo(linkName, invocation.GetLocation()));
+                    var cdLink = new CrossDomainLinkInfo(linkName, invocation.GetLocation());
+                    info.CrossDomainLinks.Add(cdLink);
+
+                    // Walk forward through the fluent chain to collect From<T>, WithEdge, etc.
+                    CollectCrossDomainLinkChain(invocation, model, cdLink);
                 }
             }
 
@@ -403,6 +407,26 @@ public sealed class OntologyDefinitionAnalyzer : DiagnosticAnalyzer
 
                     break;
 
+                case "AcceptsExternalLinks":
+                    var epName = ExtractStringArg(invocation, 0);
+                    if (epName != null)
+                    {
+                        var epInfo = new ExtensionPointInfo(epName, invocation.GetLocation());
+                        info.ExtensionPoints.Add(epInfo);
+
+                        // Parse the configure lambda
+                        if (invocation.ArgumentList.Arguments.Count > 1)
+                        {
+                            var epLambda = invocation.ArgumentList.Arguments[1].Expression;
+                            if (epLambda is LambdaExpressionSyntax epLambdaSyntax)
+                            {
+                                CollectExtensionPointInfo(epLambdaSyntax, model, epInfo);
+                            }
+                        }
+                    }
+
+                    break;
+
                 case "Implements":
                     if (calledMethod.TypeArguments.Length > 0)
                     {
@@ -418,6 +442,108 @@ public sealed class OntologyDefinitionAnalyzer : DiagnosticAnalyzer
                                 CollectImplementsMappingInfo(implLambdaSyntax, model, info, interfaceTypeName);
                             }
                         }
+                    }
+
+                    break;
+            }
+        }
+    }
+
+    private static void CollectCrossDomainLinkChain(
+        InvocationExpressionSyntax crossDomainLinkInvocation, SemanticModel model, CrossDomainLinkInfo linkInfo)
+    {
+        // Walk up the syntax tree to find the statement containing this fluent chain
+        // Then look at all invocations that are part of the chain
+        var statement = crossDomainLinkInvocation.FirstAncestorOrSelf<StatementSyntax>();
+        if (statement == null)
+        {
+            return;
+        }
+
+        var allInvocations = statement.DescendantNodes().OfType<InvocationExpressionSyntax>();
+        foreach (var inv in allInvocations)
+        {
+            var symInfo = model.GetSymbolInfo(inv);
+            if (symInfo.Symbol is not IMethodSymbol method)
+            {
+                continue;
+            }
+
+            var containingType = method.ContainingType?.Name ?? "";
+            if (!containingType.Contains("CrossDomainLink"))
+            {
+                continue;
+            }
+
+            switch (method.Name)
+            {
+                case "From" when method.TypeArguments.Length > 0:
+                    linkInfo.SourceType = method.TypeArguments[0].Name;
+                    break;
+
+                case "WithEdge":
+                    if (inv.ArgumentList.Arguments.Count > 0 &&
+                        inv.ArgumentList.Arguments[0].Expression is LambdaExpressionSyntax edgeLambda)
+                    {
+                        var edgeInvocations = edgeLambda.DescendantNodes().OfType<InvocationExpressionSyntax>();
+                        foreach (var edgeInv in edgeInvocations)
+                        {
+                            var edgeSym = model.GetSymbolInfo(edgeInv);
+                            if (edgeSym.Symbol is IMethodSymbol edgeMethod && edgeMethod.Name == "Property")
+                            {
+                                var epName = ExtractStringArg(edgeInv, 0);
+                                if (epName != null)
+                                {
+                                    linkInfo.EdgeProperties.Add(epName);
+                                }
+                            }
+                        }
+                    }
+
+                    break;
+            }
+        }
+    }
+
+    private static void CollectExtensionPointInfo(
+        LambdaExpressionSyntax lambda, SemanticModel model, ExtensionPointInfo info)
+    {
+        var invocations = lambda.DescendantNodes().OfType<InvocationExpressionSyntax>();
+
+        foreach (var invocation in invocations)
+        {
+            var symbolInfo = model.GetSymbolInfo(invocation);
+            if (symbolInfo.Symbol is not IMethodSymbol calledMethod)
+            {
+                continue;
+            }
+
+            switch (calledMethod.Name)
+            {
+                case "FromInterface":
+                    if (calledMethod.TypeArguments.Length > 0)
+                    {
+                        info.RequiredInterface = calledMethod.TypeArguments[0].Name;
+                    }
+
+                    break;
+
+                case "RequiresEdgeProperty":
+                    var edgePropName = ExtractStringArg(invocation, 0);
+                    if (edgePropName != null)
+                    {
+                        info.RequiredEdgeProperties.Add(edgePropName);
+                    }
+
+                    break;
+
+                case "MaxLinks":
+                    if (invocation.ArgumentList.Arguments.Count > 0 &&
+                        invocation.ArgumentList.Arguments[0].Expression is LiteralExpressionSyntax maxLiteral &&
+                        maxLiteral.IsKind(SyntaxKind.NumericLiteralExpression) &&
+                        maxLiteral.Token.Value is int maxVal)
+                    {
+                        info.MaxLinks = maxVal;
                     }
 
                     break;
@@ -977,6 +1103,92 @@ public sealed class OntologyDefinitionAnalyzer : DiagnosticAnalyzer
                 OntologyDiagnostics.CrossDomainLinkUnverifiable, link.Location,
                 link.Name, "external", "external domain"));
         }
+
+        // Build lookup: which object types have extension points
+        var typesWithExtensionPoints = new HashSet<string>();
+        foreach (var kvpOt in info.ObjectTypes)
+        {
+            if (kvpOt.Value.ExtensionPoints.Count > 0)
+            {
+                typesWithExtensionPoints.Add(kvpOt.Key);
+            }
+        }
+
+        // AONT031: Cross-domain link targets type with no extension point
+        foreach (var link in info.CrossDomainLinks)
+        {
+            if (link.SourceType != null && !typesWithExtensionPoints.Contains(link.SourceType))
+            {
+                context.ReportDiagnostic(Diagnostic.Create(
+                    OntologyDiagnostics.CrossDomainLinkNoExtensionPoint, link.Location,
+                    link.Name, link.SourceType ?? "unknown"));
+            }
+        }
+
+        // AONT032/033/034/035: Extension point validations
+        foreach (var kvpOt in info.ObjectTypes)
+        {
+            var ot3 = kvpOt.Value;
+            foreach (var ep in ot3.ExtensionPoints)
+            {
+                // AONT032: Extension point interface constraint unsatisfied
+                if (ep.RequiredInterface != null && !ot3.ImplementedInterfaces.Contains(ep.RequiredInterface))
+                {
+                    context.ReportDiagnostic(Diagnostic.Create(
+                        OntologyDiagnostics.ExtensionPointInterfaceUnsatisfied, ep.Location,
+                        ep.Name, ot3.Name, ep.RequiredInterface));
+                }
+
+                // Count matching cross-domain links (links whose SourceType matches this object type)
+                var matchingLinks = info.CrossDomainLinks
+                    .Where(l => l.SourceType == ot3.Name)
+                    .ToList();
+
+                // AONT033: Extension point requires edge property missing from link
+                if (ep.RequiredEdgeProperties.Count > 0)
+                {
+                    foreach (var link in matchingLinks)
+                    {
+                        foreach (var reqProp in ep.RequiredEdgeProperties)
+                        {
+                            if (!link.EdgeProperties.Contains(reqProp))
+                            {
+                                context.ReportDiagnostic(Diagnostic.Create(
+                                    OntologyDiagnostics.ExtensionPointEdgeMissing, ep.Location,
+                                    ep.Name, ot3.Name, reqProp));
+                            }
+                        }
+                    }
+
+                    // Also report if there are required edge properties but no links to validate
+                    if (matchingLinks.Count == 0)
+                    {
+                        foreach (var reqProp in ep.RequiredEdgeProperties)
+                        {
+                            context.ReportDiagnostic(Diagnostic.Create(
+                                OntologyDiagnostics.ExtensionPointEdgeMissing, ep.Location,
+                                ep.Name, ot3.Name, reqProp));
+                        }
+                    }
+                }
+
+                // AONT034: Extension point declared but no links match
+                if (matchingLinks.Count == 0)
+                {
+                    context.ReportDiagnostic(Diagnostic.Create(
+                        OntologyDiagnostics.ExtensionPointNoLinks, ep.Location,
+                        ep.Name, ot3.Name));
+                }
+
+                // AONT035: Max links exceeded
+                if (ep.MaxLinks.HasValue && matchingLinks.Count > ep.MaxLinks.Value)
+                {
+                    context.ReportDiagnostic(Diagnostic.Create(
+                        OntologyDiagnostics.ExtensionPointMaxLinksExceeded, ep.Location,
+                        ep.Name, ot3.Name, ep.MaxLinks.Value.ToString(), matchingLinks.Count.ToString()));
+                }
+            }
+        }
     }
 
     private static void DetectDerivationCycles(SyntaxNodeAnalysisContext context, ObjectTypeInfo ot)
@@ -1337,6 +1549,9 @@ public sealed class OntologyDefinitionAnalyzer : DiagnosticAnalyzer
         // Interface Via() property mappings
         public List<(string InterfaceType, string PropertyName, Location Location)> InterfaceViaMappings { get; } =
             new List<(string, string, Location)>();
+
+        // Extension points
+        public List<ExtensionPointInfo> ExtensionPoints { get; } = new List<ExtensionPointInfo>();
     }
 
     private sealed class CrossDomainLinkInfo
@@ -1349,6 +1564,23 @@ public sealed class OntologyDefinitionAnalyzer : DiagnosticAnalyzer
 
         public string Name { get; }
         public Location Location { get; }
+        public string? SourceType { get; set; }
+        public HashSet<string> EdgeProperties { get; } = new HashSet<string>();
+    }
+
+    private sealed class ExtensionPointInfo
+    {
+        public ExtensionPointInfo(string name, Location location)
+        {
+            Name = name;
+            Location = location;
+        }
+
+        public string Name { get; }
+        public Location Location { get; }
+        public string? RequiredInterface { get; set; }
+        public HashSet<string> RequiredEdgeProperties { get; } = new HashSet<string>();
+        public int? MaxLinks { get; set; }
     }
 
     private sealed class InterfaceInfo
