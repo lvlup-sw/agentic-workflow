@@ -118,7 +118,9 @@ public sealed class OntologyGraphBuilder
         List<ObjectTypeDescriptor> allObjectTypes,
         List<InterfaceDescriptor> allInterfaces)
     {
-        var interfaceLookup = allInterfaces.ToDictionary(i => i.Name);
+        var interfaceLookup = allInterfaces
+            .GroupBy(i => i.Name)
+            .ToDictionary(g => g.Key, g => g.First());
 
         foreach (var objectType in allObjectTypes)
         {
