@@ -31,6 +31,7 @@ namespace Strategos.Ontology.Generators
             context.EnableConcurrentExecution();
 
             DomainOntologyAnalyzer.Register(context);
+            PropertyAnalyzer.Register(context);
         }
     }
 }
