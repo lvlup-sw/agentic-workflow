@@ -36,7 +36,7 @@ namespace Strategos.Ontology.Generators.Analyzers
 
             // Check the containing type derives from DomainOntology
             var containingType = context.SemanticModel.GetDeclaredSymbol(methodDeclaration)?.ContainingType;
-            if (containingType == null || !IsDomainOntologySubclass(containingType))
+            if (containingType == null || !AnalyzerHelper.IsDomainOntologySubclass(containingType))
             {
                 return;
             }
@@ -87,23 +87,6 @@ namespace Strategos.Ontology.Generators.Analyzers
                     context.ReportDiagnostic(diagnostic);
                 }
             }
-        }
-
-        private static bool IsDomainOntologySubclass(INamedTypeSymbol typeSymbol)
-        {
-            var baseType = typeSymbol.BaseType;
-            while (baseType != null)
-            {
-                if (baseType.Name == "DomainOntology" &&
-                    baseType.ContainingNamespace?.ToDisplayString() == "Strategos.Ontology")
-                {
-                    return true;
-                }
-
-                baseType = baseType.BaseType;
-            }
-
-            return false;
         }
 
         private static bool IsObjectBuilderCall(

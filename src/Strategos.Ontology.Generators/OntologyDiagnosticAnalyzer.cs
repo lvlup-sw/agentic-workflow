@@ -32,6 +32,7 @@ namespace Strategos.Ontology.Generators
 
             DomainOntologyAnalyzer.Register(context);
             PropertyAnalyzer.Register(context);
+            InterfaceAnalyzer.Register(context);
         }
     }
 }

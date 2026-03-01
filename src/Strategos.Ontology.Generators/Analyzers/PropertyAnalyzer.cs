@@ -33,7 +33,7 @@ namespace Strategos.Ontology.Generators.Analyzers
             }
 
             // Check that this is within a DomainOntology Define method
-            if (!IsWithinDefineMethod(invocation, context.SemanticModel))
+            if (!AnalyzerHelper.IsWithinDefineMethod(invocation, context.SemanticModel))
             {
                 return;
             }
@@ -129,45 +129,6 @@ namespace Strategos.Ontology.Generators.Analyzers
             }
 
             return "unknown";
-        }
-
-        private static bool IsWithinDefineMethod(SyntaxNode node, SemanticModel semanticModel)
-        {
-            var current = node.Parent;
-            while (current != null)
-            {
-                if (current is MethodDeclarationSyntax methodDecl &&
-                    methodDecl.Identifier.Text == "Define" &&
-                    methodDecl.Modifiers.Any(SyntaxKind.OverrideKeyword))
-                {
-                    var containingType = semanticModel.GetDeclaredSymbol(methodDecl)?.ContainingType;
-                    if (containingType != null && IsDomainOntologySubclass(containingType))
-                    {
-                        return true;
-                    }
-                }
-
-                current = current.Parent;
-            }
-
-            return false;
-        }
-
-        private static bool IsDomainOntologySubclass(INamedTypeSymbol typeSymbol)
-        {
-            var baseType = typeSymbol.BaseType;
-            while (baseType != null)
-            {
-                if (baseType.Name == "DomainOntology" &&
-                    baseType.ContainingNamespace?.ToDisplayString() == "Strategos.Ontology")
-                {
-                    return true;
-                }
-
-                baseType = baseType.BaseType;
-            }
-
-            return false;
         }
     }
 }
