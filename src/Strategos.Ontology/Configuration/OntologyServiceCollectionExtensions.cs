@@ -1,0 +1,42 @@
+using Microsoft.Extensions.DependencyInjection;
+
+namespace Strategos.Ontology.Configuration;
+
+/// <summary>
+/// Extension methods for registering ontology services in a DI container.
+/// </summary>
+public static class OntologyServiceCollectionExtensions
+{
+    /// <summary>
+    /// Registers ontology domains, builds the immutable OntologyGraph, and registers
+    /// provider/dispatcher implementations in the service collection.
+    /// </summary>
+    public static IServiceCollection AddOntology(
+        this IServiceCollection services,
+        Action<OntologyOptions> configure)
+    {
+        ArgumentNullException.ThrowIfNull(configure);
+
+        var options = new OntologyOptions();
+        configure(options);
+
+        var graphBuilder = new OntologyGraphBuilder();
+
+        foreach (var domain in options.Domains)
+        {
+            graphBuilder.AddDomain(domain);
+        }
+
+        graphBuilder.AddWorkflowMetadata(options.WorkflowMetadata);
+
+        var graph = graphBuilder.Build();
+        services.AddSingleton(graph);
+
+        foreach (var registration in options.ServiceRegistrations)
+        {
+            registration(services);
+        }
+
+        return services;
+    }
+}

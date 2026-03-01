@@ -1,16 +1,30 @@
 using Strategos.Ontology.Builder;
 using Strategos.Ontology.Descriptors;
+using Strategos.Ontology.Extensions;
 
 namespace Strategos.Ontology;
 
 public sealed class OntologyGraphBuilder
 {
     private readonly List<DomainOntology> _domainOntologies = [];
+    private readonly List<WorkflowMetadataBuilder> _workflowMetadata = [];
 
     public OntologyGraphBuilder AddDomain<T>()
         where T : DomainOntology, new()
     {
         _domainOntologies.Add(new T());
+        return this;
+    }
+
+    internal OntologyGraphBuilder AddDomain(DomainOntology domain)
+    {
+        _domainOntologies.Add(domain);
+        return this;
+    }
+
+    internal OntologyGraphBuilder AddWorkflowMetadata(IEnumerable<WorkflowMetadataBuilder> metadata)
+    {
+        _workflowMetadata.AddRange(metadata);
         return this;
     }
 
@@ -51,7 +65,7 @@ public sealed class OntologyGraphBuilder
 
         ValidateInterfaceImplementations(allObjectTypes, allInterfaces);
 
-        var workflowChains = BuildWorkflowChains(allObjectTypes);
+        var workflowChains = BuildWorkflowChains(allObjectTypes, _workflowMetadata);
 
         return new OntologyGraph(
             domains: domains.ToArray(),
@@ -136,10 +150,33 @@ public sealed class OntologyGraphBuilder
         }
     }
 
-    private static List<WorkflowChain> BuildWorkflowChains(List<ObjectTypeDescriptor> allObjectTypes)
+    private static List<WorkflowChain> BuildWorkflowChains(
+        List<ObjectTypeDescriptor> allObjectTypes,
+        List<WorkflowMetadataBuilder> workflowMetadata)
     {
-        // Workflow chain validation infrastructure - will be populated in Phase 3
-        // when Produces<T>/Consumes<T> extension methods are available.
-        return [];
+        var chains = new List<WorkflowChain>();
+        var objectTypeByName = allObjectTypes.ToDictionary(ot => ot.Name);
+
+        foreach (var metadata in workflowMetadata)
+        {
+            if (metadata.ConsumedTypeName is null || metadata.ProducedTypeName is null)
+            {
+                continue;
+            }
+
+            if (!objectTypeByName.TryGetValue(metadata.ConsumedTypeName, out var consumedType))
+            {
+                continue;
+            }
+
+            if (!objectTypeByName.TryGetValue(metadata.ProducedTypeName, out var producedType))
+            {
+                continue;
+            }
+
+            chains.Add(new WorkflowChain(metadata.WorkflowName, consumedType, producedType));
+        }
+
+        return chains;
     }
 }
