@@ -8,7 +8,7 @@
 > as the target. The current implementation follows a hybrid approach: runtime-first
 > architecture with the full schema refinement vocabulary. Migration to compile-time
 > source generation is planned as a separate effort.
-
+>
 > **Scope:** Library design for `Strategos.Ontology` NuGet packages (lives in strategos repo).
 > Basileus is the first consumer; this repo receives ADR updates only.
 >

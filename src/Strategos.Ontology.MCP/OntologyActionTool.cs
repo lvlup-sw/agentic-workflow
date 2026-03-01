@@ -36,6 +36,9 @@ public sealed class OntologyActionTool
         string? filter = null,
         CancellationToken ct = default)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(objectType);
+        ArgumentException.ThrowIfNullOrWhiteSpace(action);
+
         var resolvedDomain = domain ?? ResolveDomain(objectType);
 
         var objectTypeDescriptor = resolvedDomain is not null
@@ -89,7 +92,8 @@ public sealed class OntologyActionTool
         string? filter,
         CancellationToken ct)
     {
-        ObjectSetExpression expression = new RootExpression(typeof(object));
+        var clrType = _graph.GetObjectType(domain, objectType)?.ClrType ?? typeof(object);
+        ObjectSetExpression expression = new RootExpression(clrType);
 
         if (filter is not null)
         {
@@ -103,8 +107,15 @@ public sealed class OntologyActionTool
         {
             var itemId = item?.ToString() ?? string.Empty;
             var context = new ActionContext(domain, objectType, itemId, action);
-            var actionResult = await _actionDispatcher.DispatchAsync(context, request, ct).ConfigureAwait(false);
-            results.Add(actionResult);
+            try
+            {
+                var actionResult = await _actionDispatcher.DispatchAsync(context, request, ct).ConfigureAwait(false);
+                results.Add(actionResult);
+            }
+            catch (Exception ex)
+            {
+                results.Add(new ActionResult(false, Error: $"Dispatch failed for '{itemId}': {ex.Message}"));
+            }
         }
 
         return new ActionToolResult(results);

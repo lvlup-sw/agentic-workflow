@@ -1,3 +1,4 @@
+using NSubstitute;
 using Strategos.Ontology.Builder;
 
 namespace Strategos.Ontology.Tests.Builder;

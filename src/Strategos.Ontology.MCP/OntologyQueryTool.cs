@@ -81,6 +81,11 @@ public sealed class OntologyQueryTool
     {
         ObjectSetExpression expression = new RootExpression(typeof(object));
 
+        if (filter is not null)
+        {
+            expression = new RawFilterExpression(expression, filter);
+        }
+
         if (traverseLink is not null)
         {
             expression = new TraverseLinkExpression(expression, traverseLink, typeof(object));

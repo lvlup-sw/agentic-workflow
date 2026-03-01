@@ -10,6 +10,7 @@ internal sealed class ObjectTypeBuilder<T>(string domainName) : IObjectTypeBuild
     private readonly List<PropertyBuilder<T>> _propertyBuilders = [];
     private readonly List<LinkDescriptor> _links = [];
     private readonly List<ActionBuilder<T>> _actionBuilders = [];
+    private readonly List<ActionDescriptor> _defaultActionDescriptors = [];
     private readonly List<EventDescriptor> _events = [];
     private readonly List<InterfaceDescriptor> _interfaces = [];
     private readonly List<InterfaceActionMapping> _interfaceActionMappings = [];
@@ -79,17 +80,8 @@ internal sealed class ObjectTypeBuilder<T>(string domainName) : IObjectTypeBuild
         _interfaces.Add(new InterfaceDescriptor(typeof(TInterface).Name, typeof(TInterface)));
         _interfaceActionMappings.AddRange(mapping.GetActionMappings());
 
-        // Register any default actions as regular actions on this type
-        foreach (var defaultAction in mapping.GetDefaultActions())
-        {
-            var builder = new ActionBuilder<T>(defaultAction.Name);
-            if (!string.IsNullOrEmpty(defaultAction.Description))
-            {
-                builder.Description(defaultAction.Description);
-            }
-
-            _actionBuilders.Add(builder);
-        }
+        // Register default actions directly to preserve full metadata
+        _defaultActionDescriptors.AddRange(mapping.GetDefaultActions());
     }
 
     public void Lifecycle<TEnum>(
@@ -111,17 +103,22 @@ internal sealed class ObjectTypeBuilder<T>(string domainName) : IObjectTypeBuild
         _extensionPointBuilders.Add(builder);
     }
 
-    public ObjectTypeDescriptor Build() =>
-        new(typeof(T).Name, typeof(T), domainName)
+    public ObjectTypeDescriptor Build()
+    {
+        var actions = _actionBuilders.ConvertAll(b => b.Build());
+        actions.AddRange(_defaultActionDescriptors);
+
+        return new(typeof(T).Name, typeof(T), domainName)
         {
             KeyProperty = _keyProperty,
             Properties = _propertyBuilders.ConvertAll(b => b.Build()).AsReadOnly(),
             Links = _links.AsReadOnly(),
-            Actions = _actionBuilders.ConvertAll(b => b.Build()).AsReadOnly(),
+            Actions = actions.AsReadOnly(),
             Events = _events.AsReadOnly(),
             ImplementedInterfaces = _interfaces.AsReadOnly(),
             Lifecycle = _lifecycle,
             InterfaceActionMappings = _interfaceActionMappings.AsReadOnly(),
             ExternalLinkExtensionPoints = _extensionPointBuilders.ConvertAll(b => b.Build()).AsReadOnly(),
         };
+    }
 }

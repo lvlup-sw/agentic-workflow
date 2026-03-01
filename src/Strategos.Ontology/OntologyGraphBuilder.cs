@@ -108,10 +108,16 @@ public sealed class OntologyGraphBuilder
             var sourceObjectType = allObjectTypes.FirstOrDefault(
                 ot => ot.DomainName == sourceDomain && ot.ClrType == descriptor.SourceType);
 
+            if (sourceObjectType is null)
+            {
+                throw new OntologyCompositionException(
+                    $"Cross-domain link '{descriptor.Name}' references unresolvable source type '{descriptor.SourceType.Name}' in domain '{sourceDomain}'.");
+            }
+
             resolved.Add(new ResolvedCrossDomainLink(
                 Name: descriptor.Name,
                 SourceDomain: sourceDomain,
-                SourceObjectType: sourceObjectType!,
+                SourceObjectType: sourceObjectType,
                 TargetDomain: descriptor.TargetDomain,
                 TargetObjectType: targetObjectType,
                 Cardinality: descriptor.Cardinality,
@@ -209,6 +215,11 @@ public sealed class OntologyGraphBuilder
         List<ObjectTypeDescriptor> allObjectTypes,
         List<InterfaceDescriptor> allInterfaces)
     {
+        // Use Name-based lookup: property validation requires exact name matches,
+        // which only works when the interface name matches typeof(TInterface).Name.
+        // When users provide custom names (e.g., "Searchable" for IQuerySearchable),
+        // Via() mappings handle the property name translation, so we intentionally
+        // skip strict property validation for those cases.
         var interfaceLookup = allInterfaces
             .GroupBy(i => i.Name)
             .ToDictionary(g => g.Key, g => g.First());

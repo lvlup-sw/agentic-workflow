@@ -271,11 +271,11 @@ internal sealed class OntologyQueryService(OntologyGraph graph) : IOntologyQuery
     }
 
     private static readonly Regex SimplePropertyPattern = new(
-        @"\((\w+)\.(\w+)\s*(==|!=|>|<|>=|<=)\s*(.+?)\)",
+        @"\((\w+)\.(\w+)\s*(>=|<=|==|!=|>|<)\s*(.+?)\)",
         RegexOptions.Compiled);
 
     private static readonly Regex ConvertPropertyPattern = new(
-        @"\(Convert\((\w+)\.(\w+),\s*\w+\)\s*(==|!=|>|<|>=|<=)\s*(.+?)\)",
+        @"\(Convert\((\w+)\.(\w+),\s*\w+\)\s*(>=|<=|==|!=|>|<)\s*(.+?)\)",
         RegexOptions.Compiled);
 
     private static bool? TryEvaluateSimpleComparison(

@@ -305,6 +305,15 @@ public sealed class OntologyDefinitionAnalyzer : DiagnosticAnalyzer
 
                     break;
 
+                case "BoundToTool":
+                    var boundToolActionName = FindActionNameInChain(invocation, model);
+                    if (boundToolActionName != null)
+                    {
+                        info.BoundActions.Add(boundToolActionName);
+                    }
+
+                    break;
+
                 case "Modifies":
                     var modifiesActionName = FindActionNameInChain(invocation, model);
                     var modifiesProp = ExtractPropertyNameFromExpression(invocation);
@@ -1312,19 +1321,26 @@ public sealed class OntologyDefinitionAnalyzer : DiagnosticAnalyzer
 
     private static string? ExtractPropertyNameFromLambdaArg(ExpressionSyntax expression)
     {
-        if (expression is not SimpleLambdaExpressionSyntax lambda)
+        ExpressionSyntax? body = expression switch
+        {
+            SimpleLambdaExpressionSyntax simple => simple.Body as ExpressionSyntax,
+            ParenthesizedLambdaExpressionSyntax parens => parens.Body as ExpressionSyntax,
+            _ => null,
+        };
+
+        if (body is null)
         {
             return null;
         }
 
-        // p => p.PropertyName
-        if (lambda.Body is MemberAccessExpressionSyntax memberAccess)
+        // p => p.PropertyName or (p) => p.PropertyName
+        if (body is MemberAccessExpressionSyntax memberAccess)
         {
             return memberAccess.Name.Identifier.Text;
         }
 
-        // p => (object)p.PropertyName (boxing)
-        if (lambda.Body is CastExpressionSyntax castBody &&
+        // p => (object)p.PropertyName or (p) => (object)p.PropertyName (boxing)
+        if (body is CastExpressionSyntax castBody &&
             castBody.Expression is MemberAccessExpressionSyntax castMember)
         {
             return castMember.Name.Identifier.Text;
