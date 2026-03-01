@@ -282,6 +282,15 @@ public sealed class OntologyDefinitionAnalyzer : DiagnosticAnalyzer
 
                     break;
 
+                case "Accepts" when calledMethod.TypeArguments.Length > 0:
+                    var acceptsActionName = FindActionNameInChain(invocation, model);
+                    if (acceptsActionName != null)
+                    {
+                        info.ActionAcceptsTypes[acceptsActionName] = calledMethod.TypeArguments[0].Name;
+                    }
+
+                    break;
+
                 case "BoundToWorkflow":
                     // Walk up the fluent chain to find which action this is on
                     var boundActionName = FindActionNameInChain(invocation, model);
@@ -563,6 +572,16 @@ public sealed class OntologyDefinitionAnalyzer : DiagnosticAnalyzer
                 if (actionName != null)
                 {
                     info.DeclaredActions.Add(actionName);
+                }
+            }
+
+            if (calledMethod.Name == "Accepts" && calledMethod.TypeArguments.Length > 0)
+            {
+                var acceptsType = calledMethod.TypeArguments[0].Name;
+                var ifaceActionName = FindActionNameInChainSyntactic(invocation);
+                if (ifaceActionName != null)
+                {
+                    info.ActionAcceptsTypes[ifaceActionName] = acceptsType;
                 }
             }
         }
@@ -904,6 +923,50 @@ public sealed class OntologyDefinitionAnalyzer : DiagnosticAnalyzer
                             ot.Name, ifAction, concreteAction));
                     }
                 }
+
+                // AONT029: Interface action Accepts<T> incompatible with concrete action
+                if (info.Interfaces.TryGetValue(interfaceTypeName, out var ifaceInfo29) ||
+                    TryFindInterfaceByTypeName(info.Interfaces, interfaceTypeName, out ifaceInfo29))
+                {
+                    foreach (var (ifType, ifAction, concreteAction, location) in ot.InterfaceActionMappings)
+                    {
+                        if (ifType != interfaceTypeName)
+                        {
+                            continue;
+                        }
+
+                        if (ifaceInfo29.ActionAcceptsTypes.TryGetValue(ifAction, out var ifaceAcceptsType) &&
+                            ot.ActionAcceptsTypes.TryGetValue(concreteAction, out var concreteAcceptsType) &&
+                            ifaceAcceptsType != concreteAcceptsType)
+                        {
+                            context.ReportDiagnostic(Diagnostic.Create(
+                                OntologyDiagnostics.InterfaceActionIncompatible, location,
+                                ifAction, ifaceAcceptsType, concreteAction, concreteAcceptsType));
+                        }
+                    }
+                }
+            }
+        }
+
+        // AONT030: Interface declares actions but no implementors
+        foreach (var kvp2 in info.Interfaces)
+        {
+            var ifaceInfo30 = kvp2.Value;
+            if (ifaceInfo30.DeclaredActions.Count == 0)
+            {
+                continue;
+            }
+
+            var hasImplementor = info.ObjectTypes.Values
+                .Any(ot2 => ot2.ImplementedInterfaces.Contains(ifaceInfo30.Name));
+            if (!hasImplementor)
+            {
+                foreach (var actionName in ifaceInfo30.DeclaredActions)
+                {
+                    context.ReportDiagnostic(Diagnostic.Create(
+                        OntologyDiagnostics.InterfaceActionNoImplementors, ifaceInfo30.Location,
+                        ifaceInfo30.Name, actionName));
+                }
             }
         }
 
@@ -1118,6 +1181,31 @@ public sealed class OntologyDefinitionAnalyzer : DiagnosticAnalyzer
         return null;
     }
 
+    private static string? FindActionNameInChainSyntactic(InvocationExpressionSyntax invocation)
+    {
+        // Walk the fluent chain backwards to find the Action("name") call, syntactically
+        var current = invocation.Expression;
+        while (current is MemberAccessExpressionSyntax memberAccess)
+        {
+            if (memberAccess.Expression is InvocationExpressionSyntax parentInvocation)
+            {
+                if (parentInvocation.Expression is MemberAccessExpressionSyntax parentMember &&
+                    parentMember.Name.Identifier.Text == "Action")
+                {
+                    return ExtractStringArg(parentInvocation, 0);
+                }
+
+                current = parentInvocation.Expression;
+            }
+            else
+            {
+                break;
+            }
+        }
+
+        return null;
+    }
+
     private static string? FindStateNameInChain(InvocationExpressionSyntax invocation)
     {
         // Walk the fluent chain backwards to find the State(Enum.Value) call
@@ -1201,6 +1289,8 @@ public sealed class OntologyDefinitionAnalyzer : DiagnosticAnalyzer
 
         public Dictionary<string, Location> ActionLocations { get; } = new Dictionary<string, Location>();
 
+        public Dictionary<string, string> ActionAcceptsTypes { get; } = new Dictionary<string, string>();
+
         public List<(string ActionName, string EventType, Location Location)> ActionEmitsEvents { get; } =
             new List<(string, string, Location)>();
 
@@ -1272,5 +1362,6 @@ public sealed class OntologyDefinitionAnalyzer : DiagnosticAnalyzer
         public string Name { get; }
         public Location Location { get; }
         public HashSet<string> DeclaredActions { get; } = new HashSet<string>();
+        public Dictionary<string, string> ActionAcceptsTypes { get; } = new Dictionary<string, string>();
     }
 }
