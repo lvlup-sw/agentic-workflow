@@ -72,4 +72,50 @@ public sealed class ObjectSet<T> where T : class
         var includeExpr = new IncludeExpression(Expression, inclusion);
         return new ObjectSet<T>(includeExpr, _provider, _actionDispatcher, _eventStreamProvider);
     }
+
+    /// <summary>
+    /// Materializes the object set query and returns the result.
+    /// </summary>
+    public Task<ObjectSetResult<T>> ExecuteAsync(CancellationToken ct = default)
+    {
+        return _provider.ExecuteAsync<T>(Expression, ct);
+    }
+
+    /// <summary>
+    /// Streams the results of the object set query as an async enumerable.
+    /// </summary>
+    public IAsyncEnumerable<T> StreamAsync(CancellationToken ct = default)
+    {
+        return _provider.StreamAsync<T>(Expression, ct);
+    }
+
+    /// <summary>
+    /// Applies an action to all objects in the set by first materializing the query,
+    /// then dispatching the action to each object.
+    /// </summary>
+    public async Task<IReadOnlyList<ActionResult>> ApplyAsync(string actionName, object request, CancellationToken ct = default)
+    {
+        var result = await _provider.ExecuteAsync<T>(Expression, ct).ConfigureAwait(false);
+        var results = new List<ActionResult>(result.Items.Count);
+
+        foreach (var item in result.Items)
+        {
+            var objectId = item?.ToString() ?? string.Empty;
+            var context = new ActionContext(typeof(T).Name, typeof(T).Name, objectId, actionName);
+            var actionResult = await _actionDispatcher.DispatchAsync(context, request, ct).ConfigureAwait(false);
+            results.Add(actionResult);
+        }
+
+        return results;
+    }
+
+    /// <summary>
+    /// Queries events for the object type represented by this set.
+    /// </summary>
+    public IAsyncEnumerable<OntologyEvent> EventsAsync(TimeSpan? since = null, IReadOnlyList<string>? eventTypes = null)
+    {
+        var sinceTimestamp = since.HasValue ? DateTimeOffset.UtcNow - since.Value : (DateTimeOffset?)null;
+        var query = new EventQuery(typeof(T).Name, typeof(T).Name, Since: sinceTimestamp, EventTypes: eventTypes);
+        return _eventStreamProvider.QueryEventsAsync(query);
+    }
 }
