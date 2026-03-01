@@ -45,4 +45,31 @@ public sealed class ObjectSet<T> where T : class
         var filterExpr = new FilterExpression(Expression, predicate);
         return new ObjectSet<T>(filterExpr, _provider, _actionDispatcher, _eventStreamProvider);
     }
+
+    /// <summary>
+    /// Traverses a named link to produce an ObjectSet of the linked type.
+    /// </summary>
+    public ObjectSet<TLinked> TraverseLink<TLinked>(string linkName) where TLinked : class
+    {
+        var traverseExpr = new TraverseLinkExpression(Expression, linkName, typeof(TLinked));
+        return new ObjectSet<TLinked>(traverseExpr, _provider, _actionDispatcher, _eventStreamProvider);
+    }
+
+    /// <summary>
+    /// Narrows the object set to objects implementing the given interface type.
+    /// </summary>
+    public ObjectSet<TInterface> OfInterface<TInterface>() where TInterface : class
+    {
+        var narrowExpr = new InterfaceNarrowExpression(Expression, typeof(TInterface));
+        return new ObjectSet<TInterface>(narrowExpr, _provider, _actionDispatcher, _eventStreamProvider);
+    }
+
+    /// <summary>
+    /// Specifies which data facets to include in the result. Returns a new immutable ObjectSet.
+    /// </summary>
+    public ObjectSet<T> Include(ObjectSetInclusion inclusion)
+    {
+        var includeExpr = new IncludeExpression(Expression, inclusion);
+        return new ObjectSet<T>(includeExpr, _provider, _actionDispatcher, _eventStreamProvider);
+    }
 }
