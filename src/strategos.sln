@@ -31,6 +31,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Strategos.Ontology", "Strat
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Strategos.Ontology.Tests", "Strategos.Ontology.Tests\Strategos.Ontology.Tests.csproj", "{6F0B0947-7D87-4976-9B0E-086EE1FD5A5B}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Strategos.Ontology.Generators", "Strategos.Ontology.Generators\Strategos.Ontology.Generators.csproj", "{F4FFDD66-9B30-492D-BC65-48CCE3337921}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Strategos.Ontology.Generators.Tests", "Strategos.Ontology.Generators.Tests\Strategos.Ontology.Generators.Tests.csproj", "{48A71B05-7F72-4754-9369-82131EDE2AF8}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -209,6 +213,30 @@ Global
 		{6F0B0947-7D87-4976-9B0E-086EE1FD5A5B}.Release|x64.Build.0 = Release|Any CPU
 		{6F0B0947-7D87-4976-9B0E-086EE1FD5A5B}.Release|x86.ActiveCfg = Release|Any CPU
 		{6F0B0947-7D87-4976-9B0E-086EE1FD5A5B}.Release|x86.Build.0 = Release|Any CPU
+		{F4FFDD66-9B30-492D-BC65-48CCE3337921}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F4FFDD66-9B30-492D-BC65-48CCE3337921}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F4FFDD66-9B30-492D-BC65-48CCE3337921}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{F4FFDD66-9B30-492D-BC65-48CCE3337921}.Debug|x64.Build.0 = Debug|Any CPU
+		{F4FFDD66-9B30-492D-BC65-48CCE3337921}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{F4FFDD66-9B30-492D-BC65-48CCE3337921}.Debug|x86.Build.0 = Debug|Any CPU
+		{F4FFDD66-9B30-492D-BC65-48CCE3337921}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F4FFDD66-9B30-492D-BC65-48CCE3337921}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F4FFDD66-9B30-492D-BC65-48CCE3337921}.Release|x64.ActiveCfg = Release|Any CPU
+		{F4FFDD66-9B30-492D-BC65-48CCE3337921}.Release|x64.Build.0 = Release|Any CPU
+		{F4FFDD66-9B30-492D-BC65-48CCE3337921}.Release|x86.ActiveCfg = Release|Any CPU
+		{F4FFDD66-9B30-492D-BC65-48CCE3337921}.Release|x86.Build.0 = Release|Any CPU
+		{48A71B05-7F72-4754-9369-82131EDE2AF8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{48A71B05-7F72-4754-9369-82131EDE2AF8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{48A71B05-7F72-4754-9369-82131EDE2AF8}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{48A71B05-7F72-4754-9369-82131EDE2AF8}.Debug|x64.Build.0 = Debug|Any CPU
+		{48A71B05-7F72-4754-9369-82131EDE2AF8}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{48A71B05-7F72-4754-9369-82131EDE2AF8}.Debug|x86.Build.0 = Debug|Any CPU
+		{48A71B05-7F72-4754-9369-82131EDE2AF8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{48A71B05-7F72-4754-9369-82131EDE2AF8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{48A71B05-7F72-4754-9369-82131EDE2AF8}.Release|x64.ActiveCfg = Release|Any CPU
+		{48A71B05-7F72-4754-9369-82131EDE2AF8}.Release|x64.Build.0 = Release|Any CPU
+		{48A71B05-7F72-4754-9369-82131EDE2AF8}.Release|x86.ActiveCfg = Release|Any CPU
+		{48A71B05-7F72-4754-9369-82131EDE2AF8}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
