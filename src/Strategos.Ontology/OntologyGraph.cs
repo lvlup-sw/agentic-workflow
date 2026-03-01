@@ -13,19 +13,22 @@ public sealed class OntologyGraph
     public IReadOnlyList<InterfaceDescriptor> Interfaces { get; }
     public IReadOnlyList<ResolvedCrossDomainLink> CrossDomainLinks { get; }
     public IReadOnlyList<WorkflowChain> WorkflowChains { get; }
+    public IReadOnlyList<string> Warnings { get; }
 
     internal OntologyGraph(
         IReadOnlyList<DomainDescriptor> domains,
         IReadOnlyList<ObjectTypeDescriptor> objectTypes,
         IReadOnlyList<InterfaceDescriptor> interfaces,
         IReadOnlyList<ResolvedCrossDomainLink> crossDomainLinks,
-        IReadOnlyList<WorkflowChain> workflowChains)
+        IReadOnlyList<WorkflowChain> workflowChains,
+        IReadOnlyList<string>? warnings = null)
     {
         Domains = domains;
         ObjectTypes = objectTypes;
         Interfaces = interfaces;
         CrossDomainLinks = crossDomainLinks;
         WorkflowChains = workflowChains;
+        Warnings = warnings ?? [];
 
         _objectTypeLookup = BuildObjectTypeLookup(objectTypes);
         _implementorsLookup = BuildImplementorsLookup(objectTypes);

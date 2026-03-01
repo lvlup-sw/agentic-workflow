@@ -64,6 +64,12 @@ public sealed class OntologyGraphBuilder
             allCrossDomainLinkDescriptors, domainLookup, objectTypeLookup, allObjectTypes);
 
         ValidateInterfaceImplementations(allObjectTypes, allInterfaces);
+        ValidateInterfaceActionMappings(allObjectTypes, allInterfaces);
+        ValidateLifecycles(allObjectTypes);
+        ComputeTransitiveDerivationChains(allObjectTypes);
+
+        var warnings = new List<string>();
+        MatchExtensionPoints(allObjectTypes, resolvedLinks, warnings);
 
         var workflowChains = BuildWorkflowChains(allObjectTypes, _workflowMetadata);
 
@@ -72,7 +78,8 @@ public sealed class OntologyGraphBuilder
             objectTypes: allObjectTypes.ToArray(),
             interfaces: allInterfaces.ToArray(),
             crossDomainLinks: resolvedLinks.ToArray(),
-            workflowChains: workflowChains.ToArray());
+            workflowChains: workflowChains.ToArray(),
+            warnings: warnings.AsReadOnly());
     }
 
     private static List<ResolvedCrossDomainLink> ResolveCrossDomainLinks(
@@ -114,6 +121,90 @@ public sealed class OntologyGraphBuilder
         return resolved;
     }
 
+    private static void MatchExtensionPoints(
+        List<ObjectTypeDescriptor> allObjectTypes,
+        List<ResolvedCrossDomainLink> resolvedLinks,
+        List<string> warnings)
+    {
+        for (var i = 0; i < allObjectTypes.Count; i++)
+        {
+            var objectType = allObjectTypes[i];
+            if (objectType.ExternalLinkExtensionPoints.Count == 0)
+            {
+                continue;
+            }
+
+            // Find incoming cross-domain links targeting this object type
+            var incomingLinks = resolvedLinks
+                .Where(l => l.TargetObjectType.Name == objectType.Name
+                         && l.TargetDomain == objectType.DomainName)
+                .ToList();
+
+            var updatedExtensionPoints = new List<ExternalLinkExtensionPoint>();
+
+            foreach (var extensionPoint in objectType.ExternalLinkExtensionPoints)
+            {
+                var matchedNames = new List<string>();
+
+                foreach (var link in incomingLinks)
+                {
+                    var isMatch = true;
+
+                    // Check domain constraint
+                    if (extensionPoint.RequiredSourceDomain is not null
+                        && link.SourceDomain != extensionPoint.RequiredSourceDomain)
+                    {
+                        isMatch = false;
+                    }
+
+                    // Check interface constraint
+                    if (isMatch && extensionPoint.RequiredSourceInterface is not null)
+                    {
+                        var sourceImplementsInterface = link.SourceObjectType.ImplementedInterfaces
+                            .Any(iface => iface.Name == extensionPoint.RequiredSourceInterface
+                                       || iface.InterfaceType.Name == extensionPoint.RequiredSourceInterface);
+                        if (!sourceImplementsInterface)
+                        {
+                            isMatch = false;
+                            warnings.Add(
+                                $"Cross-domain link '{link.Name}' targets extension point '{extensionPoint.Name}' on '{objectType.Name}' but source type '{link.SourceObjectType.Name}' does not implement required interface '{extensionPoint.RequiredSourceInterface}'.");
+                        }
+                    }
+
+                    // Check edge property constraints
+                    if (isMatch)
+                    {
+                        foreach (var requiredEdgeProp in extensionPoint.RequiredEdgeProperties)
+                        {
+                            var hasEdgeProp = link.EdgeProperties
+                                .Any(ep => ep.Name == requiredEdgeProp.Name);
+                            if (!hasEdgeProp)
+                            {
+                                warnings.Add(
+                                    $"Cross-domain link '{link.Name}' matched extension point '{extensionPoint.Name}' on '{objectType.Name}' but is missing required edge property '{requiredEdgeProp.Name}'.");
+                            }
+                        }
+                    }
+
+                    if (isMatch)
+                    {
+                        matchedNames.Add(link.Name);
+                    }
+                }
+
+                updatedExtensionPoints.Add(extensionPoint with
+                {
+                    MatchedLinkNames = matchedNames.AsReadOnly(),
+                });
+            }
+
+            allObjectTypes[i] = objectType with
+            {
+                ExternalLinkExtensionPoints = updatedExtensionPoints.AsReadOnly(),
+            };
+        }
+    }
+
     private static void ValidateInterfaceImplementations(
         List<ObjectTypeDescriptor> allObjectTypes,
         List<InterfaceDescriptor> allInterfaces)
@@ -150,6 +241,164 @@ public sealed class OntologyGraphBuilder
                 }
             }
         }
+    }
+
+    private static void ValidateInterfaceActionMappings(
+        List<ObjectTypeDescriptor> allObjectTypes,
+        List<InterfaceDescriptor> allInterfaces)
+    {
+        // Build lookup by InterfaceType since ObjectTypeBuilder uses typeof(TInterface).Name
+        // while InterfaceBuilder uses the user-provided name
+        var interfaceByType = allInterfaces
+            .GroupBy(i => i.InterfaceType)
+            .ToDictionary(g => g.Key, g => g.First());
+
+        foreach (var objectType in allObjectTypes)
+        {
+            foreach (var implementedInterface in objectType.ImplementedInterfaces)
+            {
+                if (!interfaceByType.TryGetValue(implementedInterface.InterfaceType, out var interfaceDescriptor))
+                {
+                    continue;
+                }
+
+                if (interfaceDescriptor.Actions.Count == 0)
+                {
+                    continue;
+                }
+
+                var mappedActionNames = objectType.InterfaceActionMappings
+                    .Select(m => m.InterfaceActionName)
+                    .ToHashSet();
+
+                foreach (var interfaceAction in interfaceDescriptor.Actions)
+                {
+                    if (!mappedActionNames.Contains(interfaceAction.Name))
+                    {
+                        throw new OntologyCompositionException(
+                            $"Object type '{objectType.Name}' implements interface '{implementedInterface.Name}' but does not map interface action '{interfaceAction.Name}'. Use ActionVia() or ActionDefault() in the Implements<> mapping.");
+                    }
+                }
+            }
+        }
+    }
+
+    private static void ValidateLifecycles(List<ObjectTypeDescriptor> allObjectTypes)
+    {
+        foreach (var objectType in allObjectTypes)
+        {
+            if (objectType.Lifecycle is null)
+            {
+                continue;
+            }
+
+            var lifecycle = objectType.Lifecycle;
+
+            // Exactly one initial state
+            var initialStates = lifecycle.States.Count(s => s.IsInitial);
+            if (initialStates != 1)
+            {
+                throw new OntologyCompositionException(
+                    $"Object type '{objectType.Name}' lifecycle must have exactly 1 initial state, found {initialStates}.");
+            }
+
+            // At least one terminal state
+            var terminalStates = lifecycle.States.Count(s => s.IsTerminal);
+            if (terminalStates < 1)
+            {
+                throw new OntologyCompositionException(
+                    $"Object type '{objectType.Name}' lifecycle must have at least 1 terminal state, found 0.");
+            }
+
+            // Validate transition state references
+            var stateNames = lifecycle.States.Select(s => s.Name).ToHashSet();
+            foreach (var transition in lifecycle.Transitions)
+            {
+                if (!stateNames.Contains(transition.FromState))
+                {
+                    throw new OntologyCompositionException(
+                        $"Object type '{objectType.Name}' lifecycle transition references undeclared state '{transition.FromState}'.");
+                }
+
+                if (!stateNames.Contains(transition.ToState))
+                {
+                    throw new OntologyCompositionException(
+                        $"Object type '{objectType.Name}' lifecycle transition references undeclared state '{transition.ToState}'.");
+                }
+            }
+        }
+    }
+
+    private static void ComputeTransitiveDerivationChains(List<ObjectTypeDescriptor> allObjectTypes)
+    {
+        for (var i = 0; i < allObjectTypes.Count; i++)
+        {
+            var objectType = allObjectTypes[i];
+            var computedProperties = objectType.Properties
+                .Where(p => p.IsComputed && p.DerivedFrom.Count > 0)
+                .ToList();
+
+            if (computedProperties.Count == 0)
+            {
+                continue;
+            }
+
+            var propertyLookup = objectType.Properties.ToDictionary(p => p.Name);
+            var updatedProperties = new List<PropertyDescriptor>();
+
+            foreach (var prop in objectType.Properties)
+            {
+                if (!prop.IsComputed || prop.DerivedFrom.Count == 0)
+                {
+                    updatedProperties.Add(prop);
+                    continue;
+                }
+
+                var transitive = new HashSet<DerivationSource>();
+                var visited = new HashSet<string>();
+                ComputeTransitiveSources(prop.Name, propertyLookup, transitive, visited);
+
+                updatedProperties.Add(prop with
+                {
+                    TransitiveDerivedFrom = transitive.ToList().AsReadOnly(),
+                });
+            }
+
+            allObjectTypes[i] = objectType with
+            {
+                Properties = updatedProperties.AsReadOnly(),
+            };
+        }
+    }
+
+    private static void ComputeTransitiveSources(
+        string propertyName,
+        Dictionary<string, PropertyDescriptor> propertyLookup,
+        HashSet<DerivationSource> transitive,
+        HashSet<string> visited)
+    {
+        if (!visited.Add(propertyName))
+        {
+            throw new OntologyCompositionException(
+                $"Derivation cycle detected involving property '{propertyName}'.");
+        }
+
+        if (!propertyLookup.TryGetValue(propertyName, out var prop))
+        {
+            return;
+        }
+
+        foreach (var source in prop.DerivedFrom)
+        {
+            transitive.Add(source);
+
+            if (source.Kind == Descriptors.DerivationSourceKind.Local && source.PropertyName is not null)
+            {
+                ComputeTransitiveSources(source.PropertyName, propertyLookup, transitive, visited);
+            }
+        }
+
+        visited.Remove(propertyName);
     }
 
     private static List<WorkflowChain> BuildWorkflowChains(
