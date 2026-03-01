@@ -13,7 +13,9 @@ public interface IObjectTypeBuilder<T>
 
     void HasMany<TLinked>(string linkName);
 
-    void ManyToMany<TLinked>(string linkName, Action<IEdgeBuilder>? edgeConfig);
+    void ManyToMany<TLinked>(string linkName);
+
+    void ManyToMany<TLinked>(string linkName, Action<IEdgeBuilder> edgeConfig);
 
     IActionBuilder<T> Action(string actionName);
 

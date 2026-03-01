@@ -62,7 +62,7 @@ public class ObjectTypeBuilderTests
     {
         var builder = new ObjectTypeBuilder<TestPosition>("Trading");
 
-        builder.ManyToMany<TestTradeOrder>("RelatedOrders", null);
+        builder.ManyToMany<TestTradeOrder>("RelatedOrders");
         var descriptor = builder.Build();
 
         await Assert.That(descriptor.Links.Count).IsEqualTo(1);

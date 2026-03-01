@@ -42,19 +42,19 @@ internal sealed class ObjectTypeBuilder<T>(string domainName) : IObjectTypeBuild
         _links.Add(new LinkDescriptor(linkName, typeof(TLinked).Name, LinkCardinality.OneToMany));
     }
 
-    public void ManyToMany<TLinked>(string linkName, Action<IEdgeBuilder>? edgeConfig)
+    public void ManyToMany<TLinked>(string linkName)
     {
-        IReadOnlyList<PropertyDescriptor> edgeProperties = [];
-        if (edgeConfig is not null)
-        {
-            var edgeBuilder = new EdgeBuilder();
-            edgeConfig(edgeBuilder);
-            edgeProperties = edgeBuilder.Build();
-        }
+        _links.Add(new LinkDescriptor(linkName, typeof(TLinked).Name, LinkCardinality.ManyToMany));
+    }
+
+    public void ManyToMany<TLinked>(string linkName, Action<IEdgeBuilder> edgeConfig)
+    {
+        var edgeBuilder = new EdgeBuilder();
+        edgeConfig(edgeBuilder);
 
         _links.Add(new LinkDescriptor(linkName, typeof(TLinked).Name, LinkCardinality.ManyToMany)
         {
-            EdgeProperties = edgeProperties,
+            EdgeProperties = edgeBuilder.Build(),
         });
     }
 

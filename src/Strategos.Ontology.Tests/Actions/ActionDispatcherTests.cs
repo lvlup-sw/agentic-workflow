@@ -57,4 +57,46 @@ public class ActionDispatcherTests
         // Assert
         await Assert.That(result.IsSuccess).IsTrue();
     }
+
+    [Test]
+    public async Task ActionContext_Options_DefaultsToNull()
+    {
+        // Arrange & Act
+        var context = new ActionContext("CRM", "Contact", "c-1", "SendEmail");
+
+        // Assert
+        await Assert.That(context.Options).IsNull();
+    }
+
+    [Test]
+    public async Task ActionContext_Options_CanEnforcePreconditions()
+    {
+        // Arrange & Act
+        var options = new ActionDispatchOptions { EnforcePreconditions = true };
+        var context = new ActionContext("CRM", "Contact", "c-1", "SendEmail", options);
+
+        // Assert
+        await Assert.That(context.Options).IsNotNull();
+        await Assert.That(context.Options!.EnforcePreconditions).IsTrue();
+    }
+
+    [Test]
+    public async Task ActionDispatchOptions_Default_DoesNotEnforcePreconditions()
+    {
+        // Arrange & Act
+        var options = ActionDispatchOptions.Default;
+
+        // Assert
+        await Assert.That(options.EnforcePreconditions).IsFalse();
+    }
+
+    [Test]
+    public async Task ActionDispatchOptions_WithInit_SetsEnforcePreconditions()
+    {
+        // Arrange & Act
+        var options = new ActionDispatchOptions { EnforcePreconditions = true };
+
+        // Assert
+        await Assert.That(options.EnforcePreconditions).IsTrue();
+    }
 }

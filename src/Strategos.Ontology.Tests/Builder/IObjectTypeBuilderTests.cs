@@ -60,7 +60,7 @@ public class IObjectTypeBuilderTests
     {
         var substitute = Substitute.For<IObjectTypeBuilder<TestPosition>>();
 
-        substitute.ManyToMany<TestTradeOrder>("RelatedOrders", null);
+        substitute.ManyToMany<TestTradeOrder>("RelatedOrders");
 
         await Assert.That(true).IsTrue();
     }
