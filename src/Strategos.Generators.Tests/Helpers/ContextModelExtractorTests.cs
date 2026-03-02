@@ -59,7 +59,7 @@ public class ContextModelExtractorTests
                 public override IWorkflowBuilder<TestState> Configure(IWorkflowBuilder<TestState> builder)
                     => builder
                         .StartWith<ValidateStep>()
-                        .WithContext(c => c.Literal(""You are a helpful assistant.""))
+                        .WithContext(c => c.FromLiteral(""You are a helpful assistant.""))
                         .Finally<CompleteStep>();
             }
             public record TestState;

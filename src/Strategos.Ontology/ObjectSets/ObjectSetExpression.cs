@@ -106,3 +106,46 @@ public sealed class IncludeExpression : ObjectSetExpression
     public ObjectSetExpression Source { get; }
     public ObjectSetInclusion Inclusion { get; }
 }
+
+/// <summary>
+/// Similarity expression — represents a vector/semantic similarity search
+/// applied to a source expression. Carries raw text; provider is responsible for embedding.
+/// </summary>
+public sealed class SimilarityExpression : ObjectSetExpression
+{
+    public SimilarityExpression(
+        ObjectSetExpression source,
+        string queryText,
+        int topK,
+        double minRelevance,
+        DistanceMetric metric = DistanceMetric.Cosine,
+        string? embeddingPropertyName = null,
+        float[]? queryVector = null,
+        IReadOnlyDictionary<string, object>? filters = null)
+        : base(source.ObjectType)
+    {
+        ArgumentNullException.ThrowIfNull(source);
+        ArgumentNullException.ThrowIfNull(queryText);
+        ArgumentOutOfRangeException.ThrowIfLessThan(topK, 1);
+        ArgumentOutOfRangeException.ThrowIfLessThan(minRelevance, 0.0);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(minRelevance, 1.0);
+
+        Source = source;
+        QueryText = queryText;
+        TopK = topK;
+        MinRelevance = minRelevance;
+        Metric = metric;
+        EmbeddingPropertyName = embeddingPropertyName;
+        QueryVector = queryVector;
+        Filters = filters;
+    }
+
+    public ObjectSetExpression Source { get; }
+    public string QueryText { get; }
+    public int TopK { get; }
+    public double MinRelevance { get; }
+    public DistanceMetric Metric { get; }
+    public string? EmbeddingPropertyName { get; }
+    public float[]? QueryVector { get; }
+    public IReadOnlyDictionary<string, object>? Filters { get; }
+}

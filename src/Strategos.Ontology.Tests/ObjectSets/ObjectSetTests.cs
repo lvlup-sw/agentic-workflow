@@ -78,4 +78,89 @@ public class ObjectSetTests
         var innerFilter = (FilterExpression)outerFilter.Source;
         await Assert.That(innerFilter.Source).IsTypeOf<RootExpression>();
     }
+
+    [Test]
+    public async Task ObjectSet_SimilarTo_ReturnsSimilarObjectSet()
+    {
+        // Arrange
+        var set = new ObjectSet<string>(_provider, _dispatcher, _eventProvider);
+
+        // Act
+        var similar = set.SimilarTo("search query");
+
+        // Assert
+        await Assert.That(similar).IsNotNull();
+        await Assert.That(similar.Expression).IsTypeOf<SimilarityExpression>();
+    }
+
+    [Test]
+    public async Task ObjectSet_SimilarTo_ExpressionHasCorrectProperties()
+    {
+        // Arrange
+        var set = new ObjectSet<string>(_provider, _dispatcher, _eventProvider);
+
+        // Act
+        var similar = set.SimilarTo(
+            "find related items",
+            topK: 10,
+            minRelevance: 0.8,
+            metric: DistanceMetric.L2,
+            embeddingPropertyName: "ContentEmbedding");
+
+        // Assert
+        var expr = similar.Expression;
+        await Assert.That(expr.QueryText).IsEqualTo("find related items");
+        await Assert.That(expr.TopK).IsEqualTo(10);
+        await Assert.That(expr.MinRelevance).IsEqualTo(0.8);
+        await Assert.That(expr.Metric).IsEqualTo(DistanceMetric.L2);
+        await Assert.That(expr.EmbeddingPropertyName).IsEqualTo("ContentEmbedding");
+        await Assert.That(expr.Source).IsTypeOf<RootExpression>();
+    }
+
+    [Test]
+    public async Task ObjectSet_SimilarTo_DefaultParameters()
+    {
+        // Arrange
+        var set = new ObjectSet<string>(_provider, _dispatcher, _eventProvider);
+
+        // Act
+        var similar = set.SimilarTo("query");
+
+        // Assert
+        var expr = similar.Expression;
+        await Assert.That(expr.TopK).IsEqualTo(5);
+        await Assert.That(expr.MinRelevance).IsEqualTo(0.7);
+        await Assert.That(expr.Metric).IsEqualTo(DistanceMetric.Cosine);
+        await Assert.That(expr.EmbeddingPropertyName).IsNull();
+        await Assert.That(expr.QueryVector).IsNull();
+    }
+
+    [Test]
+    public async Task ObjectSet_SimilarTo_WithQueryVector()
+    {
+        // Arrange
+        var set = new ObjectSet<string>(_provider, _dispatcher, _eventProvider);
+        var vector = new float[] { 0.1f, 0.2f, 0.3f };
+
+        // Act
+        var similar = set.SimilarTo("query", queryVector: vector);
+
+        // Assert
+        await Assert.That(similar.Expression.QueryVector).IsNotNull();
+        await Assert.That(similar.Expression.QueryVector!.Length).IsEqualTo(3);
+    }
+
+    [Test]
+    public async Task ObjectSet_SimilarTo_AfterWhere_ChainsExpressions()
+    {
+        // Arrange
+        var set = new ObjectSet<string>(_provider, _dispatcher, _eventProvider);
+
+        // Act
+        var similar = set.Where(s => s.Length > 5).SimilarTo("query");
+
+        // Assert
+        var expr = similar.Expression;
+        await Assert.That(expr.Source).IsTypeOf<FilterExpression>();
+    }
 }

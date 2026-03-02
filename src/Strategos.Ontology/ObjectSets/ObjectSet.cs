@@ -74,6 +74,28 @@ public sealed class ObjectSet<T> where T : class
     }
 
     /// <summary>
+    /// Returns a similarity search over this object set.
+    /// </summary>
+    public SimilarObjectSet<T> SimilarTo(
+        string queryText,
+        int topK = 5,
+        double minRelevance = 0.7,
+        DistanceMetric metric = DistanceMetric.Cosine,
+        string? embeddingPropertyName = null,
+        float[]? queryVector = null)
+    {
+        ArgumentNullException.ThrowIfNull(queryText);
+
+        // Defensive copy of mutable float[] to preserve immutability
+        var vectorCopy = queryVector is not null ? (float[])queryVector.Clone() : null;
+
+        var expression = new SimilarityExpression(
+            Expression, queryText, topK, minRelevance, metric,
+            embeddingPropertyName, vectorCopy);
+        return new SimilarObjectSet<T>(expression, _provider);
+    }
+
+    /// <summary>
     /// Materializes the object set query and returns the result.
     /// </summary>
     public Task<ObjectSetResult<T>> ExecuteAsync(CancellationToken ct = default)

@@ -6,6 +6,7 @@ internal sealed class PropertyBuilder(string name, Type propertyType) : IPropert
 {
     private bool _isRequired;
     private bool _isComputed;
+    private int? _vectorDimensions;
 
     public IPropertyBuilder Required()
     {
@@ -19,6 +20,17 @@ internal sealed class PropertyBuilder(string name, Type propertyType) : IPropert
         return this;
     }
 
+    public IPropertyBuilder Vector(int dimensions)
+    {
+        ArgumentOutOfRangeException.ThrowIfLessThan(dimensions, 1);
+        _vectorDimensions = dimensions;
+        return this;
+    }
+
     public PropertyDescriptor Build() =>
-        new(name, propertyType, _isRequired, _isComputed);
+        new(name, propertyType, _isRequired, _isComputed)
+        {
+            Kind = _vectorDimensions.HasValue ? PropertyKind.Vector : PropertyKind.Scalar,
+            VectorDimensions = _vectorDimensions,
+        };
 }
