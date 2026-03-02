@@ -108,6 +108,7 @@ public sealed class SentenceBoundaryChunker : ITextChunker
 
     internal static List<SentenceSpan> SplitSentences(string text)
     {
+        ArgumentNullException.ThrowIfNull(text);
         var sentences = new List<SentenceSpan>();
         var start = 0;
 

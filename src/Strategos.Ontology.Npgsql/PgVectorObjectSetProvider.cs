@@ -54,15 +54,10 @@ public sealed class PgVectorObjectSetProvider : IObjectSetProvider, IObjectSetWr
         // 2. Get table name from TypeMapper
         var tableName = TypeMapper.GetTableName<T>();
 
-        // 3. Translate Source filter if present
-        string? whereClause = null;
-        IReadOnlyList<ExpressionTranslator.SqlParameter> filterParams = [];
-        if (expression.Source is FilterExpression)
-        {
-            var translation = ExpressionTranslator.Translate(expression.Source);
-            whereClause = translation.WhereClause;
-            filterParams = translation.Parameters;
-        }
+        // 3. Translate Source expression (handles Filter, Include, Root transparently)
+        var sourceTranslation = ExpressionTranslator.Translate(expression.Source);
+        var whereClause = sourceTranslation.WhereClause;
+        var filterParams = sourceTranslation.Parameters;
 
         // 4. Build SQL with optional WHERE clause
         var sql = SqlGenerator.BuildSimilarityQuery(_options.Schema, tableName, expression.Metric, whereClause);
@@ -86,7 +81,7 @@ public sealed class PgVectorObjectSetProvider : IObjectSetProvider, IObjectSetWr
             var dataJson = reader.GetString(1);
             var distance = reader.GetDouble(2);
 
-            // Convert distance to similarity score (0..1 where 1 = most similar)
+            // Convert distance to similarity score (higher = more similar)
             var similarity = ConvertDistanceToSimilarity(distance, expression.Metric);
 
             // Filter by minRelevance

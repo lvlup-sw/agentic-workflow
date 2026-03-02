@@ -172,7 +172,7 @@ Strategos.Ontology.Embeddings (new)
 Strategos.Ontology.Npgsql (new)
 ├── depends on: Strategos.Ontology
 ├── depends on: Npgsql (>= 9.0)
-├── depends on: Npgsql.PgVector (>= 9.0, for vector type support)
+├── depends on: Pgvector (for vector type support)
 └── PgVectorObjectSetProvider
 ```
 
@@ -257,7 +257,7 @@ public sealed record IngestionProgress(int ChunksProcessed, int TotalChunks, str
 **Usage:**
 ```csharp
 var result = await IngestionPipeline<DocumentChunk>.Create()
-    .Chunk(new SentenceBoundaryChunker(maxTokens: 512))
+    .Chunk(new SentenceBoundaryChunker())
     .Embed(embeddingProvider)
     .Map((chunk, embedding) => new DocumentChunk
     {
@@ -389,7 +389,7 @@ services.AddOpenAiEmbeddings(opts =>
 
 // Ingestion:
 var result = await IngestionPipeline<KnowledgeChunk>.Create()
-    .Chunk(new SentenceBoundaryChunker(maxTokens: 512))
+    .Chunk(new SentenceBoundaryChunker())
     .Embed(embeddingProvider)
     .Map((chunk, embedding) => new KnowledgeChunk
     {

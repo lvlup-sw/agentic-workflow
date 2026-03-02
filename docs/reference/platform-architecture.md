@@ -3495,7 +3495,8 @@ services.AddOpenAiEmbeddings(opts =>
 // Production: pgvector storage
 services.AddPgVectorObjectSets(opts =>
 {
-    opts.ConnectionString = "Host=localhost;Database=mydb";
+    opts.ConnectionString = builder.Configuration.GetConnectionString("Ontology")
+        ?? throw new InvalidOperationException("Missing ConnectionStrings:Ontology");
     opts.Schema = "ontology";
 });
 ```

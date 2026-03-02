@@ -31,8 +31,8 @@ public sealed class InMemoryObjectSetProvider : IObjectSetProvider, IObjectSetWr
     }
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="InMemoryObjectSetProvider"/> class
-    /// with an optional embedding provider for cosine similarity scoring.
+    /// Initializes a new instance of the <see cref="InMemoryObjectSetProvider"/> class.
+    /// Uses an optional embedding provider for cosine similarity scoring.
     /// </summary>
     /// <param name="embeddingProvider">
     /// When provided, <see cref="ExecuteSimilarityAsync{T}"/> will use real cosine similarity
@@ -137,14 +137,13 @@ public sealed class InMemoryObjectSetProvider : IObjectSetProvider, IObjectSetWr
                 Array.Empty<T>(), 0, ObjectSetInclusion.Properties, Array.Empty<double>());
         }
 
-        // Apply Source filter if present (e.g., pre-filtered source + similarity)
-        if (expression.Source is FilterExpression filter)
-        {
-            items = ApplyExpression(items, filter);
-        }
+        // Apply Source expression (filters, includes, etc.)
+        items = ApplyExpression(items, expression.Source);
 
-        // When an embedding provider is available and embeddings are stored, use cosine similarity
-        if (_embeddingProvider is not null && _embeddings.TryGetValue(typeof(T), out var storedEmbeddings) && storedEmbeddings.Count > 0)
+        // When an embedding provider is available and non-placeholder embeddings exist, use cosine similarity
+        if (_embeddingProvider is not null
+            && _embeddings.TryGetValue(typeof(T), out var storedEmbeddings)
+            && storedEmbeddings.Any(static e => e.Length > 0))
         {
             return await ExecuteCosineSimilarityAsync(items, storedEmbeddings, expression, ct).ConfigureAwait(false);
         }
@@ -278,7 +277,12 @@ public sealed class InMemoryObjectSetProvider : IObjectSetProvider, IObjectSetWr
             return filtered.Where(func).ToList();
         }
 
-        // RootExpression — return all items (base case)
+        if (expression is IncludeExpression include)
+        {
+            return ApplyExpression(items, include.Source);
+        }
+
+        // RootExpression or other — return all items (base case)
         return items;
     }
 

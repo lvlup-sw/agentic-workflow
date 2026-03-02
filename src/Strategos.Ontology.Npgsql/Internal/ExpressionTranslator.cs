@@ -32,6 +32,7 @@ internal static class ExpressionTranslator
         return expression switch
         {
             FilterExpression filter => TranslateFilter(filter),
+            IncludeExpression include => Translate(include.Source),
             RootExpression => new TranslationResult(null, []),
             _ => throw new NotSupportedException($"Expression type {expression.GetType().Name} is not supported for SQL translation."),
         };
@@ -103,7 +104,11 @@ internal static class ExpressionTranslator
         parameters.Add(new SqlParameter(paramName, value));
 
         // Use JSONB accessor for property access: data->>'PropertyName'
-        return $"data->>'{propertyName}' {sqlOp} {paramName}";
+        // Cast to appropriate type for correct comparison semantics (e.g., numeric ordering)
+        var jsonbAccessor = $"data->>'{propertyName}'";
+        var cast = GetJsonbCast(value);
+        var lhs = cast.Length > 0 ? $"({jsonbAccessor}){cast}" : jsonbAccessor;
+        return $"{lhs} {sqlOp} {paramName}";
     }
 
     [RequiresDynamicCode("Expression translation may compile expressions dynamically.")]
@@ -114,8 +119,13 @@ internal static class ExpressionTranslator
             var propertyName = ExtractPropertyName(member, param);
             var value = ExtractConstantValue(methodCall.Arguments[0]);
             var paramName = $"@p{parameters.Count}";
-            parameters.Add(new SqlParameter(paramName, value));
-            return $"data->>'{propertyName}' LIKE '%' || {paramName} || '%'";
+
+            // Escape LIKE wildcards in the search value to prevent unintended pattern matching
+            var escapedValue = value is string s
+                ? s.Replace(@"\", @"\\").Replace("%", @"\%").Replace("_", @"\_")
+                : value;
+            parameters.Add(new SqlParameter(paramName, escapedValue));
+            return $"data->>'{propertyName}' LIKE '%' || {paramName} || '%' ESCAPE '\\'";
         }
 
         throw new NotSupportedException($"Method {methodCall.Method.Name} is not supported for SQL translation.");
@@ -172,4 +182,18 @@ internal static class ExpressionTranslator
         var compiled = lambda.Compile();
         return compiled.DynamicInvoke()!;
     }
+
+    /// <summary>
+    /// Returns a PostgreSQL type cast suffix for JSONB text accessor values
+    /// to ensure correct comparison semantics (e.g., numeric ordering instead of lexicographic).
+    /// </summary>
+    private static string GetJsonbCast(object value) => value switch
+    {
+        int or long or short or byte or sbyte or
+        uint or ulong or ushort or
+        float or double or decimal => "::numeric",
+        bool => "::boolean",
+        DateTime or DateTimeOffset => "::timestamptz",
+        _ => string.Empty,
+    };
 }

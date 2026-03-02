@@ -46,7 +46,7 @@ Link: `docs/designs/2026-02-24-ontology-layer.md`
 | **7.3 Object Set — Provider** | IObjectSetProvider abstraction | 026 | Covered |
 | **7.4 Object Set — Materialization** | ExecuteAsync, StreamAsync, ApplyAsync, EventsAsync | 036-037 | Covered |
 | **8.1 Source Generator — Role** | DiagnosticAnalyzer, zero runtime code | 046 | Covered |
-| **8.2 Source Generator — Diagnostics** | ONTO001-ONTO010 catalog | 047-053 | Covered |
+| **8.2 Source Generator — Diagnostics** | AONT001-AONT010 catalog | 047-053 | Covered |
 | **9.1 MCP — Design Principles** | Progressive disclosure, problem-first | 054 | Covered |
 | **9.2 MCP — Tool Catalog** | ontology_query, ontology_action, ontology_explore | 055-057 | Covered |
 | **9.3 MCP — Stub Generation** | Enriched .pyi stubs from OntologyGraph | 058 | Covered |
@@ -1038,7 +1038,7 @@ Link: `docs/designs/2026-02-24-ontology-layer.md`
    - Expected failure: Validation logic does not exist
 
 2. [GREEN] Implement validation in `OntologyGraphBuilder.Build()`:
-   - Validate interface property type compatibility
+   - Validate interface property mappings via `Via()` (strict type compatibility deferred until `Via()` mappings persist on `ObjectTypeDescriptor`)
    - Validate `Produces<T>` → `Consumes<T>` workflow chains (warning if no consumer)
 
 **Dependencies:** 041
@@ -1140,7 +1140,7 @@ Link: `docs/designs/2026-02-24-ontology-layer.md`
    - File: `src/Strategos.Ontology.Generators/OntologyDiagnosticAnalyzer.cs`
    - File: `src/Strategos.Ontology.Generators/OntologyDiagnostics.cs` (diagnostic descriptors)
    - `[DiagnosticAnalyzer(LanguageNames.CSharp)]` entry point
-   - Register all 10 diagnostic descriptors (ONTO001-ONTO010)
+   - Register all 10 diagnostic descriptors (AONT001-AONT010)
 
 **Dependencies:** 002 (Phase 0)
 **Parallelizable:** Yes (within Team 2: sequential)
@@ -1148,15 +1148,15 @@ Link: `docs/designs/2026-02-24-ontology-layer.md`
 
 ---
 
-### Task 047: ONTO001 (no Key) + ONTO007 (duplicate type)
+### Task 047: AONT001 (no Key) + AONT007 (duplicate type)
 **Phase:** RED → GREEN
 
 **TDD Steps:**
 1. [RED] Write tests:
-   - `ONTO001_ObjectTypeWithoutKey_ReportsError`
-   - `ONTO001_ObjectTypeWithKey_NoError`
-   - `ONTO007_DuplicateObjectType_ReportsError`
-   - `ONTO007_UniqueObjectTypes_NoError`
+   - `AONT001_ObjectTypeWithoutKey_ReportsError`
+   - `AONT001_ObjectTypeWithKey_NoError`
+   - `AONT007_DuplicateObjectType_ReportsError`
+   - `AONT007_UniqueObjectTypes_NoError`
    - File: `src/Strategos.Ontology.Generators.Tests/Analyzers/ObjectTypeAnalyzerTests.cs`
    - Expected failure: Analyzer logic does not exist
 
@@ -1171,13 +1171,13 @@ Link: `docs/designs/2026-02-24-ontology-layer.md`
 
 ---
 
-### Task 048: ONTO002 (non-existent property member)
+### Task 048: AONT002 (non-existent property member)
 **Phase:** RED → GREEN
 
 **TDD Steps:**
 1. [RED] Write tests:
-   - `ONTO002_PropertyExpressionValidMember_NoError`
-   - `ONTO002_PropertyExpressionInvalidMember_ReportsError`
+   - `AONT002_PropertyExpressionValidMember_NoError`
+   - `AONT002_PropertyExpressionInvalidMember_ReportsError`
    - File: `src/Strategos.Ontology.Generators.Tests/Analyzers/PropertyAnalyzerTests.cs`
    - Expected failure: Analyzer logic does not exist
 
@@ -1191,13 +1191,13 @@ Link: `docs/designs/2026-02-24-ontology-layer.md`
 
 ---
 
-### Task 049: ONTO005 (interface incompatible types)
+### Task 049: AONT005 (interface incompatible types)
 **Phase:** RED → GREEN
 
 **TDD Steps:**
 1. [RED] Write tests:
-   - `ONTO005_CompatiblePropertyMapping_NoError`
-   - `ONTO005_IncompatiblePropertyTypes_ReportsError`
+   - `AONT005_CompatiblePropertyMapping_NoError`
+   - `AONT005_IncompatiblePropertyTypes_ReportsError`
    - File: `src/Strategos.Ontology.Generators.Tests/Analyzers/InterfaceAnalyzerTests.cs`
    - Expected failure: Analyzer logic does not exist
 
@@ -1210,13 +1210,13 @@ Link: `docs/designs/2026-02-24-ontology-layer.md`
 
 ---
 
-### Task 050: ONTO009 (MaterializesLink undeclared link)
+### Task 050: AONT009 (MaterializesLink undeclared link)
 **Phase:** RED → GREEN
 
 **TDD Steps:**
 1. [RED] Write tests:
-   - `ONTO009_MaterializesLinkDeclaredLink_NoError`
-   - `ONTO009_MaterializesLinkUndeclaredLink_ReportsError`
+   - `AONT009_MaterializesLinkDeclaredLink_NoError`
+   - `AONT009_MaterializesLinkUndeclaredLink_ReportsError`
    - File: `src/Strategos.Ontology.Generators.Tests/Analyzers/EventAnalyzerTests.cs`
    - Expected failure: Analyzer logic does not exist
 
@@ -1230,22 +1230,22 @@ Link: `docs/designs/2026-02-24-ontology-layer.md`
 
 ---
 
-### Task 051: ONTO003 (unknown cross-domain, Warning) + ONTO004 (no actions, Info)
+### Task 051: AONT003 (unknown cross-domain, Warning) + AONT004 (no actions, Info)
 **Phase:** RED → GREEN
 
 **TDD Steps:**
 1. [RED] Write tests:
-   - `ONTO003_CrossDomainLinkUnknownDomain_ReportsWarning`
-   - `ONTO003_CrossDomainLinkKnownDomain_NoWarning` (limited — can't validate cross-assembly)
-   - `ONTO004_ObjectTypeNoActions_ReportsInfo`
-   - `ONTO004_ObjectTypeWithActions_NoInfo`
+   - `AONT003_CrossDomainLinkUnknownDomain_ReportsWarning`
+   - `AONT003_CrossDomainLinkKnownDomain_NoWarning` (limited — can't validate cross-assembly)
+   - `AONT004_ObjectTypeNoActions_ReportsInfo`
+   - `AONT004_ObjectTypeWithActions_NoInfo`
    - File: `src/Strategos.Ontology.Generators.Tests/Analyzers/CrossDomainLinkAnalyzerTests.cs`
    - Expected failure: Analyzer logic does not exist
 
 2. [GREEN] Implement
    - File: `src/Strategos.Ontology.Generators/Analyzers/CrossDomainLinkAnalyzer.cs`
-   - ONTO003: Warn when `ToExternal()` references domain not visible in same assembly
-   - ONTO004: Info when `Object<T>()` has no `Action()` calls
+   - AONT003: Warn when `ToExternal()` references domain not visible in same assembly
+   - AONT004: Info when `Object<T>()` has no `Action()` calls
 
 **Dependencies:** 047
 **Parallelizable:** Yes
@@ -1253,15 +1253,15 @@ Link: `docs/designs/2026-02-24-ontology-layer.md`
 
 ---
 
-### Task 052: ONTO006 (Produces/Consumes, Warning) + ONTO008 (undeclared event, Warning)
+### Task 052: AONT006 (Produces/Consumes, Warning) + AONT008 (undeclared event, Warning)
 **Phase:** RED → GREEN
 
 **TDD Steps:**
 1. [RED] Write tests:
-   - `ONTO006_ProducesWithNoConsumer_ReportsWarning`
-   - `ONTO006_ProducesWithConsumer_NoWarning`
-   - `ONTO008_EventTypeNotDeclaredOnObjectType_ReportsWarning`
-   - `ONTO008_EventTypeDeclared_NoWarning`
+   - `AONT006_ProducesWithNoConsumer_ReportsWarning`
+   - `AONT006_ProducesWithConsumer_NoWarning`
+   - `AONT008_EventTypeNotDeclaredOnObjectType_ReportsWarning`
+   - `AONT008_EventTypeDeclared_NoWarning`
    - File: `src/Strategos.Ontology.Generators.Tests/Analyzers/WorkflowChainAnalyzerTests.cs`
    - Expected failure: Analyzer logic does not exist
 
@@ -1273,13 +1273,13 @@ Link: `docs/designs/2026-02-24-ontology-layer.md`
 
 ---
 
-### Task 053: ONTO010 (events without IEventStreamProvider, Warning)
+### Task 053: AONT010 (events without IEventStreamProvider, Warning)
 **Phase:** RED → GREEN
 
 **TDD Steps:**
 1. [RED] Write tests:
-   - `ONTO010_EventsWithoutProviderRegistration_ReportsWarning`
-   - `ONTO010_EventsWithProviderRegistration_NoWarning`
+   - `AONT010_EventsWithoutProviderRegistration_ReportsWarning`
+   - `AONT010_EventsWithProviderRegistration_NoWarning`
    - File: `src/Strategos.Ontology.Generators.Tests/Analyzers/EventProviderAnalyzerTests.cs`
    - Expected failure: Analyzer logic does not exist
 
@@ -1570,7 +1570,7 @@ Depends on merge of Teams 1A + 1B. Builds OntologyGraph on top of both layers.
 |----------------------|--------------|--------------------------|
 | Branch: `feat/ontology-generators` | Branch: `feat/ontology-mcp` | Branch: `feat/ontology-extensions-di` |
 | Tasks 046-053 (8 tasks) | Tasks 054-058 (5 tasks) | Tasks 059-063 (5 tasks) |
-| DiagnosticAnalyzer + ONTO001-010 | MCP tools + stub gen | Workflow ext + DI + integration |
+| DiagnosticAnalyzer + AONT001-010 | MCP tools + stub gen | Workflow ext + DI + integration |
 
 ### Dependency Graph
 

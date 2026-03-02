@@ -24,6 +24,7 @@ internal static class ChunkingUtilities
     /// </summary>
     internal static int CountWords(string text)
     {
+        ArgumentNullException.ThrowIfNull(text);
         var count = 0;
         var inWord = false;
 
@@ -48,6 +49,7 @@ internal static class ChunkingUtilities
     /// </summary>
     internal static List<WordSpan> SplitWordSpans(string text)
     {
+        ArgumentNullException.ThrowIfNull(text);
         var words = new List<WordSpan>();
         var i = 0;
 
