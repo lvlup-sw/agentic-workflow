@@ -77,6 +77,32 @@ internal sealed class OntologyQueryService(OntologyGraph graph) : IOntologyQuery
             .AsReadOnly();
     }
 
+    public IReadOnlyList<ActionConstraintReport> GetActionConstraintReport(
+        string objectType,
+        IReadOnlyDictionary<string, object?>? knownProperties = null)
+    {
+        var ot = FindObjectType(objectType);
+        if (ot is null)
+        {
+            return [];
+        }
+
+        var props = knownProperties ?? new Dictionary<string, object?>();
+        var reports = new List<ActionConstraintReport>(ot.Actions.Count);
+
+        foreach (var action in ot.Actions)
+        {
+            var constraints = EvaluateConstraints(action.Preconditions, props);
+            var isAvailable = constraints
+                .Where(c => c.Strength == Descriptors.ConstraintStrength.Hard)
+                .All(c => c.IsSatisfied);
+
+            reports.Add(new ActionConstraintReport(action, isAvailable, constraints));
+        }
+
+        return reports.AsReadOnly();
+    }
+
     public IReadOnlyList<PostconditionTrace> TracePostconditions(
         string objectType, string actionName, int maxDepth = 1)
     {
@@ -268,6 +294,141 @@ internal sealed class OntologyQueryService(OntologyGraph graph) : IOntologyQuery
     private ObjectTypeDescriptor? FindObjectType(string objectType) =>
         graph.ObjectTypes.FirstOrDefault(ot => ot.Name == objectType);
 
+    private static IReadOnlyList<ConstraintEvaluation> EvaluateConstraints(
+        IReadOnlyList<ActionPrecondition> preconditions,
+        IReadOnlyDictionary<string, object?> knownProperties)
+    {
+        if (preconditions.Count == 0)
+        {
+            return [];
+        }
+
+        var evaluations = new List<ConstraintEvaluation>(preconditions.Count);
+
+        foreach (var precondition in preconditions)
+        {
+            var isSatisfied = IsPreconditionSatisfiable(precondition, knownProperties);
+            string? failureReason = null;
+            IReadOnlyDictionary<string, object?>? expectedShape = null;
+
+            if (!isSatisfied)
+            {
+                failureReason = BuildFailureReason(precondition, knownProperties);
+                expectedShape = BuildExpectedShape(precondition);
+            }
+
+            evaluations.Add(new ConstraintEvaluation(
+                precondition,
+                isSatisfied,
+                precondition.Strength,
+                failureReason,
+                expectedShape));
+        }
+
+        return evaluations.AsReadOnly();
+    }
+
+    private static string BuildFailureReason(
+        ActionPrecondition precondition,
+        IReadOnlyDictionary<string, object?> knownProperties)
+    {
+        return precondition.Kind switch
+        {
+            PreconditionKind.LinkExists => BuildLinkFailureReason(precondition, knownProperties),
+            PreconditionKind.PropertyPredicate => BuildPropertyFailureReason(precondition, knownProperties),
+            _ => $"Custom precondition not satisfied: {precondition.Description}",
+        };
+    }
+
+    private static string BuildLinkFailureReason(
+        ActionPrecondition precondition,
+        IReadOnlyDictionary<string, object?> knownProperties)
+    {
+        if (precondition.LinkName is null)
+        {
+            return "Link precondition has no link name specified";
+        }
+
+        if (!knownProperties.TryGetValue(precondition.LinkName, out var value))
+        {
+            return $"Link '{precondition.LinkName}' is not present in known properties";
+        }
+
+        return $"Link '{precondition.LinkName}' has value '{value}' but requires a truthy value";
+    }
+
+    private static string BuildPropertyFailureReason(
+        ActionPrecondition precondition,
+        IReadOnlyDictionary<string, object?> knownProperties)
+    {
+        var expression = precondition.Expression;
+        if (string.IsNullOrWhiteSpace(expression))
+        {
+            return $"Property precondition not satisfied: {precondition.Description}";
+        }
+
+        var parsed = TryParseComparison(expression);
+        if (parsed is null)
+        {
+            return $"Property precondition not satisfied: {precondition.Description}";
+        }
+
+        var (propertyName, op, rightSide) = parsed.Value;
+
+        if (!knownProperties.TryGetValue(propertyName, out var knownValue) || knownValue is null)
+        {
+            return $"Property '{propertyName}' is not known but requires '{op} {rightSide}'";
+        }
+
+        return $"Property '{propertyName}' has value '{knownValue}' but requires '{op} {rightSide}'";
+    }
+
+    private static IReadOnlyDictionary<string, object?>? BuildExpectedShape(
+        ActionPrecondition precondition)
+    {
+        if (precondition.Kind == PreconditionKind.LinkExists)
+        {
+            if (precondition.LinkName is null)
+            {
+                return null;
+            }
+
+            return new Dictionary<string, object?> { [precondition.LinkName] = true };
+        }
+
+        if (precondition.Kind != PreconditionKind.PropertyPredicate)
+        {
+            return null;
+        }
+
+        var parsed = TryParseComparison(precondition.Expression);
+        if (parsed is null)
+        {
+            return null;
+        }
+
+        var (propertyName, op, rightSide) = parsed.Value;
+        return new Dictionary<string, object?> { [propertyName] = $"{op} {rightSide}" };
+    }
+
+    private static (string PropertyName, string Op, string RightSide)? TryParseComparison(
+        string expression)
+    {
+        var convertMatch = ConvertPropertyPattern.Match(expression);
+        if (convertMatch.Success)
+        {
+            return (convertMatch.Groups[2].Value, convertMatch.Groups[3].Value, convertMatch.Groups[4].Value);
+        }
+
+        var simpleMatch = SimplePropertyPattern.Match(expression);
+        if (simpleMatch.Success)
+        {
+            return (simpleMatch.Groups[2].Value, simpleMatch.Groups[3].Value, simpleMatch.Groups[4].Value);
+        }
+
+        return null;
+    }
+
     private static bool IsPreconditionSatisfiable(
         ActionPrecondition precondition,
         IReadOnlyDictionary<string, object?> knownProperties)
@@ -326,32 +487,13 @@ internal sealed class OntologyQueryService(OntologyGraph graph) : IOntologyQuery
         string expression,
         IReadOnlyDictionary<string, object?> knownProperties)
     {
-        string? propertyName = null;
-        string? op = null;
-        string? rightSide = null;
-
-        var convertMatch = ConvertPropertyPattern.Match(expression);
-        if (convertMatch.Success)
-        {
-            propertyName = convertMatch.Groups[2].Value;
-            op = convertMatch.Groups[3].Value;
-            rightSide = convertMatch.Groups[4].Value;
-        }
-        else
-        {
-            var simpleMatch = SimplePropertyPattern.Match(expression);
-            if (simpleMatch.Success)
-            {
-                propertyName = simpleMatch.Groups[2].Value;
-                op = simpleMatch.Groups[3].Value;
-                rightSide = simpleMatch.Groups[4].Value;
-            }
-        }
-
-        if (propertyName is null || op is null || rightSide is null)
+        var parsed = TryParseComparison(expression);
+        if (parsed is null)
         {
             return null; // Can't parse — optimistically satisfiable
         }
+
+        var (propertyName, op, rightSide) = parsed.Value;
 
         if (!knownProperties.TryGetValue(propertyName, out var knownValue) || knownValue is null)
         {

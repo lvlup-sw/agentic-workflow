@@ -21,6 +21,10 @@ public interface IOntologyQuery
         string objectType,
         IReadOnlyDictionary<string, object?>? knownProperties = null);
 
+    IReadOnlyList<ActionConstraintReport> GetActionConstraintReport(
+        string objectType,
+        IReadOnlyDictionary<string, object?>? knownProperties = null);
+
     IReadOnlyList<PostconditionTrace> TracePostconditions(
         string objectType, string actionName, int maxDepth = 1);
 
