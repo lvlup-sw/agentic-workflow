@@ -106,3 +106,25 @@ public sealed class IncludeExpression : ObjectSetExpression
     public ObjectSetExpression Source { get; }
     public ObjectSetInclusion Inclusion { get; }
 }
+
+/// <summary>
+/// Similarity expression — represents a vector similarity search against an object set.
+/// </summary>
+public sealed class SimilarityExpression : ObjectSetExpression
+{
+    public SimilarityExpression(ObjectSetExpression source, string queryText)
+        : base(source.ObjectType)
+    {
+        Source = source;
+        QueryText = queryText;
+    }
+
+    public ObjectSetExpression Source { get; }
+    public string QueryText { get; }
+    public int TopK { get; init; } = 5;
+    public double MinRelevance { get; init; } = 0.7;
+    public DistanceMetric Metric { get; init; } = DistanceMetric.Cosine;
+    public string? EmbeddingPropertyName { get; init; }
+    public float[]? QueryVector { get; init; }
+    public string? Filters { get; init; }
+}

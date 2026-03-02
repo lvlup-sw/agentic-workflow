@@ -8,10 +8,12 @@ internal sealed class PropertyBuilder<T>(string name, Type propertyType) : IProp
 {
     private bool _isRequired;
     private bool _isComputed;
+    private int? _vectorDimensions;
     private readonly List<DerivationSource> _derivationSources = [];
 
     IPropertyBuilder IPropertyBuilder.Required() => Required();
     IPropertyBuilder IPropertyBuilder.Computed() => Computed();
+    IPropertyBuilder IPropertyBuilder.Vector(int dimensions) => Vector(dimensions);
 
     public IPropertyBuilder<T> Required()
     {
@@ -22,6 +24,12 @@ internal sealed class PropertyBuilder<T>(string name, Type propertyType) : IProp
     public IPropertyBuilder<T> Computed()
     {
         _isComputed = true;
+        return this;
+    }
+
+    public IPropertyBuilder<T> Vector(int dimensions)
+    {
+        _vectorDimensions = dimensions;
         return this;
     }
 
@@ -55,6 +63,8 @@ internal sealed class PropertyBuilder<T>(string name, Type propertyType) : IProp
     public PropertyDescriptor Build() =>
         new(name, propertyType, _isRequired, _isComputed)
         {
+            Kind = _vectorDimensions.HasValue ? PropertyKind.Vector : (_isComputed ? PropertyKind.Computed : PropertyKind.Scalar),
+            VectorDimensions = _vectorDimensions,
             DerivedFrom = _derivationSources.AsReadOnly(),
         };
 }
