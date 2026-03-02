@@ -41,10 +41,11 @@ internal static class ContextAssemblerEmitter
             "System",
             "System.CodeDom.Compiler",
             "System.Collections.Generic",
+            "System.Linq",
             "System.Threading",
             "System.Threading.Tasks",
             "Strategos.Agents.Models",
-            "Strategos.Rag",
+            "Strategos.Ontology.ObjectSets",
             "Strategos.Steps");
 
         // Namespace
@@ -111,24 +112,21 @@ internal static class ContextAssemblerEmitter
 
     private static void EmitConstructorAndDependencies(StringBuilder sb, StepModel step)
     {
-        // Collect retrieval sources to inject collection services
-        var retrievalSources = new List<RetrievalContextSourceModel>();
+        // Check if any retrieval sources exist to determine if we need IObjectSetProvider
+        var hasRetrievalSources = false;
         foreach (var source in step.Context!.Sources)
         {
-            if (source is RetrievalContextSourceModel retrieval)
+            if (source is RetrievalContextSourceModel)
             {
-                retrievalSources.Add(retrieval);
+                hasRetrievalSources = true;
+                break;
             }
         }
 
-        if (retrievalSources.Count > 0)
+        if (hasRetrievalSources)
         {
-            // Field declarations
-            foreach (var retrieval in retrievalSources)
-            {
-                var fieldName = $"_{ToCamelCase(retrieval.CollectionTypeName)}Collection";
-                sb.AppendLine($"    private readonly IVectorSearchAdapter<{retrieval.CollectionTypeName}> {fieldName};");
-            }
+            // Single IObjectSetProvider field (shared across all retrieval sources)
+            sb.AppendLine("    private readonly IObjectSetProvider _objectSetProvider;");
 
             sb.AppendLine();
 
@@ -136,31 +134,9 @@ internal static class ContextAssemblerEmitter
             sb.AppendLine($"    /// <summary>");
             sb.AppendLine($"    /// Initializes a new instance of the <see cref=\"{step.StepName}ContextAssembler\"/> class.");
             sb.AppendLine($"    /// </summary>");
-            sb.Append($"    public {step.StepName}ContextAssembler(");
-
-            var first = true;
-            foreach (var retrieval in retrievalSources)
-            {
-                if (!first)
-                {
-                    sb.Append(", ");
-                }
-
-                var paramName = $"{ToCamelCase(retrieval.CollectionTypeName)}Collection";
-                sb.Append($"IVectorSearchAdapter<{retrieval.CollectionTypeName}> {paramName}");
-                first = false;
-            }
-
-            sb.AppendLine(")");
+            sb.AppendLine($"    public {step.StepName}ContextAssembler(IObjectSetProvider objectSetProvider)");
             sb.AppendLine("    {");
-
-            foreach (var retrieval in retrievalSources)
-            {
-                var fieldName = $"_{ToCamelCase(retrieval.CollectionTypeName)}Collection";
-                var paramName = $"{ToCamelCase(retrieval.CollectionTypeName)}Collection";
-                sb.AppendLine($"        {fieldName} = {paramName};");
-            }
-
+            sb.AppendLine("        _objectSetProvider = objectSetProvider;");
             sb.AppendLine("    }");
             sb.AppendLine();
         }
@@ -215,12 +191,11 @@ internal static class ContextAssemblerEmitter
 
     private static void EmitRetrievalSource(StringBuilder sb, RetrievalContextSourceModel retrieval)
     {
-        var fieldName = $"_{ToCamelCase(retrieval.CollectionTypeName)}Collection";
         var resultsVarName = $"{ToCamelCase(retrieval.CollectionTypeName)}Results";
 
         sb.AppendLine($"        // Retrieval context from {retrieval.CollectionTypeName}");
 
-        // Build the query
+        // Build the query expression
         string queryExpr;
         if (retrieval.LiteralQuery is not null)
         {
@@ -235,12 +210,48 @@ internal static class ContextAssemblerEmitter
             queryExpr = "string.Empty";
         }
 
-        sb.AppendLine($"        var {resultsVarName} = await {fieldName}.SearchAsync(");
-        sb.AppendLine($"            {queryExpr},");
-        sb.AppendLine($"            topK: {retrieval.TopK},");
-        sb.AppendLine($"            minRelevance: {retrieval.MinRelevance}m,");
-        sb.AppendLine($"            cancellationToken: cancellationToken);");
-        sb.AppendLine($"        contextBuilder.AddRetrievalContext(\"{retrieval.CollectionTypeName}\", {resultsVarName});");
+        // Emit filters dictionary if filters exist
+        if (retrieval.Filters.Count > 0)
+        {
+            sb.AppendLine($"        var filters = new Dictionary<string, object>");
+            sb.AppendLine("        {");
+            foreach (var filter in retrieval.Filters)
+            {
+                if (filter.IsStatic)
+                {
+                    sb.AppendLine($"            {{ \"{EscapeStringForCSharp(filter.Key)}\", \"{EscapeStringForCSharp(filter.StaticValue!)}\" }},");
+                }
+                else
+                {
+                    sb.AppendLine($"            {{ \"{EscapeStringForCSharp(filter.Key)}\", ({filter.ValueExpression})(state) }},");
+                }
+            }
+
+            sb.AppendLine("        };");
+        }
+
+        // Build SimilarityExpression
+        sb.AppendLine($"        var {resultsVarName}Expression = new SimilarityExpression(");
+        sb.AppendLine($"            new RootExpression(typeof({retrieval.CollectionTypeName})),");
+        if (retrieval.Filters.Count > 0)
+        {
+            sb.AppendLine($"            {queryExpr}, {retrieval.TopK}, {retrieval.MinRelevance}m,");
+            sb.AppendLine($"            filters: filters);");
+        }
+        else
+        {
+            sb.AppendLine($"            {queryExpr}, {retrieval.TopK}, {retrieval.MinRelevance}m);");
+        }
+
+        sb.AppendLine($"        var {resultsVarName} = await _objectSetProvider.ExecuteSimilarityAsync<{retrieval.CollectionTypeName}>({resultsVarName}Expression, cancellationToken);");
+
+        // Map to RetrievalResult list
+        sb.AppendLine($"        var {resultsVarName}List = {resultsVarName}.Items.Select((item, i) => new RetrievalResult");
+        sb.AppendLine("        {");
+        sb.AppendLine("            Content = item.ToString(),");
+        sb.AppendLine($"            Score = {resultsVarName}.Scores[i],");
+        sb.AppendLine("        }).ToList();");
+        sb.AppendLine($"        contextBuilder.AddRetrievalContext(\"{retrieval.CollectionTypeName}\", {resultsVarName}List);");
     }
 
     private static string ToCamelCase(string pascalCase)
