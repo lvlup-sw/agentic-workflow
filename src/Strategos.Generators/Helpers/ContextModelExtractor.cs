@@ -128,7 +128,7 @@ internal static class ContextModelExtractor
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            if (SyntaxHelper.IsMethodCall(inv, "Literal"))
+            if (SyntaxHelper.IsMethodCall(inv, "FromLiteral"))
             {
                 if (TryParseLiteralSource(inv, out var literalSource))
                 {
