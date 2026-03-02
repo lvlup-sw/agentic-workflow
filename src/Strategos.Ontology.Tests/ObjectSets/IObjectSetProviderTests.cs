@@ -49,4 +49,47 @@ public class IObjectSetProviderTests
         // Assert
         await Assert.That(items).HasCount().EqualTo(2);
     }
+
+    [Test]
+    public async Task IObjectSetProvider_ExecuteSimilarityAsync_MethodSignatureExists()
+    {
+        // Arrange
+        var provider = Substitute.For<IObjectSetProvider>();
+        var root = new RootExpression(typeof(string));
+        var similarity = new SimilarityExpression(root, "search query", 5, 0.7);
+        var expected = new ScoredObjectSetResult<string>(
+            ["match1", "match2"], 2, ObjectSetInclusion.Properties, [0.95, 0.80]);
+
+        provider.ExecuteSimilarityAsync<string>(similarity, Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(expected));
+
+        // Act
+        var result = await provider.ExecuteSimilarityAsync<string>(similarity, CancellationToken.None);
+
+        // Assert
+        await Assert.That(result.Items).HasCount().EqualTo(2);
+        await Assert.That(result.Scores).HasCount().EqualTo(2);
+        await Assert.That(result.TotalCount).IsEqualTo(2);
+    }
+
+    [Test]
+    public async Task IObjectSetProvider_ExecuteSimilarityAsync_EmptyResult()
+    {
+        // Arrange
+        var provider = Substitute.For<IObjectSetProvider>();
+        var root = new RootExpression(typeof(string));
+        var similarity = new SimilarityExpression(root, "no matches", 5, 0.9);
+        var expected = new ScoredObjectSetResult<string>(
+            [], 0, ObjectSetInclusion.Properties, []);
+
+        provider.ExecuteSimilarityAsync<string>(similarity, Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(expected));
+
+        // Act
+        var result = await provider.ExecuteSimilarityAsync<string>(similarity, CancellationToken.None);
+
+        // Assert
+        await Assert.That(result.Items).HasCount().EqualTo(0);
+        await Assert.That(result.Scores).HasCount().EqualTo(0);
+    }
 }
