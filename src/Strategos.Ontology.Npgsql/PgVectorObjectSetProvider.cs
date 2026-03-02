@@ -4,6 +4,7 @@ using System.Text.Json;
 using Microsoft.Extensions.Options;
 using Npgsql;
 using Pgvector;
+using Strategos.Ontology.Embeddings;
 using Strategos.Ontology.Npgsql.Internal;
 using Strategos.Ontology.ObjectSets;
 
