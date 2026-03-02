@@ -6,7 +6,9 @@ namespace Strategos.Ontology.Query;
 internal sealed class OntologyQueryService(OntologyGraph graph) : IOntologyQuery
 {
     public IReadOnlyList<ObjectTypeDescriptor> GetObjectTypes(
-        string? domain = null, string? implementsInterface = null)
+        string? domain = null,
+        string? implementsInterface = null,
+        bool includeSubtypes = false)
     {
         IEnumerable<ObjectTypeDescriptor> result = graph.ObjectTypes;
 
@@ -22,7 +24,19 @@ internal sealed class OntologyQueryService(OntologyGraph graph) : IOntologyQuery
                     i.Name == implementsInterface || i.InterfaceType.Name == implementsInterface));
         }
 
-        return result.ToList().AsReadOnly();
+        var matched = result.ToList();
+
+        if (includeSubtypes && matched.Count > 0)
+        {
+            var matchedNames = matched.Select(ot => ot.Name).ToHashSet();
+            var subtypes = graph.ObjectTypes
+                .Where(ot => ot.ParentTypeName is not null && matchedNames.Contains(ot.ParentTypeName))
+                .Where(ot => !matchedNames.Contains(ot.Name));
+
+            matched.AddRange(subtypes);
+        }
+
+        return matched.AsReadOnly();
     }
 
     public IReadOnlyList<ActionDescriptor> GetActions(string objectType)

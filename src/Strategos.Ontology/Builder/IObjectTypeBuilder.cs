@@ -32,4 +32,6 @@ public interface IObjectTypeBuilder<T>
         where TEnum : struct, Enum;
 
     void AcceptsExternalLinks(string name, Action<IExtensionPointBuilder> configure);
+
+    void IsA<TParent>() where TParent : class;
 }

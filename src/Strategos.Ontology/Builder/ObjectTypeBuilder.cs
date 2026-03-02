@@ -18,6 +18,7 @@ internal sealed class ObjectTypeBuilder<T>(string domainName) : IObjectTypeBuild
     private readonly List<ExtensionPointBuilder> _extensionPointBuilders = [];
     private LifecycleDescriptor? _lifecycle;
     private ObjectKind _objectKind = ObjectKind.Entity;
+    private Type? _parentType;
 
     public void Key(Expression<Func<T, object>> keySelector)
     {
@@ -116,6 +117,11 @@ internal sealed class ObjectTypeBuilder<T>(string domainName) : IObjectTypeBuild
         _extensionPointBuilders.Add(builder);
     }
 
+    public void IsA<TParent>() where TParent : class
+    {
+        _parentType = typeof(TParent);
+    }
+
     public ObjectTypeDescriptor Build()
     {
         var actions = _actionBuilders.ConvertAll(b => b.Build());
@@ -133,6 +139,8 @@ internal sealed class ObjectTypeBuilder<T>(string domainName) : IObjectTypeBuild
             Lifecycle = _lifecycle,
             InterfaceActionMappings = _interfaceActionMappings.AsReadOnly(),
             InterfacePropertyMappings = _interfacePropertyMappings.AsReadOnly(),
+            ParentType = _parentType,
+            ParentTypeName = _parentType?.Name,
             ExternalLinkExtensionPoints = _extensionPointBuilders.ConvertAll(b => b.Build()).AsReadOnly(),
         };
     }

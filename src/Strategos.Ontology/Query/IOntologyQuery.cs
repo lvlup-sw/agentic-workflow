@@ -5,7 +5,10 @@ namespace Strategos.Ontology.Query;
 public interface IOntologyQuery
 {
     // Core queries
-    IReadOnlyList<ObjectTypeDescriptor> GetObjectTypes(string? domain = null, string? implementsInterface = null);
+    IReadOnlyList<ObjectTypeDescriptor> GetObjectTypes(
+        string? domain = null,
+        string? implementsInterface = null,
+        bool includeSubtypes = false);
 
     IReadOnlyList<ActionDescriptor> GetActions(string objectType);
 

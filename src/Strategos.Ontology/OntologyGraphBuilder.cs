@@ -63,6 +63,7 @@ public sealed class OntologyGraphBuilder
         var resolvedLinks = ResolveCrossDomainLinks(
             allCrossDomainLinkDescriptors, domainLookup, objectTypeLookup, allObjectTypes);
 
+        ValidateIsAHierarchy(allObjectTypes);
         ValidateInterfaceImplementations(allObjectTypes, allInterfaces);
         ValidateInterfaceActionMappings(allObjectTypes, allInterfaces);
         ValidateLifecycles(allObjectTypes);
@@ -209,6 +210,55 @@ public sealed class OntologyGraphBuilder
             {
                 ExternalLinkExtensionPoints = updatedExtensionPoints.AsReadOnly(),
             };
+        }
+    }
+
+    private static void ValidateIsAHierarchy(List<ObjectTypeDescriptor> allObjectTypes)
+    {
+        var typesByName = allObjectTypes.ToDictionary(ot => ot.Name);
+
+        foreach (var objectType in allObjectTypes)
+        {
+            if (objectType.ParentTypeName is null)
+            {
+                continue;
+            }
+
+            if (!typesByName.ContainsKey(objectType.ParentTypeName))
+            {
+                throw new OntologyCompositionException(
+                    $"Object type '{objectType.Name}' declares IS-A relationship with unregistered parent type '{objectType.ParentTypeName}'.");
+            }
+        }
+
+        // Detect cycles using DFS
+        foreach (var objectType in allObjectTypes)
+        {
+            if (objectType.ParentTypeName is null)
+            {
+                continue;
+            }
+
+            var visited = new HashSet<string>();
+            var current = objectType.Name;
+
+            while (current is not null)
+            {
+                if (!visited.Add(current))
+                {
+                    throw new OntologyCompositionException(
+                        $"IS-A hierarchy cycle detected involving type '{current}'.");
+                }
+
+                if (typesByName.TryGetValue(current, out var currentType))
+                {
+                    current = currentType.ParentTypeName;
+                }
+                else
+                {
+                    break;
+                }
+            }
         }
     }
 
