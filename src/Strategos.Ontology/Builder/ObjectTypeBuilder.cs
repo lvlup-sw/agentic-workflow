@@ -17,12 +17,18 @@ internal sealed class ObjectTypeBuilder<T>(string domainName) : IObjectTypeBuild
     private readonly List<InterfacePropertyMapping> _interfacePropertyMappings = [];
     private readonly List<ExtensionPointBuilder> _extensionPointBuilders = [];
     private LifecycleDescriptor? _lifecycle;
+    private ObjectKind _objectKind = ObjectKind.Entity;
 
     public void Key(Expression<Func<T, object>> keySelector)
     {
         var memberName = ExpressionHelper.ExtractMemberName(keySelector);
         var memberType = ExpressionHelper.ExtractMemberType(keySelector);
         _keyProperty = new PropertyDescriptor(memberName, memberType);
+    }
+
+    public void Kind(ObjectKind kind)
+    {
+        _objectKind = kind;
     }
 
     public IPropertyBuilder<T> Property(Expression<Func<T, object>> propertySelector)
@@ -117,6 +123,7 @@ internal sealed class ObjectTypeBuilder<T>(string domainName) : IObjectTypeBuild
 
         return new(typeof(T).Name, typeof(T), domainName)
         {
+            Kind = _objectKind,
             KeyProperty = _keyProperty,
             Properties = _propertyBuilders.ConvertAll(b => b.Build()).AsReadOnly(),
             Links = _links.AsReadOnly(),

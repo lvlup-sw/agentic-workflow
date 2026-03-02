@@ -24,4 +24,6 @@ public sealed record ObjectTypeDescriptor(
     public IReadOnlyList<ExternalLinkExtensionPoint> ExternalLinkExtensionPoints { get; init; } = [];
 
     public IReadOnlyList<InterfacePropertyMapping> InterfacePropertyMappings { get; init; } = [];
+
+    public ObjectKind Kind { get; init; } = ObjectKind.Entity;
 }

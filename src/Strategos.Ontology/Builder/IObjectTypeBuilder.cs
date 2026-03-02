@@ -1,4 +1,5 @@
 using System.Linq.Expressions;
+using Strategos.Ontology.Descriptors;
 
 namespace Strategos.Ontology.Builder;
 
@@ -8,6 +9,8 @@ public interface IObjectTypeBuilder<T>
     void Key(Expression<Func<T, object>> keySelector);
 
     IPropertyBuilder<T> Property(Expression<Func<T, object>> propertySelector);
+
+    void Kind(ObjectKind kind);
 
     void HasOne<TLinked>(string linkName);
 
