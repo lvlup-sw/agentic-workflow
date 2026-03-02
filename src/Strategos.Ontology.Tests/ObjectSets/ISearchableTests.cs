@@ -44,7 +44,7 @@ public class ISearchableTests
 }
 
 // Test helper implementing ISearchable
-public sealed class SearchableTestObject : ISearchable
+internal sealed class SearchableTestObject : ISearchable
 {
     public SearchableTestObject(float[] embedding)
     {

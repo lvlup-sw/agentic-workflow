@@ -45,6 +45,13 @@ internal sealed class PropertyBuilder<T>(string name, Type propertyType) : IProp
     public IPropertyBuilder<T> Vector(int dimensions)
     {
         ArgumentOutOfRangeException.ThrowIfLessThan(dimensions, 1);
+
+        if (propertyType != typeof(float[]))
+        {
+            throw new InvalidOperationException(
+                $"Property '{name}' must be of type float[] to be configured as a vector, but was {propertyType}.");
+        }
+
         _vectorDimensions = dimensions;
         return this;
     }

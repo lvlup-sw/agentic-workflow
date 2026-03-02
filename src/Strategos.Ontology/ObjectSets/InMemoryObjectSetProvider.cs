@@ -122,7 +122,12 @@ public sealed class InMemoryObjectSetProvider : IObjectSetProvider
         if (expression is FilterExpression filter)
         {
             var compiled = filter.Predicate.Compile();
-            var func = (Func<T, bool>)compiled;
+            if (compiled is not Func<T, bool> func)
+            {
+                throw new InvalidOperationException(
+                    $"Filter predicate type '{compiled.GetType()}' is not compatible with Func<{typeof(T).Name}, bool>.");
+            }
+
             return items.Where(func).ToList();
         }
 

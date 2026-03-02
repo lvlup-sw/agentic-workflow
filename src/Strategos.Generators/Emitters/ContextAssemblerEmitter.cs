@@ -153,6 +153,7 @@ internal static class ContextAssemblerEmitter
         sb.AppendLine("        var contextBuilder = new AssembledContextBuilder();");
         sb.AppendLine();
 
+        var retrievalIndex = 0;
         foreach (var source in step.Context!.Sources)
         {
             switch (source)
@@ -166,7 +167,7 @@ internal static class ContextAssemblerEmitter
                     break;
 
                 case RetrievalContextSourceModel retrieval:
-                    EmitRetrievalSource(sb, retrieval);
+                    EmitRetrievalSource(sb, retrieval, retrievalIndex++);
                     break;
             }
         }
@@ -190,9 +191,9 @@ internal static class ContextAssemblerEmitter
         sb.AppendLine($"        contextBuilder.AddStateContext(\"{stateSource.PropertyPath}\", {stateSource.AccessExpression});");
     }
 
-    private static void EmitRetrievalSource(StringBuilder sb, RetrievalContextSourceModel retrieval)
+    private static void EmitRetrievalSource(StringBuilder sb, RetrievalContextSourceModel retrieval, int retrievalIndex)
     {
-        var resultsVarName = $"{ToCamelCase(retrieval.CollectionTypeName)}Results";
+        var resultsVarName = $"{ToCamelCase(retrieval.CollectionTypeName)}Results{retrievalIndex}";
 
         sb.AppendLine($"        // Retrieval context from {retrieval.CollectionTypeName}");
 

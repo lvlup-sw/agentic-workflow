@@ -9,6 +9,11 @@ public sealed class SimilarObjectSet<T> where T : class
 {
     private readonly IObjectSetProvider _provider;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="SimilarObjectSet{T}"/> class.
+    /// </summary>
+    /// <param name="expression">The similarity expression defining the query.</param>
+    /// <param name="provider">The provider that executes the similarity search.</param>
     public SimilarObjectSet(SimilarityExpression expression, IObjectSetProvider provider)
     {
         ArgumentNullException.ThrowIfNull(expression);
