@@ -233,16 +233,17 @@ internal static class ContextAssemblerEmitter
         }
 
         // Build SimilarityExpression
+        var minRelevanceLiteral = ((double)retrieval.MinRelevance).ToString(System.Globalization.CultureInfo.InvariantCulture);
         sb.AppendLine($"        var {resultsVarName}Expression = new SimilarityExpression(");
         sb.AppendLine($"            new RootExpression(typeof({retrieval.CollectionTypeName})),");
         if (retrieval.Filters.Count > 0)
         {
-            sb.AppendLine($"            {queryExpr}, {retrieval.TopK}, {retrieval.MinRelevance}m,");
+            sb.AppendLine($"            {queryExpr}, {retrieval.TopK}, {minRelevanceLiteral},");
             sb.AppendLine($"            filters: {filtersVarName});");
         }
         else
         {
-            sb.AppendLine($"            {queryExpr}, {retrieval.TopK}, {retrieval.MinRelevance}m);");
+            sb.AppendLine($"            {queryExpr}, {retrieval.TopK}, {minRelevanceLiteral});");
         }
 
         sb.AppendLine($"        var {resultsVarName} = await _objectSetProvider.ExecuteSimilarityAsync<{retrieval.CollectionTypeName}>({resultsVarName}Expression, cancellationToken);");
