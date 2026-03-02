@@ -70,8 +70,9 @@ internal sealed class OntologyQueryService(OntologyGraph graph) : IOntologyQuery
         }
 
         return ot.Actions
-            .Where(a => a.Preconditions.Count == 0 || a.Preconditions.All(p =>
-                IsPreconditionSatisfiable(p, knownProperties)))
+            .Where(a => a.Preconditions.Count == 0 || a.Preconditions
+                .Where(p => p.Strength == Descriptors.ConstraintStrength.Hard)
+                .All(p => IsPreconditionSatisfiable(p, knownProperties)))
             .ToList()
             .AsReadOnly();
     }
