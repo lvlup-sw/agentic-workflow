@@ -20,8 +20,13 @@ public sealed class OpenAiCompatibleEmbeddingProvider : IEmbeddingProvider
     /// <param name="options">The configuration options.</param>
     public OpenAiCompatibleEmbeddingProvider(HttpClient httpClient, IOptions<OpenAiEmbeddingOptions> options)
     {
+        ArgumentNullException.ThrowIfNull(httpClient);
+        ArgumentNullException.ThrowIfNull(options);
+
         _httpClient = httpClient;
         _options = options.Value;
+
+        ArgumentOutOfRangeException.ThrowIfLessThan(_options.BatchSize, 1);
     }
 
     /// <inheritdoc />
@@ -54,10 +59,17 @@ public sealed class OpenAiCompatibleEmbeddingProvider : IEmbeddingProvider
 
             var embeddings = await SendBatchRequestAsync(batch, cancellationToken).ConfigureAwait(false);
 
-            // Order by index and place into the correct positions
+            // Order by index and place into the correct positions, validating bounds
             foreach (var item in embeddings)
             {
-                allResults[offset + item.Index] = item.Embedding;
+                var targetIndex = offset + item.Index;
+                if (targetIndex < 0 || targetIndex >= allResults.Length)
+                {
+                    throw new InvalidOperationException(
+                        $"Embedding response contains invalid index {item.Index} for batch at offset {offset} (total items: {texts.Count}).");
+                }
+
+                allResults[targetIndex] = item.Embedding;
             }
 
             offset += batchCount;

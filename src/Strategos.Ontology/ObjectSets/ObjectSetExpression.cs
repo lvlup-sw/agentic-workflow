@@ -124,6 +124,8 @@ public sealed class SimilarityExpression : ObjectSetExpression
         IReadOnlyDictionary<string, object>? filters = null)
         : base(source.ObjectType)
     {
+        ArgumentNullException.ThrowIfNull(source);
+        ArgumentNullException.ThrowIfNull(queryText);
         ArgumentOutOfRangeException.ThrowIfLessThan(topK, 1);
         ArgumentOutOfRangeException.ThrowIfLessThan(minRelevance, 0.0);
         ArgumentOutOfRangeException.ThrowIfGreaterThan(minRelevance, 1.0);

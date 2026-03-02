@@ -31,7 +31,7 @@ internal static class ExpressionTranslator
         {
             FilterExpression filter => TranslateFilter(filter),
             RootExpression => new TranslationResult(null, []),
-            _ => new TranslationResult(null, []),
+            _ => throw new NotSupportedException($"Expression type {expression.GetType().Name} is not supported for SQL translation."),
         };
     }
 

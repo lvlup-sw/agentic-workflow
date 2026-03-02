@@ -45,7 +45,7 @@ public static class PgVectorServiceCollectionExtensions
     public static OntologyOptions UsePgVector(this OntologyOptions options, string connectionString)
     {
         ArgumentNullException.ThrowIfNull(options);
-        ArgumentNullException.ThrowIfNull(connectionString);
+        ArgumentException.ThrowIfNullOrWhiteSpace(connectionString);
 
         options.AddServiceRegistration(services =>
         {

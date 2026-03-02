@@ -11,6 +11,15 @@ internal static class ChunkingUtilities
     internal const double TokensPerWord = 0.75;
 
     /// <summary>
+    /// Converts MaxTokens to a max word count, validating that the value is positive.
+    /// </summary>
+    internal static int TokensToMaxWords(int maxTokens)
+    {
+        ArgumentOutOfRangeException.ThrowIfLessThan(maxTokens, 1);
+        return (int)(maxTokens / TokensPerWord);
+    }
+
+    /// <summary>
     /// Counts the number of whitespace-delimited words in the given text.
     /// </summary>
     internal static int CountWords(string text)

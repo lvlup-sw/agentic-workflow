@@ -99,6 +99,12 @@ public sealed class IngestionPipeline<T> : IIngestionPipeline<T>
         var chunkContents = allChunks.Select(c => c.Content).ToList();
         var embeddings = await _embedder.EmbedBatchAsync(chunkContents, ct).ConfigureAwait(false);
 
+        if (embeddings.Count != totalChunks)
+        {
+            throw new InvalidOperationException(
+                $"Embedding provider returned {embeddings.Count} embeddings for {totalChunks} chunks. Expected 1:1 alignment.");
+        }
+
         _progress?.Report(new IngestionProgress(totalChunks, totalChunks, "Embedding"));
 
         // Phase 3: Map each (chunk, embedding) pair to the target type

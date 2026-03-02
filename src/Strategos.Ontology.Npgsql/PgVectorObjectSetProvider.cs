@@ -52,16 +52,31 @@ public sealed class PgVectorObjectSetProvider : IObjectSetProvider, IObjectSetWr
         // 2. Get table name from TypeMapper
         var tableName = TypeMapper.GetTableName<T>();
 
-        // 3. Build SQL
-        var sql = SqlGenerator.BuildSimilarityQuery(_options.Schema, tableName, expression.Metric);
+        // 3. Translate Source filter if present
+        string? whereClause = null;
+        IReadOnlyList<ExpressionTranslator.SqlParameter> filterParams = [];
+        if (expression.Source is FilterExpression)
+        {
+            var translation = ExpressionTranslator.Translate(expression.Source);
+            whereClause = translation.WhereClause;
+            filterParams = translation.Parameters;
+        }
 
-        // 4. Execute query
+        // 4. Build SQL with optional WHERE clause
+        var sql = SqlGenerator.BuildSimilarityQuery(_options.Schema, tableName, expression.Metric, whereClause);
+
+        // 5. Execute query
         var items = new List<T>();
         var scores = new List<double>();
 
         await using var cmd = _dataSource.CreateCommand(sql);
         cmd.Parameters.AddWithValue("query", new Vector(queryVector));
         cmd.Parameters.AddWithValue("topK", expression.TopK);
+
+        foreach (var p in filterParams)
+        {
+            cmd.Parameters.AddWithValue(p.Name.TrimStart('@'), p.Value);
+        }
 
         await using var reader = await cmd.ExecuteReaderAsync(ct).ConfigureAwait(false);
         while (await reader.ReadAsync(ct).ConfigureAwait(false))
@@ -158,6 +173,7 @@ public sealed class PgVectorObjectSetProvider : IObjectSetProvider, IObjectSetWr
 
         if (item is ISearchable searchable)
         {
+            ValidateEmbedding(searchable.Embedding);
             cmd.Parameters.AddWithValue("embedding", new Vector(searchable.Embedding));
         }
 
@@ -196,6 +212,7 @@ public sealed class PgVectorObjectSetProvider : IObjectSetProvider, IObjectSetWr
 
             if (item is ISearchable searchable)
             {
+                ValidateEmbedding(searchable.Embedding);
                 await writer.WriteAsync(new Vector(searchable.Embedding), ct).ConfigureAwait(false);
             }
         }
@@ -221,14 +238,32 @@ public sealed class PgVectorObjectSetProvider : IObjectSetProvider, IObjectSetWr
 
     private static double ConvertDistanceToSimilarity(double distance, DistanceMetric metric) => metric switch
     {
-        // Cosine distance is in [0, 2], similarity = 1 - distance
+        // pgvector <=> returns cosine distance in [0, 2] (1 - cosine_similarity).
+        // Convert back: similarity = 1.0 - distance, yielding [-1, 1] range.
+        // For normalized vectors, distance is in [0, 2] so similarity is in [-1, 1].
         DistanceMetric.Cosine => 1.0 - distance,
-        // L2 distance is in [0, inf), similarity = 1 / (1 + distance)
+        // pgvector <-> returns L2 (Euclidean) distance in [0, inf).
+        // Convert to a bounded similarity score via reciprocal.
         DistanceMetric.L2 => 1.0 / (1.0 + distance),
-        // Inner product: pgvector returns negative inner product, similarity = -distance
+        // pgvector <#> returns negative inner product. Negate to get actual inner product.
         DistanceMetric.InnerProduct => -distance,
-        _ => 1.0 - distance,
+        _ => throw new ArgumentOutOfRangeException(nameof(metric), metric, "Unsupported distance metric."),
     };
+
+    private void ValidateEmbedding(float[]? embedding)
+    {
+        if (embedding is null || embedding.Length == 0)
+        {
+            throw new InvalidOperationException(
+                "ISearchable.Embedding must not be null or empty when storing items with embeddings.");
+        }
+
+        if (embedding.Length != _embeddingProvider.Dimensions)
+        {
+            throw new InvalidOperationException(
+                $"Embedding dimension mismatch: item has {embedding.Length} dimensions, provider expects {_embeddingProvider.Dimensions}.");
+        }
+    }
 
     private static void AddTranslatedParameters(NpgsqlCommand cmd, IReadOnlyList<ExpressionTranslator.SqlParameter> parameters)
     {

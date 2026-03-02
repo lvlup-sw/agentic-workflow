@@ -32,7 +32,7 @@ public sealed class ParagraphChunker : ITextChunker
 
         options ??= new ChunkOptions();
 
-        var maxWords = (int)(options.MaxTokens / TokensPerWord);
+        var maxWords = TokensToMaxWords(options.MaxTokens);
 
         var paragraphs = SplitParagraphs(text);
 

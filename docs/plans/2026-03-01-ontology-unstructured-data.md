@@ -384,7 +384,7 @@ No TDD — metadata only.
 
 ## Dependency Graph
 
-```
+```text
 Tasks 001, 002, 003 ──→ all independent, run in parallel
 
 Task 004 ──→ blocked by 001 + 003

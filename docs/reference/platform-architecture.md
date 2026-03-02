@@ -3487,7 +3487,7 @@ services.AddOntology(opts =>
 // Production: OpenAI-compatible embeddings
 services.AddOpenAiEmbeddings(opts =>
 {
-    opts.ApiKey = "sk-...";
+    opts.ApiKey = builder.Configuration["OpenAI:ApiKey"]!;
     opts.Model = "text-embedding-3-small";
     opts.Dimensions = 1536;
 });

@@ -96,6 +96,8 @@ internal static class SqlGenerator
         PgVectorIndexType indexType,
         DistanceMetric metric = DistanceMetric.Cosine)
     {
+        ArgumentOutOfRangeException.ThrowIfLessThan(vectorDimensions, 1);
+
         var sb = new StringBuilder();
 
         sb.AppendLine("CREATE EXTENSION IF NOT EXISTS vector;");
@@ -113,7 +115,7 @@ internal static class SqlGenerator
         {
             PgVectorIndexType.IvfFlat => "ivfflat",
             PgVectorIndexType.Hnsw => "hnsw",
-            _ => "ivfflat",
+            _ => throw new ArgumentOutOfRangeException(nameof(indexType), indexType, "Unsupported pgvector index type."),
         };
 
         sb.Append($"CREATE INDEX IF NOT EXISTS idx_{tableName}_embedding ON \"{schema}\".\"{tableName}\" USING {indexMethod} (embedding {opsClass})");

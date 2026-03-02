@@ -63,11 +63,13 @@ public class EmbeddingProviderRegistrationTests
         var provider = services.BuildServiceProvider();
 
         // Act
-        var embeddingProvider = provider.GetService<IEmbeddingProvider>();
+        var first = provider.GetService<IEmbeddingProvider>();
+        var second = provider.GetService<IEmbeddingProvider>();
 
         // Assert
-        await Assert.That(embeddingProvider).IsNotNull();
-        await Assert.That(embeddingProvider).IsTypeOf<StubEmbeddingProviderForDI>();
+        await Assert.That(first).IsNotNull();
+        await Assert.That(first).IsTypeOf<StubEmbeddingProviderForDI>();
+        await Assert.That(first).IsSameReferenceAs(second);
     }
 
     [Test]
@@ -85,11 +87,13 @@ public class EmbeddingProviderRegistrationTests
         var provider = services.BuildServiceProvider();
 
         // Act
-        var writer = provider.GetService<IObjectSetWriter>();
+        var first = provider.GetService<IObjectSetWriter>();
+        var second = provider.GetService<IObjectSetWriter>();
 
         // Assert
-        await Assert.That(writer).IsNotNull();
-        await Assert.That(writer).IsTypeOf<StubObjectSetWriterForDI>();
+        await Assert.That(first).IsNotNull();
+        await Assert.That(first).IsTypeOf<StubObjectSetWriterForDI>();
+        await Assert.That(first).IsSameReferenceAs(second);
     }
 
     [Test]

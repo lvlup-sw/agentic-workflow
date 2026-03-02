@@ -84,9 +84,14 @@ public sealed class ObjectSet<T> where T : class
         string? embeddingPropertyName = null,
         float[]? queryVector = null)
     {
+        ArgumentNullException.ThrowIfNull(queryText);
+
+        // Defensive copy of mutable float[] to preserve immutability
+        var vectorCopy = queryVector is not null ? (float[])queryVector.Clone() : null;
+
         var expression = new SimilarityExpression(
             Expression, queryText, topK, minRelevance, metric,
-            embeddingPropertyName, queryVector);
+            embeddingPropertyName, vectorCopy);
         return new SimilarObjectSet<T>(expression, _provider);
     }
 

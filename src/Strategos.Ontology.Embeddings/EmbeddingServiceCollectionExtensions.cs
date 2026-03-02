@@ -19,8 +19,7 @@ public static class EmbeddingServiceCollectionExtensions
         Action<OpenAiEmbeddingOptions> configure)
     {
         services.Configure(configure);
-        services.AddHttpClient<OpenAiCompatibleEmbeddingProvider>();
-        services.AddSingleton<IEmbeddingProvider, OpenAiCompatibleEmbeddingProvider>();
+        services.AddHttpClient<IEmbeddingProvider, OpenAiCompatibleEmbeddingProvider>();
         return services;
     }
 }

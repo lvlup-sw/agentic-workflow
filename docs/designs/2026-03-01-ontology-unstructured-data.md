@@ -14,7 +14,7 @@ The platform architecture (§12.2-12.3) defers these as "consumer responsibiliti
 
 **Layered Packages** — Abstractions in the existing `Strategos.Ontology` package; implementations in two new packages that users add progressively.
 
-```
+```text
 Strategos.Ontology              ← IEmbeddingProvider, ITextChunker, IObjectSetWriter,
                                    IngestionPipeline<T>, built-in chunkers
 Strategos.Ontology.Embeddings   ← OpenAiCompatibleEmbeddingProvider (new package)
@@ -157,7 +157,7 @@ Extend the existing in-memory provider to support the writer interface and optio
 
 ### Package Dependency Graph
 
-```
+```text
 Strategos.Ontology (existing)
 ├── IEmbeddingProvider, ITextChunker, IObjectSetWriter    (new abstractions)
 ├── IngestionPipeline<T>                                   (new DSL)
@@ -425,7 +425,7 @@ var results = await objectSet.Of<KnowledgeChunk>()
 - **Unit tests** for `OpenAiCompatibleEmbeddingProvider` with `MockHttpMessageHandler`
 - **Integration tests** for `PgVectorObjectSetProvider` using Testcontainers (PostgreSQL + pgvector)
 - **Snapshot tests** for SQL generation (similarity queries, schema DDL)
-- **Existing test preservation** — all 3160 current tests pass without modification
+- **Existing test preservation** — all existing tests pass without modification
 
 ## Open Questions
 

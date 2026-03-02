@@ -57,7 +57,7 @@ public class TypeMapperTests
     public async Task ToSnakeCase_ConsecutiveAcronyms_HandlesBoundary()
     {
         var result = TypeMapper.ToSnakeCase("XMLHTTPRequest");
-        // Should handle consecutive acronyms: "xml_http_request"
+        // Consecutive acronyms are kept together: "xmlhttp_request"
         await Assert.That(result).IsEqualTo("xmlhttp_request");
     }
 

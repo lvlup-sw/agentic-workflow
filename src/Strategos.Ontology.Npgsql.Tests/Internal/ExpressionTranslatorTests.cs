@@ -99,15 +99,14 @@ public class ExpressionTranslatorTests
     }
 
     [Test]
-    public async Task Translate_UnsupportedExpression_ReturnsNoWhere()
+    public async Task Translate_UnsupportedExpression_ThrowsNotSupportedException()
     {
-        // TraverseLinkExpression is not supported, should fall through to default
+        // TraverseLinkExpression is not supported for SQL translation
         var root = new RootExpression(typeof(TestEntity));
         var traverse = new TraverseLinkExpression(root, "link", typeof(TestEntity));
 
-        var result = ExpressionTranslator.Translate(traverse);
-
-        await Assert.That(result.WhereClause).IsNull();
+        await Assert.That(() => ExpressionTranslator.Translate(traverse))
+            .Throws<NotSupportedException>();
     }
 
     public sealed class TestEntity

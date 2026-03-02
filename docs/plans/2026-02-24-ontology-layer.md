@@ -1555,7 +1555,7 @@ Creates all project files on main branch.
 
 Teams 1A and 1B have **zero shared files** — they create in different subdirectories:
 - 1A: `Descriptors/`, `Builder/`, `DomainOntology.cs`
-- 1B: `ObjectSets/`, Events/`, `Actions/`, `Query/`, `Telemetry/`
+- 1B: `ObjectSets/`, `Events/`, `Actions/`, `Query/`, `Telemetry/`
 
 ### Phase 2: Runtime Layer (Single Team)
 ```

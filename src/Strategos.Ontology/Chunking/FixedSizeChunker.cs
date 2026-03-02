@@ -18,7 +18,7 @@ public sealed class FixedSizeChunker : ITextChunker
 
         options ??= new ChunkOptions();
 
-        var maxWords = (int)(options.MaxTokens / TokensPerWord);
+        var maxWords = TokensToMaxWords(options.MaxTokens);
         var overlapWords = (int)(options.OverlapTokens / TokensPerWord);
 
         var words = SplitWordSpans(text);

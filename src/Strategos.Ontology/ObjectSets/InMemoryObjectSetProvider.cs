@@ -58,11 +58,9 @@ public sealed class InMemoryObjectSetProvider : IObjectSetProvider, IObjectSetWr
         _items.GetOrAdd(type, _ => new List<object>()).Add(item);
         _searchableContent.GetOrAdd(type, _ => new List<string>()).Add(searchableContent);
 
-        // If the item implements ISearchable, also store its embedding
-        if (item is ISearchable searchable)
-        {
-            _embeddings.GetOrAdd(type, _ => new List<float[]>()).Add(searchable.Embedding);
-        }
+        // Store embedding (or empty placeholder) to maintain index alignment with _items
+        var embedding = item is ISearchable searchable ? searchable.Embedding : [];
+        _embeddings.GetOrAdd(type, _ => new List<float[]>()).Add(embedding);
     }
 
     /// <inheritdoc />
@@ -76,10 +74,9 @@ public sealed class InMemoryObjectSetProvider : IObjectSetProvider, IObjectSetWr
         _items.GetOrAdd(type, _ => new List<object>()).Add(item);
         _searchableContent.GetOrAdd(type, _ => new List<string>()).Add(searchableText);
 
-        if (item is ISearchable searchable)
-        {
-            _embeddings.GetOrAdd(type, _ => new List<float[]>()).Add(searchable.Embedding);
-        }
+        // Store embedding (or empty placeholder) to maintain index alignment with _items
+        var embedding = item is ISearchable searchable ? searchable.Embedding : [];
+        _embeddings.GetOrAdd(type, _ => new List<float[]>()).Add(embedding);
 
         return Task.CompletedTask;
     }
@@ -100,6 +97,7 @@ public sealed class InMemoryObjectSetProvider : IObjectSetProvider, IObjectSetWr
     public Task<ObjectSetResult<T>> ExecuteAsync<T>(ObjectSetExpression expression, CancellationToken ct = default)
         where T : class
     {
+        ArgumentNullException.ThrowIfNull(expression);
         var items = GetSeededItems<T>();
         var filtered = ApplyExpression(items, expression);
         var result = new ObjectSetResult<T>(filtered, filtered.Count, ObjectSetInclusion.Properties);
@@ -111,6 +109,7 @@ public sealed class InMemoryObjectSetProvider : IObjectSetProvider, IObjectSetWr
         ObjectSetExpression expression,
         [EnumeratorCancellation] CancellationToken ct = default) where T : class
     {
+        ArgumentNullException.ThrowIfNull(expression);
         var items = GetSeededItems<T>();
         var filtered = ApplyExpression(items, expression);
 
@@ -250,6 +249,9 @@ public sealed class InMemoryObjectSetProvider : IObjectSetProvider, IObjectSetWr
     {
         if (expression is FilterExpression filter)
         {
+            // Recursively apply the source expression first
+            var filtered = ApplyExpression(items, filter.Source);
+
             var compiled = filter.Predicate.Compile();
             if (compiled is not Func<T, bool> func)
             {
@@ -257,11 +259,10 @@ public sealed class InMemoryObjectSetProvider : IObjectSetProvider, IObjectSetWr
                     $"Filter predicate type '{compiled.GetType()}' is not compatible with Func<{typeof(T).Name}, bool>.");
             }
 
-            return items.Where(func).ToList();
+            return filtered.Where(func).ToList();
         }
 
-        // For RootExpression and other unsupported expression types, return all items
-        // (RootExpression) or empty (unknown types handled by returning all seeded)
+        // RootExpression — return all items (base case)
         return items;
     }
 
