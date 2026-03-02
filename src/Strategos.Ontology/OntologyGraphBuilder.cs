@@ -291,6 +291,12 @@ public sealed class OntologyGraphBuilder
                 var objectPropertyLookup = objectType.Properties
                     .ToDictionary(p => p.Name, p => p.PropertyType);
 
+                // Also include the key property in the lookup (keys are valid interface targets)
+                if (objectType.KeyProperty is not null)
+                {
+                    objectPropertyLookup.TryAdd(objectType.KeyProperty.Name, objectType.KeyProperty.PropertyType);
+                }
+
                 // Build a set of interface property names covered by Via() mappings
                 var viaMappedTargets = objectType.InterfacePropertyMappings
                     .Where(m => m.InterfaceName == implementedInterface.Name)
