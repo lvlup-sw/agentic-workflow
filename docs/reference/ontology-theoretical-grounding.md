@@ -1,6 +1,6 @@
 # Ontology Theoretical Grounding: Nirenburg & Raskin Analysis
 
-A formal analysis mapping the Strategos `Agentic.Ontology` layer against the theoretical framework of Nirenburg & Raskin's *Ontological Semantics* (MIT Press, 2004). This document examines where our design aligns with the theory, where it diverges, what concepts from the literature we are missing, and what concrete improvements are warranted.
+A formal analysis mapping the Strategos `Strategos.Ontology` layer against the theoretical framework of Nirenburg & Raskin's *Ontological Semantics* (MIT Press, 2004). This document examines where our design aligns with the theory, where it diverges, what concepts from the literature we are missing, and what concrete improvements are warranted.
 
 **Scope:** All 12 core primitives from `platform-architecture.md` section 4.14.4, analyzed against Chapters 1, 5, 6, and 7 of the textbook.
 
@@ -40,7 +40,7 @@ Recommendations are concrete and prioritized. The IS-A hierarchy gap (#1) is the
 
 Alignment ratings: **Strong** = direct structural correspondence; **Moderate** = same intent, different mechanism; **Weak** = loose conceptual parallel; **Novel** = no textbook equivalent.
 
-| # | Agentic.Ontology Primitive | N&R Equivalent | Alignment | Notes |
+| # | Strategos.Ontology Primitive | N&R Equivalent | Alignment | Notes |
 |---|---------------------------|----------------|-----------|-------|
 | 1 | **Object Type** `builder.Object<T>()` | CONCEPT (OBJECT or EVENT frame) | Strong | Both represent typed entities as named collections of property-value pairs. N&R further divides concepts into OBJECT, EVENT, and PROPERTY subtrees [Ch.7 §7.1.1]. Our Object Types map to their OBJECT and EVENT categories; the `ObjectKind` discriminator (T-022) now distinguishes `Entity` from `Process`. |
 | 2 | **Property** `obj.Property(x => x.Prop)` | ATTRIBUTE (literal/scalar filler) | Strong | N&R distinguish RELATIONs (concept-valued) from ATTRIBUTEs (literal/scalar-valued) [Ch.7 §7.1.1]. The `PropertyKind` discriminator (T-021) now auto-infers `Scalar`, `Reference`, or `Computed` at graph build time. N&R properties also carry a multi-facet system (SEM, DEFAULT, RELAXABLE-TO) that we do not fully model, though hard/soft constraint strength (T-024) addresses the most important aspect. |
@@ -65,7 +65,7 @@ Alignment ratings: **Strong** = direct structural correspondence; **Moderate** =
 
 Our Object Types are structurally equivalent to N&R's concept frames. Both represent entities as named collections of property-value pairs:
 
-| N&R Concept Frame | Agentic.Ontology |
+| N&R Concept Frame | Strategos.Ontology |
 |-------------------|------------------|
 | `pay definition "..." agent sem human theme sem commodity` | `builder.Object<TradeOrder>(obj => { obj.Property(o => o.Side); obj.Property(o => o.Price); })` |
 
@@ -159,7 +159,7 @@ This facet system enables graceful degradation: "The program first attempts to m
 
 **Textbook concept:** The lexicon maps natural language words to ontological concepts via SEM-STRUC (semantic structure) entries: "the ontological semantic lexicon specifies what concept, concepts, property or properties of concepts defined in the ontology must be instantiated in the TMR to account for the meaning of a particular lexical unit" [Ch.7 §7.1, p.155]. This is the bridge between human language and machine knowledge.
 
-**Our design:** Object Types, Properties, and Actions have `Description` fields (free-text strings) but no structured mapping between agent-facing names/descriptions and ontological concepts. The `Agentic.Ontology.MCP` package provides progressive disclosure descriptions, but these are string-based, not semantically structured.
+**Our design:** Object Types, Properties, and Actions have `Description` fields (free-text strings) but no structured mapping between agent-facing names/descriptions and ontological concepts. The `Strategos.Ontology.MCP` package provides progressive disclosure descriptions, but these are string-based, not semantically structured.
 
 **Impact:** When an agent reads a tool description like "Execute a trade against this position," it must parse the natural language to understand that this maps to the `ExecuteTrade` action on a `Position` Object Type. N&R's lexicon would provide a structured SEM-STRUC mapping: `execute-trade → ExecuteTrade.Action(AGENT: agent-instance, THEME: Position-instance)`. Without this, the burden of semantic interpretation falls entirely on the LLM's language understanding.
 

@@ -20,12 +20,12 @@ An ontology-to-tools compilation framework that turns an OWL/RDF ontology (T-Box
 
 ## Relevance to Strategos Ontology Layer
 
-This paper addresses the same core problem as our `Agentic.Ontology` layer: compiling domain ontologies into typed tool interfaces that constrain LLM agent action spaces. Key parallels:
+This paper addresses the same core problem as our `Strategos.Ontology` layer: compiling domain ontologies into typed tool interfaces that constrain LLM agent action spaces. Key parallels:
 
 - **T-Box → Tool compilation** maps directly to our `DomainOntology.Define()` → Roslyn source generator → `IOntologyQuery` pipeline
 - **Hard constraints (axioms)** parallel our `Requires()` preconditions
 - **Soft constraints (annotations)** parallel our `Description()` metadata
-- **MCP tool exposure** parallels our `Agentic.Ontology.MCP` package
+- **MCP tool exposure** parallels our `Strategos.Ontology.MCP` package
 - **Constraint feedback loop** informs our postcondition/derivation chain staleness reasoning
 
 See [ontology-to-tools-grounding.md](../ontology-to-tools-grounding.md) for the formal analysis.

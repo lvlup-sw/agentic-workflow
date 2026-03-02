@@ -36,7 +36,7 @@ A comprehensive approach to the treatment of text meaning by computer. Ontologic
 
 ## Relevance to Strategos Ontology Layer
 
-The following chapters are most directly relevant to the `Agentic.Ontology` layer (see `platform-architecture.md` section 4.14):
+The following chapters are most directly relevant to the `Strategos.Ontology` layer (see `platform-architecture.md` section 4.14):
 
 - **Ch. 5 (Formal Ontology)** — Ontological categories, inheritance hierarchies, property types, and relations. Maps to our Object Types, Links, and Properties.
 - **Ch. 7 (Static Knowledge Sources)** — The ontology's internal structure (concepts as frames with property-value pairs), the fact database (instance patterns), and the lexicon (semantic mappings). Maps to our `ComposedOntology`, `IOntologyQuery`, cross-domain links, and interface system.

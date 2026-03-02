@@ -1,6 +1,6 @@
 # Platform Architecture: Basileus
 
-A consolidated reference for the Basileus agentic workflows platform -- covering the three-tier runtime, the Agentic.Workflow library, event sourcing, security model, deployment topology, and resource management.
+A consolidated reference for the Basileus agentic workflows platform -- covering the three-tier runtime, the Strategos workflow library, event sourcing, security model, deployment topology, and resource management.
 
 Version 3.0 | Phronesis Orchestration Pattern | Replaces Magentic-One
 
@@ -11,7 +11,7 @@ Version 3.0 | Phronesis Orchestration Pattern | Replaces Magentic-One
 1. [System Overview](#1-system-overview)
 2. [Core Concepts & Terminology](#2-core-concepts--terminology)
 3. [Application Layer: Phronesis Pattern](#3-application-layer-phronesis-pattern)
-4. [Agentic.Workflow Library](#4-agenticworkflow-library)
+4. [Strategos Library](#4-strategos-library)
 5. [Infrastructure Layer](#5-infrastructure-layer)
 6. [End-to-End Request Flow](#6-end-to-end-request-flow)
 7. [Event Sourcing & State Durability](#7-event-sourcing--state-durability)
@@ -32,7 +32,7 @@ The Basileus platform is a multi-tier architecture designed to orchestrate AI ag
 2. **Tool Abstraction** -- Execution environments have no knowledge of tool backend implementations. Tools are accessed through a filesystem-based progressive disclosure system, enriched with ontology schemas (Object Types, Actions, Links) to provide typed semantic discovery and constrain the valid action space. All tool invocations route back to the ControlPlane via envd callbacks; sandboxes never hold credentials or connect to external services directly.
 3. **Credential Isolation** -- API keys, database credentials, and OAuth tokens live exclusively in Azure Key Vault, accessed only by the ControlPlane. Secrets are injected at call time and never enter the sandbox.
 4. **Centralized Observability** -- All execution requests and tool invocations flow through a single control point, providing complete audit trails via event sourcing.
-5. **Semantic Type Safety** -- A compile-time ontology (Agentic.Ontology) maps domain types into a unified type graph of Object Types, Properties, Links, Actions, and Interfaces. Domain assemblies remain independent -- the ontology maps them, not owns them. A Roslyn source generator validates the type graph at build time, produces cross-domain link resolution, and generates typed tool stubs for progressive disclosure. Agents plan against the ontology rather than flat tool lists, directly reducing the CMDP action space ([AI Theory, &sect;2.3](../ai-theory/agentic-workflow-theory.md)).
+5. **Semantic Type Safety** -- A compile-time ontology (Strategos.Ontology) maps domain types into a unified type graph of Object Types, Properties, Links, Actions, and Interfaces. Domain assemblies remain independent -- the ontology maps them, not owns them. A Roslyn source generator validates the type graph at build time, produces cross-domain link resolution, and generates typed tool stubs for progressive disclosure. Agents plan against the ontology rather than flat tool lists, directly reducing the CMDP action space ([AI Theory, &sect;2.3](../ai-theory/strategos-theory.md)).
 
 ### Three-Tier Architecture
 
@@ -61,7 +61,7 @@ flowchart TB
 
 | Tier | Component | Responsibilities |
 |------|-----------|-----------------|
-| Orchestrator | AgentHost | Agentic.Workflow runtime, Phronesis pattern via fluent DSL, Wolverine sagas, Marten event sourcing, Code Execution Bridge, Workflow MCP Server (event streaming to external clients) |
+| Orchestrator | AgentHost | Strategos runtime, Phronesis pattern via fluent DSL, Wolverine sagas, Marten event sourcing, Code Execution Bridge, Workflow MCP Server (event streaming to external clients) |
 | Inference | InferenceGateway | Unified OpenAI-compatible model inference with multi-provider routing, caching, and budget enforcement |
 | Control Plane | ControlPlane | Security boundary, MCP server hosting tools, streamable HTTP streaming, E2B sandbox lifecycle management, policy enforcement |
 | Execution | E2B Sandbox | Firecracker micro-VMs, stateless code execution, envd agent for SDK communication, tool callbacks via vsock |
@@ -71,7 +71,7 @@ flowchart TB
 ### System Components
 
 **Orchestrator Tier (AgentHost)**
-- Hosts the Agentic.Workflow runtime for reflective agent orchestration
+- Hosts the Strategos runtime for reflective agent orchestration
 - Implements the Phronesis pattern via workflow definitions (Plan, Think, Act, Observe, Reflect, Synthesize)
 - Processes user requests and maintains Task/Progress Ledgers
 - Hosts the Workflow MCP Server — a second MCP server (separate from ControlPlane) that exposes workflow event streams and command interfaces to external MCP clients (Exarchos instances). Uses Marten `ISubscription` → `Channel<T>` → SSE for real-time event delivery. See [Remote Notification Bridge](../designs/2026-02-19-remote-notification-bridge.md).
@@ -122,14 +122,14 @@ This glossary provides the single authoritative definition for each term used th
 | Term | Definition |
 | :--- | :--- |
 | **Phronesis** | The reflective execution loop orchestration pattern that replaced the Magentic-One specialist taxonomy. Named after Aristotle's concept of practical wisdom. Implements a Plan -> (Think -> Act -> Observe -> Reflect)* -> Synthesize loop where a single orchestrator uses composable execution profiles instead of specialist agents. |
-| **Reflective Execution Loop** | The core Phronesis cycle: Think (context assembly + approach decision), Act (code generation + sandbox execution), Observe (zero-cost result capture), Reflect (tiered evaluation). Expressed declaratively via the Agentic.Workflow fluent DSL as a `RepeatUntil` loop. |
+| **Reflective Execution Loop** | The core Phronesis cycle: Think (context assembly + approach decision), Act (code generation + sandbox execution), Observe (zero-cost result capture), Reflect (tiered evaluation). Expressed declaratively via the Strategos fluent DSL as a `RepeatUntil` loop. |
 | **Execution Profile** | A declarative, composable configuration that shapes the Think step. Each profile specifies instructions, tool subsets, RAG collections, RAG query configuration, and quality gates. Profiles replace the specialist agent taxonomy as the customization mechanism. Multiple profiles compose via `ExecutionProfile.Compose()`. |
 | **Execution Strategy** | An approach to executing a task, selected by Thompson Sampling. Strategies include SearchThenCode, CodeDirectly, DecomposeFirst, ExemplarBased, and InteractiveProbe. The strategy space replaces the specialist agent space as the Thompson Sampling selection target. |
 | **Tiered Reflection** | The three-tier evaluation model within the Reflect step. Tier 1: deterministic rules (0 tokens, ~1ms). Tier 2: NLP Sidecar semantic analysis (0 tokens, ~50ms). Tier 3: LLM meta-reasoning (~500 tokens, ~3s). Higher tiers only run when lower tiers are inconclusive, saving 37--51% tokens per iteration compared to the previous pattern. |
 | **ReflectionOutcome** | The result of the Reflect step: Continue (advance to next task), Retry (try different approach via AdaptStrategy), Escalate (needs human guidance), or Synthesize (budget exhausted, produce partial result). |
 | **Task Ledger** | Immutable state structure tracking what needs to be done. Created during the DecomposeRequest step. Each task specifies capability requirements (`TaskRequirements`) rather than specialist assignments, enabling deterministic profile resolution. |
 | **Progress Ledger** | Mutable state structure recording what has been completed. Updated by the Observe step after each execution cycle. Used for tiered reflection analysis (Tier 2 semantic similarity) and completion evaluation. |
-| **WorkflowSaga** | A Wolverine saga generated from Agentic.Workflow definitions. Provides automatic persistence to PostgreSQL, transactional outbox for exactly-once processing, and message-driven step transitions. |
+| **WorkflowSaga** | A Wolverine saga generated from Strategos definitions. Provides automatic persistence to PostgreSQL, transactional outbox for exactly-once processing, and message-driven step transitions. |
 | **Event Stream** | The append-only sequence of immutable events capturing everything that happens during a workflow execution -- step transitions, agent decisions, context assemblies, approvals, and completions. Stored in Marten. |
 | **Projection** | A read model built from the event stream, optimized for querying. Projections are updated asynchronously from events and provide eventual consistency. Example: `PhronesisProjection` materializes current phase, execution history, and reflection outcomes. |
 | **Materialized View** | The concrete read model produced by a projection. Example: `PhronesisReadModel` with properties like `CurrentPhase`, `ExecutionHistory`, `ReflectionOutcomes`. |
@@ -146,9 +146,9 @@ This glossary provides the single authoritative definition for each term used th
 | **Policy Engine** | ControlPlane component evaluating every tool call before and after execution. Pre-execution: authentication, authorization, input validation, content filtering, rate limiting. Post-execution: output filtering, resource checks, audit logging. |
 | **Streamable HTTP** | HTTP-based streaming transport for real-time execution updates from ControlPlane to AgentHost, used as the preferred MCP protocol transport. Future upgrade path to gRPC. |
 | **Tool Callback Hairpin** | The call chain where sandbox code invokes a tool wrapper, which communicates via envd vsock to the E2B orchestrator, which routes to the ControlPlane for actual tool execution, and results flow back through the same path. The ControlPlane is the sole gateway for all external access. |
-| **Agentic.Workflow** | The fluent DSL library for defining durable, event-sourced agent workflows. Generates Wolverine sagas, Marten events, phase enums, and DI registrations from declarative workflow definitions. Distributed via [NuGet](https://www.nuget.org/packages/Agentic.Workflow). |
+| **Strategos** | The fluent DSL library for defining durable, event-sourced agent workflows. Generates Wolverine sagas, Marten events, phase enums, and DI registrations from declarative workflow definitions. Distributed via [NuGet](https://www.nuget.org/packages/Strategos). |
 | **Thompson Sampling** | Contextual multi-armed bandit algorithm used for execution strategy selection. Maintains Beta(alpha, beta) distributions per (strategy, taskCategory) pair and samples to select the strategy with highest expected reward. Previously targeted specialist agents; retargeted to strategies in the Phronesis pattern. |
-| **Agentic.Ontology** | A semantic type system for agentic operations, distributed as a separate NuGet package within the Agentic.Workflow repository. Provides a fluent DSL for declaring Object Types, Properties, Links, Actions, and Interfaces across domain boundaries. A Roslyn source generator produces compile-time descriptors, typed accessors, and cross-domain link validation. Enhances progressive disclosure with schema-driven tool stubs. Inspired by [Palantir Foundry's Ontology](https://www.palantir.com/docs/foundry/ontology/overview). |
+| **Strategos.Ontology** | A semantic type system for agentic operations, distributed as a separate NuGet package within the Strategos repository. Provides a fluent DSL for declaring Object Types, Properties, Links, Actions, and Interfaces across domain boundaries. A Roslyn source generator produces compile-time descriptors, typed accessors, and cross-domain link validation. Enhances progressive disclosure with schema-driven tool stubs. Inspired by [Palantir Foundry's Ontology](https://www.palantir.com/docs/foundry/ontology/overview). |
 | **Domain Ontology** | A `DomainOntology` subclass declared per domain assembly (e.g., `TradingOntology`, `KnowledgeOntology`). Maps existing domain types into the ontology via a fluent builder API. The source generator parses these definitions at compile time to produce descriptors and validate the type graph. |
 | **Ontology Interface** | A polymorphic shape declaration backed by a C# interface (e.g., `ISearchable`). Object types from different domains can implement the same ontology interface, enabling cross-domain queries ("find all Searchable objects matching X"). |
 | **Cross-Domain Link** | A typed relationship between object types in different domain assemblies. Declared by the originating domain using string-based external references (`ToExternal("trading", "Strategy")`), resolved and validated at composition time by the host assembly's source generator. |
@@ -161,7 +161,7 @@ This glossary provides the single authoritative definition for each term used th
 
 The Phronesis pattern replaces the Magentic-One specialist taxonomy with a reflective execution loop that leverages the platform's unified code execution model. Named after Aristotle's concept of practical wisdom -- the ability to discern the right action in particular circumstances -- it mirrors how a skilled developer works: understand the problem (Think), write code (Act), see what happens (Observe), adjust (Reflect).
 
-The orchestration loop is defined using Agentic.Workflow's fluent DSL:
+The orchestration loop is defined using Strategos's fluent DSL:
 
 1. **DecomposeRequest** -- Decompose the user request into a TaskLedger where each task specifies capability requirements (not specialist assignments)
 2. **Think** -- Resolve execution profile from task requirements, query RAG collections, select execution strategy via Thompson Sampling, assemble unified context, and generate an execution plan
@@ -234,7 +234,7 @@ public record ExecutionProfile
 
 ```mermaid
 graph TD
-    subgraph "AgentHost (Agentic.Workflow Runtime)"
+    subgraph "AgentHost (Strategos Runtime)"
         User((User Input))
 
         subgraph "Phronesis Loop"
@@ -541,16 +541,16 @@ Profile-specific RAG collections ensure exemplar relevance is high for every tas
 
 ---
 
-## 4. Agentic.Workflow Library (Strategos)
+## 4. Strategos Library
 
-Agentic.Workflow (codename **Strategos**) is a standalone .NET library for building production-grade agentic workflows. It combines the ergonomics of modern agent frameworks with the reliability guarantees of enterprise workflow engines, adding capabilities unique to AI-powered systems. Distributed via [NuGet](https://www.nuget.org/packages/Agentic.Workflow).
+Strategos is a standalone .NET library for building production-grade agentic workflows. It combines the ergonomics of modern agent frameworks with the reliability guarantees of enterprise workflow engines, adding capabilities unique to AI-powered systems. Distributed via [NuGet](https://www.nuget.org/packages/Strategos).
 
 **Installation:**
 
 ```bash
-dotnet add package Agentic.Workflow
-dotnet add package Agentic.Workflow.Generators
-dotnet add package Agentic.Workflow.Infrastructure
+dotnet add package Strategos
+dotnet add package Strategos.Generators
+dotnet add package Strategos.Infrastructure
 ```
 
 ### 4.1 Design Philosophy
@@ -912,7 +912,7 @@ The source generator produces the following artifacts (condensed for illustratio
 
 ```csharp
 // 1. Phase Enumeration
-[GeneratedCode("Agentic.Workflow", "1.0")]
+[GeneratedCode("Strategos", "1.0")]
 public enum ProcessClaimPhase
 {
     NotStarted,
@@ -927,7 +927,7 @@ public enum ProcessClaimPhase
 }
 
 // 2. Saga Class with Handlers
-[GeneratedCode("Agentic.Workflow", "1.0")]
+[GeneratedCode("Strategos", "1.0")]
 public partial class ProcessClaimSaga : Saga
 {
     [SagaIdentity] [Identity]
@@ -1024,7 +1024,7 @@ public partial class ProcessClaimSaga : Saga
 }
 
 // 3. Projection (Read Model)
-[GeneratedCode("Agentic.Workflow", "1.0")]
+[GeneratedCode("Strategos", "1.0")]
 public class ProcessClaimProjection : SingleStreamProjection<ProcessClaimReadModel>
 {
     public ProcessClaimReadModel Create(ProcessClaimStarted evt) => new()
@@ -1152,7 +1152,7 @@ flowchart TB
 
 ### 4.12 Comparison with Existing Frameworks
 
-| Framework | Strengths | Gaps Agentic.Workflow Addresses |
+| Framework | Strengths | Gaps Strategos Addresses |
 |-----------|-----------|-------------------------------|
 | **LangGraph** | Agent-native, visualization, active community | Snapshot-only checkpoints, no compensation, no confidence routing |
 | **CrewAI** | Simple mental model, quick prototyping | No durability, limited workflow control, no human-in-loop |
@@ -1162,7 +1162,7 @@ flowchart TB
 
 **Unique Capabilities:**
 
-The following capabilities are unique to Agentic.Workflow or rare among alternatives:
+The following capabilities are unique to Strategos or rare among alternatives:
 
 - Confidence-based routing as a first-class DSL feature
 - Declarative context assembly with automatic capture
@@ -1174,7 +1174,7 @@ The following capabilities are unique to Agentic.Workflow or rare among alternat
 
 **Target Use Cases:**
 
-Agentic.Workflow is ideal for:
+Strategos is ideal for:
 
 - Production AI systems requiring reliability and auditability
 - Regulated industries needing complete decision trails
@@ -1191,11 +1191,11 @@ Agentic.Workflow is ideal for:
 - **Implicit Branch Rejoining** -- Branches automatically rejoin at the next `Then()` or `Finally()` unless a branch explicitly calls `Complete()`.
 - **Context Assembly as First-Class Concept** -- Declarative context assembly ensures "what did the agent see?" is always answerable.
 
-### 4.14 Ontology Layer (Agentic.Ontology)
+### 4.14 Ontology Layer (Strategos.Ontology)
 
 The Ontology Layer is a semantic type system for all agentic operations -- running on Basileus or orchestrated through Exarchos. Inspired by [Palantir Foundry's Ontology](https://www.palantir.com/docs/foundry/ontology/overview) and adapted for .NET source generation with runtime query capabilities, it provides a unified world model that agents plan and act against. Definitions are validated at compile time via Roslyn source generators; agents query the ontology at runtime through `IOntologyQuery`, a source-generated DI service.
 
-While it lives in the [Agentic.Workflow repository](https://github.com/levelup-software/agentic-workflow) and ships as NuGet packages, it is architecturally independent from the workflow DSL. Workflows can declare ontological context (`Consumes<T>`, `Produces<T>`) but the ontology is usable without workflows.
+While it lives in the [Strategos repository](https://github.com/levelup-software/strategos) and ships as NuGet packages, it is architecturally independent from the workflow DSL. Workflows can declare ontological context (`Consumes<T>`, `Produces<T>`) but the ontology is usable without workflows.
 
 The layer's design is grounded in two theoretical sources: Nirenburg & Raskin's *Ontological Semantics* (MIT Press, 2004) for foundational knowledge representation theory (IS-A hierarchy, frame-based types, property/relation distinction), and Zhou et al.'s "Ontology-to-tools compilation for executable semantic constraint enforcement in LLM agents" (arXiv:2602.03439, 2025) for constraint enforcement and MCP tool integration patterns (hard/soft constraints, structured feedback, tool description enrichment). See the [Nirenburg & Raskin grounding analysis](ontology-theoretical-grounding.md) and [Zhou et al. grounding analysis](ontology-to-tools-grounding.md) for detailed alignment analyses.
 
@@ -1211,7 +1211,7 @@ Three architectural deficiencies motivate the ontology:
 
 The ontology adapts Palantir Foundry's key abstractions for compile-time .NET source generation:
 
-| Palantir Foundry | Agentic.Ontology | Adaptation |
+| Palantir Foundry | Strategos.Ontology | Adaptation |
 |-----------------|------------------|------------|
 | Object Type | `builder.Object<T>()` | Maps existing C# records/classes; does not generate domain types. Optional `Kind(ObjectKind.Entity \| Process)` distinguishes persistent entities from temporal processes (N&R OBJECT/EVENT split [Ch.7 &sect;7.1.1]) |
 | IS-A Hierarchy | `obj.IsA<TParent>()` | Optional parent-child hierarchy with subsumption queries; N&R's inheritance backbone [Ch.7 &sect;7.1.2] adapted for flat C# type registration |
@@ -1219,19 +1219,19 @@ The ontology adapts Palantir Foundry's key abstractions for compile-time .NET so
 | Link Type | `obj.HasMany<T>()`, `ManyToMany<T>()` | Typed directional relationships with optional edge data; `.Inverse("name")` for bidirectional traversal (N&R INVERSE slot [Ch.7 &sect;7.1.1]) |
 | Action Type | `obj.Action("name")` | Bound to workflows (`BoundToWorkflow`) or MCP tools (`BoundToTool`) |
 | Interface | `builder.Interface<T>()` | Backed by C# interfaces; enables cross-domain polymorphic queries |
-| OSDK (code-gen) | `Agentic.Ontology.Generators` | Roslyn incremental source generator for validation and runtime service generation |
+| OSDK (code-gen) | `Strategos.Ontology.Generators` | Roslyn incremental source generator for validation and runtime service generation |
 | OMS (metadata registry) | `ComposedOntology` / `IOntologyQuery` | Source-generated in host assembly; merges all domain ontologies and exposes runtime query interface |
 | Object Storage | Domain persistence (Marten, pgvector) | Ontology maps types, does not own storage |
 | Security layer | Policy Engine (&sect;5.5) + ontology action scoping | Object-level permissions evaluated at tool invocation |
 
-Key difference from Palantir: Foundry's ontology is a runtime-only metadata service queried via REST APIs with no build-time validation. Agentic.Ontology validates the entire type graph at compile time -- invalid definitions (broken links, missing keys, type mismatches) are compiler errors, not runtime exceptions. At runtime, the source-generated `IOntologyQuery` service (&sect;4.14.13) provides the same query capabilities Foundry exposes via REST, but with type-safe, DI-registered access.
+Key difference from Palantir: Foundry's ontology is a runtime-only metadata service queried via REST APIs with no build-time validation. Strategos.Ontology validates the entire type graph at compile time -- invalid definitions (broken links, missing keys, type mismatches) are compiler errors, not runtime exceptions. At runtime, the source-generated `IOntologyQuery` service (&sect;4.14.13) provides the same query capabilities Foundry exposes via REST, but with type-safe, DI-registered access.
 
 #### 4.14.3 Packages
 
 ```bash
-dotnet add package Agentic.Ontology              # Contracts, DomainOntology base, fluent builder interfaces
-dotnet add package Agentic.Ontology.Generators    # Roslyn incremental source generator
-dotnet add package Agentic.Ontology.MCP           # Progressive disclosure integration (§5.3)
+dotnet add package Strategos.Ontology              # Contracts, DomainOntology base, fluent builder interfaces
+dotnet add package Strategos.Ontology.Generators    # Roslyn incremental source generator
+dotnet add package Strategos.Ontology.MCP           # Progressive disclosure integration (§5.3)
 ```
 
 #### 4.14.4 Core Primitives
@@ -1691,7 +1691,7 @@ public string? ParentTypeName { get; init; }
 
 #### 4.14.11 Domain Definition
 
-Each domain assembly declares one `DomainOntology` subclass. The source generator parses the `Define` method body at compile time via Roslyn syntax analysis (the same technique used by the Agentic.Workflow DSL generator). The following example demonstrates the full set of schema refinements (preconditions, lifecycle, derivation chains, interface actions, extension points, IS-A hierarchy, inverse links, constraint strength):
+Each domain assembly declares one `DomainOntology` subclass. The source generator parses the `Define` method body at compile time via Roslyn syntax analysis (the same technique used by the Strategos DSL generator). The following example demonstrates the full set of schema refinements (preconditions, lifecycle, derivation chains, interface actions, extension points, IS-A hierarchy, inverse links, constraint strength):
 
 ```csharp
 namespace Basileus.Trading;
@@ -2274,7 +2274,7 @@ No new object types are needed. Existing domain types gain lifecycle, preconditi
 
 The `Strategos.Ontology.MCP` package integrates with the ControlPlane's tool virtualization system (&sect;5.3), enriching progressive disclosure stubs with ontology metadata -- including preconditions, lifecycle states, derivation chains, extension points, and constraint summaries -- so agents discover typed action signatures with planning constraints rather than flat tool descriptions. Each MCP tool descriptor includes `ActionConstraintSummary` records reporting hard and soft constraint counts per action, along with human-readable constraint descriptions. This enables agents to assess action availability and risk directly from tool discovery responses, without requiring a separate `GetActionConstraintReport` call. The enrichment follows Zhou et al.'s [&sect;5.3] principle of embedding semantic constraint metadata in tool descriptions for zero-shot agent reasoning.
 
-See [Ontology Layer Design](https://github.com/levelup-software/agentic-workflow/blob/main/docs/designs/2026-02-24-ontology-layer.md) for the complete DSL specification and implementation roadmap.
+See [Ontology Layer Design](https://github.com/levelup-software/strategos/blob/main/docs/designs/2026-02-24-ontology-layer.md) for the complete DSL specification and implementation roadmap.
 
 ---
 
@@ -2285,7 +2285,7 @@ See [Ontology Layer Design](https://github.com/levelup-software/agentic-workflow
 ```mermaid
 graph TD
     subgraph "Orchestrator Tier"
-        AH[<b>AgentHost</b><br/>Agentic.Workflow Runtime]
+        AH[<b>AgentHost</b><br/>Strategos Runtime]
     end
 
     subgraph "Control Plane Tier"
@@ -2331,7 +2331,7 @@ graph TD
 
 | Component | Technology | Primary Responsibilities |
 | :--- | :--- | :--- |
-| **AgentHost** | .NET 10 / Agentic.Workflow | Workflow execution via generated sagas. Event emission to Marten. Automatic state persistence via Wolverine. |
+| **AgentHost** | .NET 10 / Strategos | Workflow execution via generated sagas. Event emission to Marten. Automatic state persistence via Wolverine. |
 | **ControlPlane** | .NET 10 / MCP | MCP tool hosting. Security validation via Policy Engine. Sandbox lifecycle via Sandbox Manager. Streamable HTTP streaming. External API mediation. |
 | **E2B Sandbox** | Firecracker micro-VMs / envd | Stateless code execution. Tool callbacks via envd vsock to ControlPlane. Zero outbound internet. |
 | **NLP Sidecar** | Python / FastAPI / sentence-transformers | Embedding generation. Text segmentation. Signal evaluation for loop detection. |
@@ -2339,7 +2339,7 @@ graph TD
 
 ### 5.2 The Execution Hairpin
 
-The hairpin pattern describes how requests flow through the tiers and results stream back. Streaming events are captured as Agentic.Workflow events for the audit trail.
+The hairpin pattern describes how requests flow through the tiers and results stream back. Streaming events are captured as Strategos events for the audit trail.
 
 ```mermaid
 sequenceDiagram
@@ -2579,7 +2579,7 @@ The ControlPlane is the mandatory security boundary. AgentHost never communicate
 Sandboxes discover tools via filesystem exploration, invoke them via envd vsock callbacks to the ControlPlane. No sandbox has knowledge of actual tool implementations, databases, or API keys. Credentials live exclusively in Azure Key Vault and are injected at call time by the External API Gateway.
 
 **Centralized Observability:**
-Enhanced by Agentic.Workflow's event sourcing and Bifrost OpenTelemetry integration:
+Enhanced by Strategos's event sourcing and Bifrost OpenTelemetry integration:
 - Every workflow step transition is captured as an event
 - Context assembly is recorded for each agent step
 - Complete audit trail via Marten event streams
@@ -2733,7 +2733,7 @@ The following scenario illustrates the request "Get MSFT stock history for 2024 
 
 - **SynthesizeResults Step:** Aggregates results from both tasks into a final user response, including the chart artifact
 - **EmitCompletionMetrics:** Records workflow duration, total tokens, budget utilization
-- **WorkflowCompleted Event:** Emitted automatically by Agentic.Workflow
+- **WorkflowCompleted Event:** Emitted automatically by Strategos
 
 ### Key Observations
 
@@ -2750,7 +2750,7 @@ The following scenario illustrates the request "Get MSFT stock history for 2024 
 
 ## 7. Event Sourcing & State Durability
 
-This section merges content from both the system architecture and the Agentic.Workflow library design, providing a unified view of how events, state, and audit trails work across the platform.
+This section merges content from both the system architecture and the Strategos library design, providing a unified view of how events, state, and audit trails work across the platform.
 
 ### 7.1 Events as the Source of Truth
 
@@ -2872,7 +2872,7 @@ Replay scenarios include:
 Events are projected into read models optimized for querying:
 
 ```csharp
-[GeneratedCode("Agentic.Workflow", "1.0")]
+[GeneratedCode("Strategos", "1.0")]
 public class PhronesisProjection : SingleStreamProjection<PhronesisReadModel>
 {
     public PhronesisReadModel Create(PhronesisOrchestratorStarted evt) => new()
@@ -3125,7 +3125,7 @@ The platform extends observability into production runtime via the Panoptikon pr
 - Feature-tagged issue → feature flag disable via Azure App Configuration
 - All cases → `IncidentOpened` event → async agent triage via IncidentWorkflow (Phronesis-based)
 
-**Agent-Driven Incident Triage (IncidentWorkflow):** A Phronesis workflow expressed via the Agentic.Workflow fluent DSL. Steps: AssembleIncidentContext (Sentry + Azure Monitor logs + Honeycomb traces + Marten event history) → DiagnoseRootCause → GenerateFix / EscalateToHumanQueue → ResolveIncident. Impact-based HITL gating: low = auto-merge, medium = human notified, high = human approval required.
+**Agent-Driven Incident Triage (IncidentWorkflow):** A Phronesis workflow expressed via the Strategos fluent DSL. Steps: AssembleIncidentContext (Sentry + Azure Monitor logs + Honeycomb traces + Marten event history) → DiagnoseRootCause → GenerateFix / EscalateToHumanQueue → ResolveIncident. Impact-based HITL gating: low = auto-merge, medium = human notified, high = human approval required.
 
 See [Panoptikon Production Observability](../designs/2026-02-24-panoptikon-production-observability.md) for the complete design including deployment flow, incident workflow definition, production event taxonomy, and Loop 6 feedback integration.
 
@@ -3192,7 +3192,7 @@ This hybrid approach provides a production-like deployment topology at a fractio
 
 ## 10. Resource Management
 
-Budget management integrates with Agentic.Workflow through state and step validation.
+Budget management integrates with Strategos through state and step validation.
 
 ### 10.1 Budget Algebra
 
@@ -3297,7 +3297,7 @@ public class TrackBudgetConsumption : WorkflowStep<PhronesisState>
 
 ## 11. Agent Framework Integration
 
-The Agentic.Workflow library integrates with LLM frameworks through adapters, allowing consumers to use their preferred AI provider while benefiting from the workflow engine's durability, event sourcing, and state management.
+The Strategos library integrates with LLM frameworks through adapters, allowing consumers to use their preferred AI provider while benefiting from the workflow engine's durability, event sourcing, and state management.
 
 **Model Routing via InferenceGateway:** When the InferenceGateway is deployed, all `IChatClient` calls from AgentHost are routed through it rather than directly to external providers. The gateway provides:
 
@@ -3372,11 +3372,11 @@ Adapters handle the mapping between workflow state and agent input/output, conte
 
 ### 11.4 SDLC Pipeline: Agentic Coder as Phronesis Workflow
 
-The [SDLC Pipeline's Agentic Coder](../adrs/distributed-sdlc-pipeline.md#6-remote-tier-agentic-coder) runs a plan-code-test-review loop inside containerized environments. This loop is a natural consumer of the Agentic.Workflow library -- expressing it as a Phronesis-style workflow definition provides automatic event sourcing, durability, loop detection, budget algebra, confidence routing, and compensation handlers without ad hoc reimplementation.
+The [SDLC Pipeline's Agentic Coder](../adrs/distributed-sdlc-pipeline.md#6-remote-tier-agentic-coder) runs a plan-code-test-review loop inside containerized environments. This loop is a natural consumer of the Strategos library -- expressing it as a Phronesis-style workflow definition provides automatic event sourcing, durability, loop detection, budget algebra, confidence routing, and compensation handlers without ad hoc reimplementation.
 
 The Agentic Coder's phases map directly to Phronesis steps:
 
-| Agentic Coder Phase | Phronesis Step | Benefit from Agentic.Workflow |
+| Agentic Coder Phase | Phronesis Step | Benefit from Strategos |
 |---------------------|---------------|-------------------------------|
 | Analyze Codebase | DecomposeRequest | Task capability extraction |
 | Create Plan | ThinkStep | Context Tier assembly + strategy selection |
@@ -3391,7 +3391,7 @@ Expressing the Agentic Coder as a Phronesis workflow means its execution history
 
 ## 12. Deferred Features and Consumer Responsibilities
 
-The following features were intentionally deferred from the Agentic.Workflow MVP. They are the consumer's responsibility to implement when needed. Each deferral was based on one or more criteria: the implementation varies significantly by use case, requires external dependencies not under library control, or is better implemented at the application layer with domain knowledge.
+The following features were intentionally deferred from the Strategos MVP. They are the consumer's responsibility to implement when needed. Each deferral was based on one or more criteria: the implementation varies significantly by use case, requires external dependencies not under library control, or is better implemented at the application layer with domain knowledge.
 
 ### 12.1 Deferred Features Summary
 
@@ -3502,7 +3502,7 @@ For detailed analysis of all deferred features including implementation priority
 
 ## 13. Future Considerations
 
-The following capabilities are anticipated for future versions of the Agentic.Workflow library:
+The following capabilities are anticipated for future versions of the Strategos library:
 
 ### Visual Workflow Editor
 
@@ -3680,14 +3680,14 @@ Together, these mechanisms ensure the system improves monotonically under normal
 | [Agentic Platform Architecture](../decisions/agentic-platform-architecture.md) | Original E2B system design (security model, tool patterns, sandbox manager) |
 | [Panoptikon Production Observability](../designs/2026-02-24-panoptikon-production-observability.md) | Production observability loop: GitOps CD, instant rollback, incident workflow, Loop 6 feedback |
 | [AI Theory](../ai-theory/) | Formal theoretical framework (CMDP, HSM, Thompson Sampling, Budget Algebra) |
-| [Ontology Layer Design](https://github.com/levelup-software/agentic-workflow/blob/main/docs/designs/2026-02-24-ontology-layer.md) | Full DSL specification, source generator pipeline, agent query interface, and Palantir concept mapping |
+| [Ontology Layer Design](https://github.com/levelup-software/strategos/blob/main/docs/designs/2026-02-24-ontology-layer.md) | Full DSL specification, source generator pipeline, agent query interface, and Palantir concept mapping |
 
 ## References
 
 ### Library
 
-1. **Agentic.Workflow Repository:** [github.com/levelup-software/agentic-workflow](https://github.com/levelup-software/agentic-workflow) -- Fluent DSL, state management, source generation, and ontology layer. Distributed via NuGet.
-1b. **Palantir Foundry Ontology:** [Ontology Overview](https://www.palantir.com/docs/foundry/ontology/overview), [Architecture](https://www.palantir.com/docs/foundry/architecture-center/ontology-system) -- Inspirational reference for the Agentic.Ontology semantic type system.
+1. **Strategos Repository:** [github.com/levelup-software/strategos](https://github.com/levelup-software/strategos) -- Fluent DSL, state management, source generation, and ontology layer. Distributed via NuGet.
+1b. **Palantir Foundry Ontology:** [Ontology Overview](https://www.palantir.com/docs/foundry/ontology/overview), [Architecture](https://www.palantir.com/docs/foundry/architecture-center/ontology-system) -- Inspirational reference for the Strategos.Ontology semantic type system.
 
 ### Academic Foundations
 

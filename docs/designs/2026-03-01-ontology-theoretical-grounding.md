@@ -2,7 +2,7 @@
 
 ## Problem Statement
 
-The Strategos ontology layer (`Agentic.Ontology`) was designed with practical engineering goals: typed tool discovery, cross-domain linking, and compile-time validation. Its concept mapping draws from Palantir Foundry's ontology (a commercial product ontology) but lacks grounding in formal ontological semantics theory.
+The Strategos ontology layer (`Strategos.Ontology`) was designed with practical engineering goals: typed tool discovery, cross-domain linking, and compile-time validation. Its concept mapping draws from Palantir Foundry's ontology (a commercial product ontology) but lacks grounding in formal ontological semantics theory.
 
 Nirenburg & Raskin's "Ontological Semantics" (2004) provides a comprehensive theoretical framework for building ontologies that serve as the backbone of intelligent agent systems -- precisely our use case. The textbook covers ontology structure, knowledge representation, static knowledge sources (ontology, lexicon, fact database), and processing methodologies. A systematic comparison could reveal architectural gaps, validate our design choices, and identify concepts from the literature that strengthen our ontology layer.
 
@@ -59,7 +59,7 @@ Each chapter file must meet minimum quality standards for use as a reference cor
 
 ### DR-3: Theoretical Grounding Analysis Document
 
-Produce a formal analysis document at `docs/reference/ontology-theoretical-grounding.md` that maps the Agentic.Ontology layer against Nirenburg & Raskin's ontological semantics framework.
+Produce a formal analysis document at `docs/reference/ontology-theoretical-grounding.md` that maps the Strategos.Ontology layer against Nirenburg & Raskin's ontological semantics framework.
 
 **Document structure:**
 1. **Executive Summary** -- Key findings and top recommendations
@@ -71,7 +71,7 @@ Produce a formal analysis document at `docs/reference/ontology-theoretical-groun
 7. **References** -- Page/section citations into the converted markdown chapters
 
 **Acceptance criteria:**
-- Every Agentic.Ontology primitive (from platform-architecture.md section 4.14.4) has a mapping entry
+- Every Strategos.Ontology primitive (from platform-architecture.md section 4.14.4) has a mapping entry
 - Gap analysis identifies at least 3 specific concepts from the textbook that could strengthen our ontology
 - Recommendations are concrete and actionable (not vague "consider X")
 - All claims cite specific chapters/sections from the textbook
@@ -136,7 +136,7 @@ From the preface and Ch. 1, the textbook's knowledge architecture includes:
 - **Onomasticon**: proper noun database (instances with names)
 - **Text Meaning Representation (TMR)**: structured representation of text meaning
 
-Our `Agentic.Ontology` maps most directly to the textbook's "Ontology" component, but may benefit from concepts in the Fact Database (instance patterns), Lexicon (semantic mappings), and TMR (structured intent representation) layers.
+Our `Strategos.Ontology` maps most directly to the textbook's "Ontology" component, but may benefit from concepts in the Fact Database (instance patterns), Lexicon (semantic mappings), and TMR (structured intent representation) layers.
 
 ## Integration Points
 
@@ -152,7 +152,7 @@ The theoretical grounding analysis may produce recommendations that feed into fu
 This is a documentation/analysis task, not a code change. Verification is:
 - **Conversion**: Spot-check 3 chapters (one early, one middle, one late) for structural accuracy against the PDF
 - **Analysis**: Cross-reference every claim in the grounding document against the source chapter files
-- **Completeness**: Verify all 12 Agentic.Ontology primitives from section 4.14.4 appear in the concept mapping table
+- **Completeness**: Verify all 12 Strategos.Ontology primitives from section 4.14.4 appear in the concept mapping table
 
 ## Open Questions
 

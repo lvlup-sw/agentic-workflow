@@ -19,7 +19,7 @@
     <PackageProjectUrl>https://github.com/levelup-software/strategos</PackageProjectUrl>
     <RepositoryUrl>https://github.com/levelup-software/strategos</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
-    <PackageTags>workflow;agent;llm;ai;durable;event-sourcing;wolverine;marten;saga;thompson-sampling</PackageTags>
+    <PackageTags>workflow;agent;llm;ai;durable;event-sourcing;wolverine;marten;saga;thompson-sampling;ontology;mcp;domain-modeling</PackageTags>
   </PropertyGroup>
   <PropertyGroup>
     <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>

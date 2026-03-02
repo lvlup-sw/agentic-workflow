@@ -4,7 +4,12 @@
     <IsAotCompatible>true</IsAotCompatible>
     <PackageId>Strategos.Ontology.MCP</PackageId>
     <Description>MCP tool surface for Strategos ontology. Exposes ontology exploration, querying, and action dispatch as MCP tools for AI agent integration.</Description>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
 
   <ItemGroup>
     <InternalsVisibleTo Include="$(AssemblyName).Tests" />

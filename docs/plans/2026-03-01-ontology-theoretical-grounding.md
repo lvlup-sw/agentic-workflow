@@ -281,7 +281,7 @@ Document structure:
 - Top 3-5 recommendations
 
 **2. Concept Mapping Table**
-Map each Agentic.Ontology primitive to Nirenburg & Raskin equivalents:
+Map each Strategos.Ontology primitive to Nirenburg & Raskin equivalents:
 
 | Our Primitive | N&R Equivalent | Chapter/Section | Notes |
 |--------------|---------------|----------------|-------|

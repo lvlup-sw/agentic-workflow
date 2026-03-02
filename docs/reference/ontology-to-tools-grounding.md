@@ -1,6 +1,6 @@
 # Ontology-to-Tools Compilation: Grounding Analysis
 
-A formal analysis mapping the Strategos `Agentic.Ontology` layer against Zhou et al.'s "Ontology-to-tools compilation for executable semantic constraint enforcement in LLM agents" (arXiv:2602.03439, 2025). This paper addresses the same core problem we solve: compiling formal domain knowledge into executable tool interfaces that constrain LLM agent behavior.
+A formal analysis mapping the Strategos `Strategos.Ontology` layer against Zhou et al.'s "Ontology-to-tools compilation for executable semantic constraint enforcement in LLM agents" (arXiv:2602.03439, 2025). This paper addresses the same core problem we solve: compiling formal domain knowledge into executable tool interfaces that constrain LLM agent behavior.
 
 **Scope:** All 12 core primitives from `platform-architecture.md` section 4.14.4, analyzed against the paper's compilation framework, constraint enforcement model, and MCP integration.
 
@@ -17,11 +17,11 @@ A formal analysis mapping the Strategos `Agentic.Ontology` layer against Zhou et
 
 ## 1. Executive Summary
 
-Zhou et al.'s paper is the closest published work to our `Agentic.Ontology` design. Both systems solve the same fundamental problem -- compiling domain ontologies into typed tool interfaces that constrain LLM agent action spaces -- but take different approaches reflecting different architectural contexts (runtime RDF knowledge graphs vs. compile-time .NET source generation).
+Zhou et al.'s paper is the closest published work to our `Strategos.Ontology` design. Both systems solve the same fundamental problem -- compiling domain ontologies into typed tool interfaces that constrain LLM agent action spaces -- but take different approaches reflecting different architectural contexts (runtime RDF knowledge graphs vs. compile-time .NET source generation).
 
 **Three areas of strong convergence:**
 
-1. **Ontology-to-tool compilation pipeline.** Both systems transform a declarative ontology specification into executable tool interfaces. OTC compiles OWL T-Box → Python MCP server with typed tools. We compile `DomainOntology.Define()` → Roslyn source generator → `IOntologyQuery` + `Agentic.Ontology.MCP` tool stubs [§4.14.11].
+1. **Ontology-to-tool compilation pipeline.** Both systems transform a declarative ontology specification into executable tool interfaces. OTC compiles OWL T-Box → Python MCP server with typed tools. We compile `DomainOntology.Define()` → Roslyn source generator → `IOntologyQuery` + `Strategos.Ontology.MCP` tool stubs [§4.14.11].
 
 2. **Constraint enforcement at creation time.** Both enforce constraints during agent interaction rather than through post-hoc validation. OTC returns structured constraint feedback from tool calls. We express preconditions (`Requires()`) and postconditions (`Modifies()`, `CreatesLinked()`) that are checked at dispatch time [§4.14.5].
 
@@ -47,7 +47,7 @@ Zhou et al.'s paper is the closest published work to our `Agentic.Ontology` desi
 
 Alignment ratings: **Strong** = direct structural correspondence; **Moderate** = same intent, different mechanism; **Weak** = loose conceptual parallel; **Novel** = no paper equivalent.
 
-| # | Agentic.Ontology Primitive | OTC Equivalent | Alignment | Notes |
+| # | Strategos.Ontology Primitive | OTC Equivalent | Alignment | Notes |
 |---|---------------------------|----------------|-----------|-------|
 | 1 | **Object Type** `builder.Object<T>()` | OWL Class in T-Box | Strong | Both map domain entity types into the ontology. OTC uses `owl:Class` definitions; we use C# types registered via expression trees. The OTC T-Box is richer in formal axiomatics (OWL DL) but poorer in engineering guarantees (no compile-time validation). |
 | 2 | **Property** `obj.Property(x => x.Prop)` | `owl:DatatypeProperty` / `owl:ObjectProperty` | Strong | OTC inherits OWL's property distinction (DatatypeProperty for literals, ObjectProperty for entity references) which we lack (see N&R gap §4.2 in the companion analysis). OTC also carries `rdfs:range` constraints that parallel our type-checked expression trees. |
@@ -72,7 +72,7 @@ Alignment ratings: **Strong** = direct structural correspondence; **Moderate** =
 
 The deepest alignment between our systems is the compilation pipeline itself:
 
-| Stage | OTC | Agentic.Ontology |
+| Stage | OTC | Strategos.Ontology |
 |-------|-----|------------------|
 | **Input** | OWL T-Box + meta-prompts | `DomainOntology.Define()` method body |
 | **Compiler** | LLM agent (preparation stage) | Roslyn incremental source generator |
@@ -106,7 +106,7 @@ Both systems use MCP as the protocol for exposing ontology-aware tools to LLM ag
 
 **OTC:** "The Model Context Protocol (MCP) standardize[s] this interaction by providing a common interface for registering tools and exchanging typed inputs and outputs" [§1, p.5]. Generated MCP servers expose "each function as an MCP tool with an ontology-derived name and a typed argument schema" [§6.1, p.18].
 
-**Our system:** `Agentic.Ontology.MCP` enriches progressive disclosure stubs with ontology metadata -- "including preconditions, lifecycle states, derivation chains, and extension points -- so agents discover typed action signatures with planning constraints rather than flat tool descriptions" [§4.14.15].
+**Our system:** `Strategos.Ontology.MCP` enriches progressive disclosure stubs with ontology metadata -- "including preconditions, lifecycle states, derivation chains, and extension points -- so agents discover typed action signatures with planning constraints rather than flat tool descriptions" [§4.14.15].
 
 Both systems use MCP to bridge between symbolic ontological knowledge and LLM agent capabilities. The difference is granularity: OTC generates full tool *implementations* (Python functions with validation logic); we generate tool *descriptions* (metadata stubs that describe pre-existing tool implementations).
 
@@ -203,7 +203,7 @@ Add `ConstraintKind` to `ActionPrecondition`. This enables `IOntologyQuery.GetVa
 
 **Priority: High** | **Effort: Low** | **Breaking: No**
 
-OTC's MCP tools carry ontology-derived validation descriptions. Ensure our `Agentic.Ontology.MCP` progressive disclosure stubs include:
+OTC's MCP tools carry ontology-derived validation descriptions. Ensure our `Strategos.Ontology.MCP` progressive disclosure stubs include:
 
 - Precondition expressions (human-readable) in tool descriptions
 - Lifecycle state requirements ("requires Position in Active state")

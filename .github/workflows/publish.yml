@@ -107,7 +107,7 @@ jobs:
             dotnet nuget deprecate "$old" \
               --all-versions \
               --alternate-package "$new" \
-              --message "Renamed to $new. See https://github.com/lvlup-sw/agentic-workflow for migration guide." \
+              --message "Renamed to $new. See https://github.com/levelup-software/strategos for migration guide." \
               --source https://api.nuget.org/v3/index.json \
               --api-key ${{ secrets.NUGET_API_KEY }} || true
           done
