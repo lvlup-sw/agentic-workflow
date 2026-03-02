@@ -12,9 +12,9 @@ public interface IObjectTypeBuilder<T>
 
     void Kind(ObjectKind kind);
 
-    void HasOne<TLinked>(string linkName);
+    ILinkBuilder HasOne<TLinked>(string linkName);
 
-    void HasMany<TLinked>(string linkName);
+    ILinkBuilder HasMany<TLinked>(string linkName);
 
     void ManyToMany<TLinked>(string linkName);
 

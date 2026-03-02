@@ -45,6 +45,9 @@ public interface IOntologyQuery
     ActionDescriptor? ResolveInterfaceAction(
         string objectType, string interfaceActionName);
 
+    // Inverse Link queries
+    IReadOnlyList<LinkDescriptor> GetInverseLinks(string objectType, string linkName);
+
     // Extension Point queries (§4.14.9)
     IReadOnlyList<ExternalLinkExtensionPoint> GetExtensionPoints(
         string objectType);

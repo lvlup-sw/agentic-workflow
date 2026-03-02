@@ -69,6 +69,7 @@ public sealed class OntologyGraphBuilder
         ValidateLifecycles(allObjectTypes);
         ComputeTransitiveDerivationChains(allObjectTypes);
         InferPropertyKinds(allObjectTypes);
+        ValidateInverseLinks(allObjectTypes);
 
         var warnings = new List<string>();
         MatchExtensionPoints(allObjectTypes, resolvedLinks, warnings);
@@ -487,6 +488,41 @@ public sealed class OntologyGraphBuilder
         }
 
         visited.Remove(propertyName);
+    }
+
+    private static void ValidateInverseLinks(List<ObjectTypeDescriptor> allObjectTypes)
+    {
+        var typesByName = allObjectTypes.ToDictionary(ot => ot.Name);
+
+        foreach (var objectType in allObjectTypes)
+        {
+            foreach (var link in objectType.Links)
+            {
+                if (link.InverseLinkName is null)
+                {
+                    continue;
+                }
+
+                if (!typesByName.TryGetValue(link.TargetTypeName, out var targetType))
+                {
+                    continue; // Target type not found; other validations handle this
+                }
+
+                var inverseLink = targetType.Links.FirstOrDefault(l => l.Name == link.InverseLinkName);
+                if (inverseLink is null)
+                {
+                    throw new OntologyCompositionException(
+                        $"Link '{link.Name}' on '{objectType.Name}' declares inverse '{link.InverseLinkName}' but target type '{link.TargetTypeName}' has no link named '{link.InverseLinkName}'.");
+                }
+
+                // If the inverse link also declares an inverse, verify symmetry
+                if (inverseLink.InverseLinkName is not null && inverseLink.InverseLinkName != link.Name)
+                {
+                    throw new OntologyCompositionException(
+                        $"Asymmetric inverse declaration: '{objectType.Name}.{link.Name}' declares inverse '{link.InverseLinkName}', but '{link.TargetTypeName}.{link.InverseLinkName}' declares inverse '{inverseLink.InverseLinkName}' instead of '{link.Name}'.");
+                }
+            }
+        }
     }
 
     private static void InferPropertyKinds(List<ObjectTypeDescriptor> allObjectTypes)

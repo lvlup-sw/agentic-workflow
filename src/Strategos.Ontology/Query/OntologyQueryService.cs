@@ -215,6 +215,35 @@ internal sealed class OntologyQueryService(OntologyGraph graph) : IOntologyQuery
         return ot.Actions.FirstOrDefault(a => a.Name == mapping.ConcreteActionName);
     }
 
+    public IReadOnlyList<LinkDescriptor> GetInverseLinks(string objectType, string linkName)
+    {
+        var ot = FindObjectType(objectType);
+        if (ot is null)
+        {
+            return [];
+        }
+
+        var link = ot.Links.FirstOrDefault(l => l.Name == linkName);
+        if (link?.InverseLinkName is null)
+        {
+            return [];
+        }
+
+        var targetOt = FindObjectType(link.TargetTypeName);
+        if (targetOt is null)
+        {
+            return [];
+        }
+
+        var inverseLink = targetOt.Links.FirstOrDefault(l => l.Name == link.InverseLinkName);
+        if (inverseLink is null)
+        {
+            return [];
+        }
+
+        return [inverseLink];
+    }
+
     public IReadOnlyList<ExternalLinkExtensionPoint> GetExtensionPoints(string objectType)
     {
         var ot = FindObjectType(objectType);

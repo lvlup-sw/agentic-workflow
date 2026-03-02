@@ -8,7 +8,7 @@ internal sealed class ObjectTypeBuilder<T>(string domainName) : IObjectTypeBuild
 {
     private PropertyDescriptor? _keyProperty;
     private readonly List<PropertyBuilder<T>> _propertyBuilders = [];
-    private readonly List<LinkDescriptor> _links = [];
+    private readonly List<LinkBuilder> _linkBuilders = [];
     private readonly List<ActionBuilder<T>> _actionBuilders = [];
     private readonly List<ActionDescriptor> _defaultActionDescriptors = [];
     private readonly List<EventDescriptor> _events = [];
@@ -41,19 +41,23 @@ internal sealed class ObjectTypeBuilder<T>(string domainName) : IObjectTypeBuild
         return builder;
     }
 
-    public void HasOne<TLinked>(string linkName)
+    public ILinkBuilder HasOne<TLinked>(string linkName)
     {
-        _links.Add(new LinkDescriptor(linkName, typeof(TLinked).Name, LinkCardinality.OneToOne));
+        var linkBuilder = new LinkBuilder(new LinkDescriptor(linkName, typeof(TLinked).Name, LinkCardinality.OneToOne));
+        _linkBuilders.Add(linkBuilder);
+        return linkBuilder;
     }
 
-    public void HasMany<TLinked>(string linkName)
+    public ILinkBuilder HasMany<TLinked>(string linkName)
     {
-        _links.Add(new LinkDescriptor(linkName, typeof(TLinked).Name, LinkCardinality.OneToMany));
+        var linkBuilder = new LinkBuilder(new LinkDescriptor(linkName, typeof(TLinked).Name, LinkCardinality.OneToMany));
+        _linkBuilders.Add(linkBuilder);
+        return linkBuilder;
     }
 
     public void ManyToMany<TLinked>(string linkName)
     {
-        _links.Add(new LinkDescriptor(linkName, typeof(TLinked).Name, LinkCardinality.ManyToMany));
+        _linkBuilders.Add(new LinkBuilder(new LinkDescriptor(linkName, typeof(TLinked).Name, LinkCardinality.ManyToMany)));
     }
 
     public void ManyToMany<TLinked>(string linkName, Action<IEdgeBuilder> edgeConfig)
@@ -61,10 +65,10 @@ internal sealed class ObjectTypeBuilder<T>(string domainName) : IObjectTypeBuild
         var edgeBuilder = new EdgeBuilder();
         edgeConfig(edgeBuilder);
 
-        _links.Add(new LinkDescriptor(linkName, typeof(TLinked).Name, LinkCardinality.ManyToMany)
+        _linkBuilders.Add(new LinkBuilder(new LinkDescriptor(linkName, typeof(TLinked).Name, LinkCardinality.ManyToMany)
         {
             EdgeProperties = edgeBuilder.Build(),
-        });
+        }));
     }
 
     public IActionBuilder<T> Action(string actionName)
@@ -132,7 +136,7 @@ internal sealed class ObjectTypeBuilder<T>(string domainName) : IObjectTypeBuild
             Kind = _objectKind,
             KeyProperty = _keyProperty,
             Properties = _propertyBuilders.ConvertAll(b => b.Build()).AsReadOnly(),
-            Links = _links.AsReadOnly(),
+            Links = _linkBuilders.ConvertAll(b => b.Build()).AsReadOnly(),
             Actions = actions.AsReadOnly(),
             Events = _events.AsReadOnly(),
             ImplementedInterfaces = _interfaces.AsReadOnly(),
