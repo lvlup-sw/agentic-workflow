@@ -67,6 +67,7 @@ public sealed class OntologyGraphBuilder
         ValidateInterfaceActionMappings(allObjectTypes, allInterfaces);
         ValidateLifecycles(allObjectTypes);
         ComputeTransitiveDerivationChains(allObjectTypes);
+        InferPropertyKinds(allObjectTypes);
 
         var warnings = new List<string>();
         MatchExtensionPoints(allObjectTypes, resolvedLinks, warnings);
@@ -436,6 +437,74 @@ public sealed class OntologyGraphBuilder
         }
 
         visited.Remove(propertyName);
+    }
+
+    private static void InferPropertyKinds(List<ObjectTypeDescriptor> allObjectTypes)
+    {
+        var registeredClrTypes = allObjectTypes
+            .Select(ot => ot.ClrType)
+            .ToHashSet();
+
+        for (var i = 0; i < allObjectTypes.Count; i++)
+        {
+            var objectType = allObjectTypes[i];
+            var updatedProperties = new List<PropertyDescriptor>();
+            var hasChanges = false;
+
+            foreach (var prop in objectType.Properties)
+            {
+                PropertyKind kind;
+
+                if (prop.IsComputed)
+                {
+                    kind = PropertyKind.Computed;
+                }
+                else if (IsReferenceType(prop.PropertyType, registeredClrTypes))
+                {
+                    kind = PropertyKind.Reference;
+                }
+                else
+                {
+                    kind = PropertyKind.Scalar;
+                }
+
+                if (kind != prop.Kind)
+                {
+                    hasChanges = true;
+                    updatedProperties.Add(prop with { Kind = kind });
+                }
+                else
+                {
+                    updatedProperties.Add(prop);
+                }
+            }
+
+            if (hasChanges)
+            {
+                allObjectTypes[i] = objectType with
+                {
+                    Properties = updatedProperties.AsReadOnly(),
+                };
+            }
+        }
+    }
+
+    private static bool IsReferenceType(Type propertyType, HashSet<Type> registeredClrTypes)
+    {
+        // Check the direct type
+        if (registeredClrTypes.Contains(propertyType))
+        {
+            return true;
+        }
+
+        // Check for Nullable<T>
+        var underlying = Nullable.GetUnderlyingType(propertyType);
+        if (underlying is not null && registeredClrTypes.Contains(underlying))
+        {
+            return true;
+        }
+
+        return false;
     }
 
     private static List<WorkflowChain> BuildWorkflowChains(
