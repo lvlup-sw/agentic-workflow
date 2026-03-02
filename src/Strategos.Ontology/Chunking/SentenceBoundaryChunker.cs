@@ -1,3 +1,5 @@
+using static Strategos.Ontology.Chunking.ChunkingUtilities;
+
 namespace Strategos.Ontology.Chunking;
 
 /// <summary>
@@ -6,8 +8,6 @@ namespace Strategos.Ontology.Chunking;
 /// </summary>
 public sealed class SentenceBoundaryChunker : ITextChunker
 {
-    private const double TokensPerWord = 0.75;
-
     /// <inheritdoc />
     public IReadOnlyList<TextChunk> Chunk(string text, ChunkOptions? options = null)
     {
@@ -149,27 +149,6 @@ public sealed class SentenceBoundaryChunker : ITextChunker
     private static bool IsSentenceTerminator(char c) =>
         c is '.' or '!' or '?';
 
-    private static int CountWords(string text)
-    {
-        var count = 0;
-        var inWord = false;
-
-        foreach (var c in text)
-        {
-            if (char.IsWhiteSpace(c))
-            {
-                inWord = false;
-            }
-            else if (!inWord)
-            {
-                inWord = true;
-                count++;
-            }
-        }
-
-        return count;
-    }
-
     private static List<TextChunk> SplitByWords(
         string text,
         int baseOffset,
@@ -200,37 +179,5 @@ public sealed class SentenceBoundaryChunker : ITextChunker
         return chunks;
     }
 
-    private static List<WordSpan> SplitWordSpans(string text)
-    {
-        var words = new List<WordSpan>();
-        var i = 0;
-
-        while (i < text.Length)
-        {
-            while (i < text.Length && char.IsWhiteSpace(text[i]))
-            {
-                i++;
-            }
-
-            if (i >= text.Length)
-            {
-                break;
-            }
-
-            var start = i;
-
-            while (i < text.Length && !char.IsWhiteSpace(text[i]))
-            {
-                i++;
-            }
-
-            words.Add(new WordSpan(start, i - start));
-        }
-
-        return words;
-    }
-
     internal readonly record struct SentenceSpan(string Content, int Offset);
-
-    private readonly record struct WordSpan(int Offset, int Length);
 }

@@ -131,7 +131,7 @@ public sealed class PgVectorObjectSetProvider : IObjectSetProvider, IObjectSetWr
         await using var cmd = _dataSource.CreateCommand(sql);
         AddTranslatedParameters(cmd, translation.Parameters);
 
-        await using var reader = await cmd.ExecuteReaderAsync(ct).ConfigureAwait(false);
+        await using var reader = await cmd.ExecuteReaderAsync(System.Data.CommandBehavior.SequentialAccess, ct).ConfigureAwait(false);
         while (await reader.ReadAsync(ct).ConfigureAwait(false))
         {
             var dataJson = reader.GetString(1);
@@ -176,26 +176,31 @@ public sealed class PgVectorObjectSetProvider : IObjectSetProvider, IObjectSetWr
 
         var tableName = TypeMapper.GetTableName<T>();
         var hasEmbedding = items[0] is ISearchable;
-        var sql = SqlGenerator.BuildInsertSql(_options.Schema, tableName, hasEmbedding);
 
         await using var connection = await _dataSource.OpenConnectionAsync(ct).ConfigureAwait(false);
-        await using var batch = new NpgsqlBatch(connection);
+
+        var copyColumns = hasEmbedding
+            ? $"\"{_options.Schema}\".\"{tableName}\" (id, data, embedding)"
+            : $"\"{_options.Schema}\".\"{tableName}\" (id, data)";
+
+        await using var writer = await connection.BeginBinaryImportAsync(
+            $"COPY {copyColumns} FROM STDIN (FORMAT BINARY)", ct).ConfigureAwait(false);
 
         foreach (var item in items)
         {
-            var batchCmd = new NpgsqlBatchCommand(sql);
-            batchCmd.Parameters.AddWithValue("id", Guid.NewGuid());
-            batchCmd.Parameters.AddWithValue("data", JsonSerializer.Serialize(item));
+            ct.ThrowIfCancellationRequested();
+
+            await writer.StartRowAsync(ct).ConfigureAwait(false);
+            await writer.WriteAsync(Guid.NewGuid(), ct).ConfigureAwait(false);
+            await writer.WriteAsync(JsonSerializer.Serialize(item), NpgsqlTypes.NpgsqlDbType.Jsonb, ct).ConfigureAwait(false);
 
             if (item is ISearchable searchable)
             {
-                batchCmd.Parameters.AddWithValue("embedding", new Vector(searchable.Embedding));
+                await writer.WriteAsync(new Vector(searchable.Embedding), ct).ConfigureAwait(false);
             }
-
-            batch.BatchCommands.Add(batchCmd);
         }
 
-        await batch.ExecuteNonQueryAsync(ct).ConfigureAwait(false);
+        await writer.CompleteAsync(ct).ConfigureAwait(false);
     }
 
     /// <summary>

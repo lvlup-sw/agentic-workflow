@@ -1,3 +1,5 @@
+using static Strategos.Ontology.Chunking.ChunkingUtilities;
+
 namespace Strategos.Ontology.Chunking;
 
 /// <summary>
@@ -6,8 +8,6 @@ namespace Strategos.Ontology.Chunking;
 /// </summary>
 public sealed class FixedSizeChunker : ITextChunker
 {
-    private const double TokensPerWord = 0.75;
-
     /// <inheritdoc />
     public IReadOnlyList<TextChunk> Chunk(string text, ChunkOptions? options = null)
     {
@@ -21,7 +21,7 @@ public sealed class FixedSizeChunker : ITextChunker
         var maxWords = (int)(options.MaxTokens / TokensPerWord);
         var overlapWords = (int)(options.OverlapTokens / TokensPerWord);
 
-        var words = SplitWords(text);
+        var words = SplitWordSpans(text);
 
         if (words.Count <= maxWords)
         {
@@ -56,38 +56,4 @@ public sealed class FixedSizeChunker : ITextChunker
 
         return chunks;
     }
-
-    private static List<WordSpan> SplitWords(string text)
-    {
-        var words = new List<WordSpan>();
-        var i = 0;
-
-        while (i < text.Length)
-        {
-            // Skip whitespace
-            while (i < text.Length && char.IsWhiteSpace(text[i]))
-            {
-                i++;
-            }
-
-            if (i >= text.Length)
-            {
-                break;
-            }
-
-            var start = i;
-
-            // Read word
-            while (i < text.Length && !char.IsWhiteSpace(text[i]))
-            {
-                i++;
-            }
-
-            words.Add(new WordSpan(start, i - start));
-        }
-
-        return words;
-    }
-
-    private readonly record struct WordSpan(int Offset, int Length);
 }

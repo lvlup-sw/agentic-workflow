@@ -1,5 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.DependencyInjection;
+using Npgsql;
+using Strategos.Ontology.Configuration;
 using Strategos.Ontology.ObjectSets;
 
 namespace Strategos.Ontology.Npgsql;
@@ -29,5 +31,35 @@ public static class PgVectorServiceCollectionExtensions
         services.AddSingleton<IObjectSetWriter>(sp => sp.GetRequiredService<PgVectorObjectSetProvider>());
 
         return services;
+    }
+
+    /// <summary>
+    /// Shorthand to register pgvector-backed object sets using a connection string.
+    /// Configures <see cref="NpgsqlDataSource"/>, <see cref="IObjectSetProvider"/>, and <see cref="IObjectSetWriter"/>.
+    /// </summary>
+    /// <param name="options">The ontology options being configured.</param>
+    /// <param name="connectionString">The PostgreSQL connection string.</param>
+    /// <returns>The ontology options for chaining.</returns>
+    [RequiresDynamicCode("PgVectorObjectSetProvider uses JSON serialization which requires dynamic code.")]
+    [RequiresUnreferencedCode("PgVectorObjectSetProvider uses JSON serialization which requires unreferenced code.")]
+    public static OntologyOptions UsePgVector(this OntologyOptions options, string connectionString)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+        ArgumentNullException.ThrowIfNull(connectionString);
+
+        options.AddServiceRegistration(services =>
+        {
+            services.Configure<PgVectorOptions>(opts => opts.ConnectionString = connectionString);
+
+            var dataSourceBuilder = new NpgsqlDataSourceBuilder(connectionString);
+            dataSourceBuilder.UseVector();
+            services.AddSingleton(dataSourceBuilder.Build());
+
+            services.AddSingleton<PgVectorObjectSetProvider>();
+            services.AddSingleton<IObjectSetProvider>(sp => sp.GetRequiredService<PgVectorObjectSetProvider>());
+            services.AddSingleton<IObjectSetWriter>(sp => sp.GetRequiredService<PgVectorObjectSetProvider>());
+        });
+
+        return options;
     }
 }

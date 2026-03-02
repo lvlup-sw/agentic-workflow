@@ -12,7 +12,7 @@ public sealed class IngestionPipelineBuilder<T>
     where T : class
 {
     private ITextChunker? _chunker;
-    private bool _chunkerFromOptions;
+    private ChunkOptions? _chunkOptions;
     private IEmbeddingProvider? _embedder;
     private Func<TextChunk, float[], T>? _mapper;
     private IObjectSetWriter? _writer;
@@ -27,21 +27,20 @@ public sealed class IngestionPipelineBuilder<T>
     {
         ArgumentNullException.ThrowIfNull(chunker);
         _chunker = chunker;
-        _chunkerFromOptions = false;
+        _chunkOptions = null;
         return this;
     }
 
     /// <summary>
-    /// Sets chunk options. Currently no default chunker is available; calling this
-    /// without also calling <see cref="Chunk(ITextChunker)"/> will cause
-    /// <see cref="Build"/> to throw.
+    /// Sets chunk options using a <see cref="SentenceBoundaryChunker"/> as the default chunker.
     /// </summary>
     /// <param name="options">The chunk options.</param>
     /// <returns>This builder for fluent chaining.</returns>
     public IngestionPipelineBuilder<T> Chunk(ChunkOptions options)
     {
         ArgumentNullException.ThrowIfNull(options);
-        _chunkerFromOptions = true;
+        _chunker = new SentenceBoundaryChunker();
+        _chunkOptions = options;
         return this;
     }
 
@@ -100,12 +99,6 @@ public sealed class IngestionPipelineBuilder<T>
     /// <exception cref="InvalidOperationException">Thrown when required components are missing.</exception>
     public IngestionPipeline<T> Build()
     {
-        if (_chunkerFromOptions && _chunker is null)
-        {
-            throw new InvalidOperationException(
-                "No chunker provided and no default available. Use Chunk(ITextChunker) instead.");
-        }
-
         if (_embedder is null)
         {
             throw new InvalidOperationException("Embed(IEmbeddingProvider) must be called before Build().");
@@ -124,7 +117,7 @@ public sealed class IngestionPipelineBuilder<T>
         // When no chunker is set, use a default that returns the full text as a single chunk.
         var chunker = _chunker ?? new PassthroughChunker();
 
-        return new IngestionPipeline<T>(chunker, _embedder, _mapper, _writer, _progress);
+        return new IngestionPipeline<T>(chunker, _chunkOptions, _embedder, _mapper, _writer, _progress);
     }
 
     /// <summary>

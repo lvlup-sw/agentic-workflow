@@ -65,6 +65,18 @@ public sealed class OntologyOptions
         return this;
     }
 
+    /// <summary>
+    /// Adds a service registration callback to be applied during DI setup.
+    /// Used by extension packages (e.g., Npgsql) to register their services.
+    /// </summary>
+    /// <param name="registration">The service registration action.</param>
+    public OntologyOptions AddServiceRegistration(Action<IServiceCollection> registration)
+    {
+        ArgumentNullException.ThrowIfNull(registration);
+        _serviceRegistrations.Add(registration);
+        return this;
+    }
+
     public OntologyOptions AddWorkflow(string workflowName, Action<WorkflowMetadataBuilder> configure)
     {
         var builder = new WorkflowMetadataBuilder(workflowName);

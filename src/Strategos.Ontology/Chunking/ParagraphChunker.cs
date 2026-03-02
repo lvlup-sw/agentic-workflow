@@ -1,3 +1,5 @@
+using static Strategos.Ontology.Chunking.ChunkingUtilities;
+
 namespace Strategos.Ontology.Chunking;
 
 /// <summary>
@@ -6,7 +8,6 @@ namespace Strategos.Ontology.Chunking;
 /// </summary>
 public sealed class ParagraphChunker : ITextChunker
 {
-    private const double TokensPerWord = 0.75;
     private readonly SentenceBoundaryChunker _sentenceChunker;
 
     /// <summary>
@@ -172,27 +173,6 @@ public sealed class ParagraphChunker : ITextChunker
         }
 
         return i;
-    }
-
-    private static int CountWords(string text)
-    {
-        var count = 0;
-        var inWord = false;
-
-        foreach (var c in text)
-        {
-            if (char.IsWhiteSpace(c))
-            {
-                inWord = false;
-            }
-            else if (!inWord)
-            {
-                inWord = true;
-                count++;
-            }
-        }
-
-        return count;
     }
 
     private readonly record struct ParagraphSpan(string Content, int Offset);

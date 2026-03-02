@@ -80,18 +80,22 @@ public class IngestionPipelineBuilderTests
     }
 
     [Test]
-    public void Build_ChunkOptionsOverload_ThrowsInvalidOperationException()
+    public async Task Build_ChunkOptionsOverload_UsesSentenceBoundaryChunkerByDefault()
     {
-        // Arrange & Act
-        var builder = IngestionPipeline<BuilderTestEntity>.Create()
-            .Chunk(new ChunkOptions { MaxTokens = 256 });
+        // Arrange & Act — Chunk(ChunkOptions) should use SentenceBoundaryChunker as default
+        var embedder = Substitute.For<IEmbeddingProvider>();
+        var writer = Substitute.For<IObjectSetWriter>();
 
-        // Assert — should throw because no default chunker is available
-        Assert.Throws<InvalidOperationException>(() =>
-            builder.Embed(Substitute.For<IEmbeddingProvider>())
-                .Map((chunk, embedding) => new BuilderTestEntity(chunk.Content, embedding))
-                .WriteTo(Substitute.For<IObjectSetWriter>())
-                .Build());
+        var pipeline = IngestionPipeline<BuilderTestEntity>.Create()
+            .Chunk(new ChunkOptions { MaxTokens = 256 })
+            .Embed(embedder)
+            .Map((chunk, embedding) => new BuilderTestEntity(chunk.Content, embedding))
+            .WriteTo(writer)
+            .Build();
+
+        // Assert
+        await Assert.That(pipeline).IsNotNull();
+        await Assert.That(pipeline).IsTypeOf<IngestionPipeline<BuilderTestEntity>>();
     }
 
     [Test]
