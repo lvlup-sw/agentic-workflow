@@ -14,6 +14,7 @@ internal sealed class ObjectTypeBuilder<T>(string domainName) : IObjectTypeBuild
     private readonly List<EventDescriptor> _events = [];
     private readonly List<InterfaceDescriptor> _interfaces = [];
     private readonly List<InterfaceActionMapping> _interfaceActionMappings = [];
+    private readonly List<InterfacePropertyMapping> _interfacePropertyMappings = [];
     private readonly List<ExtensionPointBuilder> _extensionPointBuilders = [];
     private LifecycleDescriptor? _lifecycle;
 
@@ -80,6 +81,12 @@ internal sealed class ObjectTypeBuilder<T>(string domainName) : IObjectTypeBuild
         _interfaces.Add(new InterfaceDescriptor(typeof(TInterface).Name, typeof(TInterface)));
         _interfaceActionMappings.AddRange(mapping.GetActionMappings());
 
+        foreach (var (sourceName, targetName) in mapping.GetMappings())
+        {
+            _interfacePropertyMappings.Add(new InterfacePropertyMapping(
+                sourceName, targetName, typeof(TInterface).Name));
+        }
+
         // Register default actions directly to preserve full metadata
         _defaultActionDescriptors.AddRange(mapping.GetDefaultActions());
     }
@@ -118,6 +125,7 @@ internal sealed class ObjectTypeBuilder<T>(string domainName) : IObjectTypeBuild
             ImplementedInterfaces = _interfaces.AsReadOnly(),
             Lifecycle = _lifecycle,
             InterfaceActionMappings = _interfaceActionMappings.AsReadOnly(),
+            InterfacePropertyMappings = _interfacePropertyMappings.AsReadOnly(),
             ExternalLinkExtensionPoints = _extensionPointBuilders.ConvertAll(b => b.Build()).AsReadOnly(),
         };
     }

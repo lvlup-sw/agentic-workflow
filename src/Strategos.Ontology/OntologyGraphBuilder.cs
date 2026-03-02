@@ -215,40 +215,66 @@ public sealed class OntologyGraphBuilder
         List<ObjectTypeDescriptor> allObjectTypes,
         List<InterfaceDescriptor> allInterfaces)
     {
-        // Use Name-based lookup: property validation requires exact name matches,
-        // which only works when the interface name matches typeof(TInterface).Name.
-        // When users provide custom names (e.g., "Searchable" for IQuerySearchable),
-        // Via() mappings handle the property name translation, so we intentionally
-        // skip strict property validation for those cases.
-        var interfaceLookup = allInterfaces
+        var interfaceByName = allInterfaces
             .GroupBy(i => i.Name)
+            .ToDictionary(g => g.Key, g => g.First());
+
+        var interfaceByType = allInterfaces
+            .GroupBy(i => i.InterfaceType)
             .ToDictionary(g => g.Key, g => g.First());
 
         foreach (var objectType in allObjectTypes)
         {
             foreach (var implementedInterface in objectType.ImplementedInterfaces)
             {
-                if (!interfaceLookup.TryGetValue(implementedInterface.Name, out var interfaceDescriptor))
+                // Try name-based lookup first, then fall back to type-based
+                if (!interfaceByName.TryGetValue(implementedInterface.Name, out var interfaceDescriptor))
                 {
-                    continue;
+                    if (!interfaceByType.TryGetValue(implementedInterface.InterfaceType, out interfaceDescriptor))
+                    {
+                        continue;
+                    }
                 }
 
                 var objectPropertyLookup = objectType.Properties
                     .ToDictionary(p => p.Name, p => p.PropertyType);
 
+                // Build a set of interface property names covered by Via() mappings
+                var viaMappedTargets = objectType.InterfacePropertyMappings
+                    .Where(m => m.InterfaceName == implementedInterface.Name)
+                    .ToDictionary(m => m.TargetPropertyName, m => m.SourcePropertyName);
+
                 foreach (var interfaceProperty in interfaceDescriptor.Properties)
                 {
-                    if (!objectPropertyLookup.TryGetValue(interfaceProperty.Name, out var objectPropertyType))
+                    // Check direct name match first
+                    if (objectPropertyLookup.TryGetValue(interfaceProperty.Name, out var objectPropertyType))
                     {
-                        throw new OntologyCompositionException(
-                            $"Object type '{objectType.Name}' implements interface '{implementedInterface.Name}' but is missing property '{interfaceProperty.Name}'.");
+                        if (!interfaceProperty.PropertyType.IsAssignableFrom(objectPropertyType))
+                        {
+                            throw new OntologyCompositionException(
+                                $"Object type '{objectType.Name}' implements interface '{implementedInterface.Name}' but property '{interfaceProperty.Name}' has incompatible type. Expected '{interfaceProperty.PropertyType.Name}', found '{objectPropertyType.Name}'.");
+                        }
+
+                        continue;
                     }
 
-                    if (!interfaceProperty.PropertyType.IsAssignableFrom(objectPropertyType))
+                    // Check Via() mapping
+                    if (viaMappedTargets.TryGetValue(interfaceProperty.Name, out var sourcePropName))
                     {
-                        throw new OntologyCompositionException(
-                            $"Object type '{objectType.Name}' implements interface '{implementedInterface.Name}' but property '{interfaceProperty.Name}' has incompatible type. Expected '{interfaceProperty.PropertyType.Name}', found '{objectPropertyType.Name}'.");
+                        if (objectPropertyLookup.TryGetValue(sourcePropName, out var sourcePropertyType))
+                        {
+                            if (!interfaceProperty.PropertyType.IsAssignableFrom(sourcePropertyType))
+                            {
+                                throw new OntologyCompositionException(
+                                    $"Object type '{objectType.Name}' implements interface '{implementedInterface.Name}' but Via() mapped property '{sourcePropName}' has incompatible type for interface property '{interfaceProperty.Name}'. Expected '{interfaceProperty.PropertyType.Name}', found '{sourcePropertyType.Name}'.");
+                            }
+
+                            continue;
+                        }
                     }
+
+                    throw new OntologyCompositionException(
+                        $"Object type '{objectType.Name}' implements interface '{implementedInterface.Name}' but is missing property '{interfaceProperty.Name}'.");
                 }
             }
         }
