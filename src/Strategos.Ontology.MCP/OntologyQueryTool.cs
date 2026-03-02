@@ -37,7 +37,7 @@ public sealed class OntologyQueryTool
         CancellationToken ct = default)
     {
         var inclusion = ParseInclusion(include);
-        var expression = BuildExpression(objectType, filter, traverseLink, interfaceName, inclusion);
+        var expression = BuildExpression(domain, objectType, filter, traverseLink, interfaceName, inclusion);
 
         var result = await _objectSetProvider.ExecuteAsync<object>(expression, ct).ConfigureAwait(false);
 
@@ -72,14 +72,19 @@ public sealed class OntologyQueryTool
         return events;
     }
 
-    private static ObjectSetExpression BuildExpression(
+    private ObjectSetExpression BuildExpression(
+        string? domain,
         string objectType,
         string? filter,
         string? traverseLink,
         string? interfaceName,
         ObjectSetInclusion? inclusion)
     {
-        ObjectSetExpression expression = new RootExpression(typeof(object));
+        var clrType = domain is not null
+            ? _graph.GetObjectType(domain, objectType)?.ClrType ?? typeof(object)
+            : typeof(object);
+
+        ObjectSetExpression expression = new RootExpression(clrType);
 
         if (filter is not null)
         {
@@ -88,12 +93,12 @@ public sealed class OntologyQueryTool
 
         if (traverseLink is not null)
         {
-            expression = new TraverseLinkExpression(expression, traverseLink, typeof(object));
+            expression = new TraverseLinkExpression(expression, traverseLink, clrType);
         }
 
         if (interfaceName is not null)
         {
-            expression = new InterfaceNarrowExpression(expression, typeof(object));
+            expression = new InterfaceNarrowExpression(expression, clrType);
         }
 
         if (inclusion.HasValue)

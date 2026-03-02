@@ -119,6 +119,102 @@ public class OntologyQueryToolTests
     }
 
     [Test]
+    public async Task QueryAsync_WithDomain_UsesResolvedClrType()
+    {
+        // Arrange
+        ObjectSetExpression? capturedExpression = null;
+        var testItems = new List<object> { new { Id = "p1" } };
+        _objectSetProvider
+            .ExecuteAsync<object>(Arg.Any<ObjectSetExpression>(), Arg.Any<CancellationToken>())
+            .Returns(callInfo =>
+            {
+                capturedExpression = callInfo.Arg<ObjectSetExpression>();
+                return new ObjectSetResult<object>(testItems, testItems.Count, ObjectSetInclusion.Properties);
+            });
+
+        // Act
+        await _tool.QueryAsync(objectType: "TestPosition", domain: "trading");
+
+        // Assert — RootExpression should use TestPosition CLR type, not typeof(object)
+        await Assert.That(capturedExpression).IsNotNull();
+        var root = capturedExpression as RootExpression;
+        await Assert.That(root).IsNotNull();
+        await Assert.That(root!.ObjectType).IsEqualTo(typeof(TestPosition));
+    }
+
+    [Test]
+    public async Task QueryAsync_UnknownObjectType_FallsBackToObjectType()
+    {
+        // Arrange
+        ObjectSetExpression? capturedExpression = null;
+        var testItems = new List<object>();
+        _objectSetProvider
+            .ExecuteAsync<object>(Arg.Any<ObjectSetExpression>(), Arg.Any<CancellationToken>())
+            .Returns(callInfo =>
+            {
+                capturedExpression = callInfo.Arg<ObjectSetExpression>();
+                return new ObjectSetResult<object>(testItems, testItems.Count, ObjectSetInclusion.Properties);
+            });
+
+        // Act
+        await _tool.QueryAsync(objectType: "NonExistentType", domain: "trading");
+
+        // Assert — should fall back to typeof(object) when type is not found
+        await Assert.That(capturedExpression).IsNotNull();
+        var root = capturedExpression as RootExpression;
+        await Assert.That(root).IsNotNull();
+        await Assert.That(root!.ObjectType).IsEqualTo(typeof(object));
+    }
+
+    [Test]
+    public async Task QueryAsync_TraverseLink_UsesResolvedClrType()
+    {
+        // Arrange
+        ObjectSetExpression? capturedExpression = null;
+        var testItems = new List<object> { new { OrderId = "o1" } };
+        _objectSetProvider
+            .ExecuteAsync<object>(Arg.Any<ObjectSetExpression>(), Arg.Any<CancellationToken>())
+            .Returns(callInfo =>
+            {
+                capturedExpression = callInfo.Arg<ObjectSetExpression>();
+                return new ObjectSetResult<object>(testItems, testItems.Count, ObjectSetInclusion.Properties);
+            });
+
+        // Act
+        await _tool.QueryAsync(objectType: "TestPosition", domain: "trading", traverseLink: "Orders");
+
+        // Assert — TraverseLinkExpression should use resolved CLR type, not typeof(object)
+        await Assert.That(capturedExpression).IsNotNull();
+        var traverse = capturedExpression as TraverseLinkExpression;
+        await Assert.That(traverse).IsNotNull();
+        await Assert.That(traverse!.ObjectType).IsEqualTo(typeof(TestPosition));
+    }
+
+    [Test]
+    public async Task QueryAsync_WithInterface_UsesResolvedClrType()
+    {
+        // Arrange
+        ObjectSetExpression? capturedExpression = null;
+        var testItems = new List<object> { new { Id = "p1" } };
+        _objectSetProvider
+            .ExecuteAsync<object>(Arg.Any<ObjectSetExpression>(), Arg.Any<CancellationToken>())
+            .Returns(callInfo =>
+            {
+                capturedExpression = callInfo.Arg<ObjectSetExpression>();
+                return new ObjectSetResult<object>(testItems, testItems.Count, ObjectSetInclusion.Properties);
+            });
+
+        // Act
+        await _tool.QueryAsync(objectType: "TestPosition", domain: "trading", interfaceName: "Searchable");
+
+        // Assert — InterfaceNarrowExpression should use resolved CLR type, not typeof(object)
+        await Assert.That(capturedExpression).IsNotNull();
+        var narrow = capturedExpression as InterfaceNarrowExpression;
+        await Assert.That(narrow).IsNotNull();
+        await Assert.That(narrow!.ObjectType).IsEqualTo(typeof(TestPosition));
+    }
+
+    [Test]
     public async Task OntologyQuery_Events_ReturnTemporalEvents()
     {
         // Arrange
